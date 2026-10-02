@@ -11,5 +11,7 @@ model Person {
   user    User @relation("UserPersons", fields: [user_id], references: [id], onDelete: Cascade)
 
   // Relação inversa opcional caso o User aponte para Person via person_id
+  createdAt      DateTime        @default(now()) 
+  updatedAt      DateTime        @updatedAt
   UserAsMain User[]
 }

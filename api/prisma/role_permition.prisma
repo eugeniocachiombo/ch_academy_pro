@@ -4,6 +4,8 @@ model RolePermition {
   role         Role      @relation(fields: [role_id], references: [id], onDelete: Cascade)
   permition_id Int
   permition    Permition @relation(fields: [permition_id], references: [id], onDelete: Cascade)
-
+  createdAt      DateTime        @default(now()) 
+  updatedAt      DateTime        @updatedAt
+  
   @@unique([role_id, permition_id])
 }
