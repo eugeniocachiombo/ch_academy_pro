@@ -9,7 +9,7 @@ async function init() {
      rolePermitionList = await api.get<unknown, Array<{ role_id: number }>>('/role-permitions'); 
 }
 
-export function can(user_id: number){
+export function can(user_id: number | string){
     
     const roles = userRole.filter((e) => e.user_id == user_id);
     if(!roles) return false;
