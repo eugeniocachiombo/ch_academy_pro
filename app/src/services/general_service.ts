@@ -5,6 +5,7 @@
  */
 import { computed, reactive, ref } from 'vue'
 import router from '@/router'
+import { clearSession } from '@/services/auth_service'
 
 /* ------------------------------------------------------------------ */
 /* Tipos                                                              */
@@ -286,5 +287,10 @@ export function closeOverlays(): void {
 /* Sessão                                                             */
 /* ------------------------------------------------------------------ */
 export function logout(): void {
+  clearSession()
+  searchQuery.value = ''
+  sidebarExpanded.value = false
+  closeOverlays()
+  router.push({ name: 'login' })
   showNotification('Sessão encerrada com segurança.', 'info')
 }

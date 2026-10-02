@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { currentUser } from '@/services/auth_service'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
 const links: { id: TabId; label: string; icon: string }[] = [
@@ -66,14 +67,14 @@ function closeSidebar() {
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
           <img
-            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120"
-            alt="Dra. Carla Souza"
+            :src="currentUser?.photo"
+            :alt="currentUser?.name"
             class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50"
           />
           <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden flex-1">
-            <h4 class="text-xs font-bold text-white truncate">Dra. Carla Souza</h4>
+            <h4 class="text-xs font-bold text-white truncate">{{ currentUser?.name }}</h4>
             <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Diretor(a)
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{ currentUser?.role }}
             </span>
           </div>
           <button

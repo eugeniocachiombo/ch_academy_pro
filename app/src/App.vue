@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import ToastNotification from '@/components/shared/ToastNotification.vue'
@@ -8,17 +9,29 @@ import NoticeModal from '@/components/shared/NoticeModal.vue'
 import ChatWidget from '@/components/shared/ChatWidget.vue'
 import { closeOverlays, showNotification } from '@/services/general_service'
 
+const route = useRoute()
+// Rotas públicas (ex.: login) não mostram sidebar, cabeçalho, chat nem modais
+const isPublic = computed(() => route.meta.public === true)
+
 let welcomeTimer: ReturnType<typeof setTimeout> | undefined
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') closeOverlays()
 }
 
-onMounted(() => {
-  document.addEventListener('keydown', onKeydown)
-  welcomeTimer = setTimeout(() => showNotification('Nova mensagem recebida do Suporte Técnico.', 'info'), 2500)
-})
+// A mensagem de boas-vindas só aparece depois de entrar no painel
+watch(
+  isPublic,
+  (publicRoute) => {
+    if (welcomeTimer) clearTimeout(welcomeTimer)
+    if (!publicRoute) {
+      welcomeTimer = setTimeout(() => showNotification('Nova mensagem recebida do Suporte Técnico.', 'info'), 2500)
+    }
+  },
+  { immediate: true },
+)
 
+onMounted(() => document.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   if (welcomeTimer) clearTimeout(welcomeTimer)
@@ -26,18 +39,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppSidebar />
+  <RouterView v-if="isPublic" />
 
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-    <AppHeader />
+  <template v-else>
+    <AppSidebar />
 
-    <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50/50 dark:bg-slate-950 relative">
-      <RouterView />
-    </main>
-  </div>
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <AppHeader />
 
-  <ChatWidget />
-  <QuickActionModal />
-  <NoticeModal />
+      <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50/50 dark:bg-slate-950 relative">
+        <RouterView />
+      </main>
+    </div>
+
+    <ChatWidget />
+    <QuickActionModal />
+    <NoticeModal />
+  </template>
+
   <ToastNotification />
 </template>
