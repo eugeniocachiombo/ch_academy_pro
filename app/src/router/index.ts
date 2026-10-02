@@ -1,7 +1,15 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user.store'
-import UnderConstructionView from '@/views/UnderConstructionView.vue'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
+
+// Importação das rotas modularizadas
+import { academicRoutes } from './modules/academic.routes'
+import { financialRoutes } from './modules/financial.routes'
+import { studentsRoutes } from './modules/students.routes'
+import { teachersRoutes } from './modules/teachers.routes'
+import { communicationsRoutes } from './modules/communications.routes'
+import { reportsRoutes } from './modules/reports.routes'
+import { settingsRoutes } from './modules/settings.routes'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -17,35 +25,14 @@ const routes: RouteRecordRaw[] = [
   { path: '/', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
   { path: '/acesso-negado', name: 'unauthorized', component: UnauthorizedView, meta: { public: true } },
 
-  // Módulo Acadêmico
-  { path: '/academico/turmas', name: 'academic-classes', component: UnderConstructionView, meta: { permission: 'classes.manage' } },
-  { path: '/academico/notas', name: 'academic-grades', component: UnderConstructionView, meta: { permission: 'grades.manage' } },
-  { path: '/academico/frequencia', name: 'academic-attendance', component: UnderConstructionView, meta: { permission: 'attendance.manage' } },
-
-  // Módulo Financeiro
-  { path: '/financeiro/mensalidades', name: 'financial-fees', component: UnderConstructionView, meta: { permission: 'fee.manage' } },
-  { path: '/financeiro/boletos', name: 'financial-bills', component: UnderConstructionView, meta: { permission: 'bill.manage' } },
-  { path: '/financeiro/caixa', name: 'financial-cashflow', component: UnderConstructionView, meta: { permission: 'cashflow.manage' } },
-
-  // Módulo Alunos
-  { path: '/alunos/diretorio', name: 'students-directory', component: UnderConstructionView, meta: { permission: 'student.manage' } },
-  { path: '/alunos/matricula', name: 'students-enrollment', component: UnderConstructionView, meta: { permission: 'enrollment.manage' } },
-
-  // Módulo Professores
-  { path: '/professores/corpo-docente', name: 'teachers-directory', component: UnderConstructionView, meta: { permission: 'teacher.manage' } },
-  { path: '/professores/horarios', name: 'teachers-schedule', component: UnderConstructionView, meta: { permission: 'schedule.manage' } },
-
-  // Módulo Comunicações
-  { path: '/comunicacoes/mural', name: 'communications-wall', component: UnderConstructionView, meta: { permission: 'wall.manage' } },
-  { path: '/comunicacoes/enviar', name: 'communications-send', component: UnderConstructionView, meta: { permission: 'message.send' } },
-
-  // Módulo Relatórios
-  { path: '/relatorios/academicos', name: 'reports-academic', component: UnderConstructionView, meta: { permission: 'report_academic.manage' } },
-  { path: '/relatorios/financeiros', name: 'reports-financial', component: UnderConstructionView, meta: { permission: 'report_financial.manage' } },
-  { path: '/relatorios/frequencia', name: 'reports-attendance', component: UnderConstructionView, meta: { permission: 'report_attendance.manage' } },
-
-  // Módulo Configurações
-  { path: '/configuracoes/ano-letivo', name: 'settings-academic-year', component: UnderConstructionView, meta: { permission: 'academic_year.manage' } },
+  // Agrupando todas as rotas dos módulos via spread operator (...)
+  ...academicRoutes,
+  ...financialRoutes,
+  ...studentsRoutes,
+  ...teachersRoutes,
+  ...communicationsRoutes,
+  ...reportsRoutes,
+  ...settingsRoutes,
 
   { path: '/:pathMatch(.*)*', redirect: { name: 'dashboard' } },
 ]
