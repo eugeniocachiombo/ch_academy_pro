@@ -76,4 +76,15 @@ userRoutes.delete("/users/:id", async (req: Request, res: Response) => {
     }
 });
 
+userRoutes.put("/users/:id/password", async (req: Request, res: Response) => {
+    try {
+        const id = Number(req.params.id);
+        console.log(id)
+        await userRepository.updatePassword(id, req.body);
+        return res.status(200).json({ message: "Palavra-passe actualizada com sucesso." });
+    } catch (error) {
+        return errorReport(res, error);
+    }
+});
+
 export { userRoutes };
