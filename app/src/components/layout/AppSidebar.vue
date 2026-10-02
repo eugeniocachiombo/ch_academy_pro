@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user.store'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
@@ -13,12 +13,14 @@ const openMenus = ref<Record<string, boolean>>({
   teachers: false,
   communications: false,
   reports: false,
+  settings: false,
 })
 
 interface SubMenu {
   id: TabId
   label: string
-  icon: string // Adicionado suporte a ícones no submenu
+  icon: string
+  permission?: boolean
 }
 
 interface MenuItem {
@@ -27,23 +29,28 @@ interface MenuItem {
   icon: string
   children?: SubMenu[]
   singleRoute?: TabId
+  permission?: boolean
 }
 
-const menuItems: MenuItem[] = [
+const p = (name: string) => userStore.getPermition(name)
+
+// computed: recalcula sozinho quando as permissões chegarem / mudarem
+const menuItems = computed<MenuItem[]>(() => [
   {
     key: 'dashboard',
     label: 'Dashboard',
     icon: 'fa-chart-pie',
     singleRoute: 'dashboard',
+    permission: true,
   },
   {
     key: 'academic',
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
-      { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard' },
-      { id: 'academic-grades', label: 'Notas', icon: 'fa-star' },
-      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user' },
+      { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permission: p('classes.manage') },
+      { id: 'academic-grades', label: 'Notas', icon: 'fa-star', permission: p('grades.manage') },
+      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permission: p('attendance.manage') },
     ],
   },
   {
@@ -51,9 +58,9 @@ const menuItems: MenuItem[] = [
     label: 'Financeiro',
     icon: 'fa-wallet',
     children: [
-      { id: 'financial-fees', label: 'Mensalidades', icon: 'fa-file-invoice-dollar' },
-      { id: 'financial-bills', label: 'Boletos', icon: 'fa-barcode' },
-      { id: 'financial-cashflow', label: 'Caixa', icon: 'fa-cash-register' },
+      { id: 'financial-fees', label: 'Mensalidades', icon: 'fa-file-invoice-dollar', permission: p('fee.manage') },
+      { id: 'financial-bills', label: 'Boletos', icon: 'fa-barcode', permission: p('bill.manage') },
+      { id: 'financial-cashflow', label: 'Caixa', icon: 'fa-cash-register', permission: p('cashflow.manage') },
     ],
   },
   {
@@ -61,8 +68,8 @@ const menuItems: MenuItem[] = [
     label: 'Alunos',
     icon: 'fa-users',
     children: [
-      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book' },
-      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus' },
+      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book', permission: p('student.manage') },
+      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus', permission: p('enrollment.manage') },
     ],
   },
   {
@@ -70,8 +77,8 @@ const menuItems: MenuItem[] = [
     label: 'Professores',
     icon: 'fa-chalkboard-user',
     children: [
-      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge' },
-      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days' },
+      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge', permission: p('teacher.manage') },
+      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permission: p('schedule.manage') },
     ],
   },
   {
@@ -79,8 +86,8 @@ const menuItems: MenuItem[] = [
     label: 'Comunicações',
     icon: 'fa-bullhorn',
     children: [
-      { id: 'communications-wall', label: 'Mural', icon: 'fa-rectangle-ad' },
-      { id: 'communications-send', label: 'Enviar', icon: 'fa-paper-plane' },
+      { id: 'communications-wall', label: 'Mural', icon: 'fa-rectangle-ad', permission: p('wall.manage') },
+      { id: 'communications-send', label: 'Enviar', icon: 'fa-paper-plane', permission: p('message.send') },
     ],
   },
   {
@@ -88,12 +95,26 @@ const menuItems: MenuItem[] = [
     label: 'Relatórios',
     icon: 'fa-file-lines',
     children: [
-      { id: 'reports-academic', label: 'Acadêmicos', icon: 'fa-file-contract' },
-      { id: 'reports-financial', label: 'Financeiros', icon: 'fa-file-invoice' },
-      { id: 'reports-attendance', label: 'Frequência', icon: 'fa-file-shield' },
+      { id: 'reports-academic', label: 'Acadêmicos', icon: 'fa-file-contract', permission: p('report_academic.manage') },
+      { id: 'reports-financial', label: 'Financeiros', icon: 'fa-file-invoice', permission: p('report_financial.manage') },
+      { id: 'reports-attendance', label: 'Frequência', icon: 'fa-file-shield', permission: p('report_attendance.manage') },
     ],
   },
-]
+  {
+    key: 'settings',
+    label: 'Configurações',
+    icon: 'fa-gears',
+    children: [
+      { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permission: p('academic_year.manage') },
+    ],
+  },
+])
+
+// Menu com submenus só aparece se tiver pelo menos um filho visível
+function hasVisibleChildren(item: MenuItem): boolean {
+  if (!item.children) return false
+  return item.children.some((sub) => sub.permission !== false)
+}
 
 function toggleSubmenu(key: string) {
   openMenus.value[key] = !openMenus.value[key]
@@ -125,13 +146,13 @@ function closeSidebar() {
         </div>
       </div>
 
-      <!-- Navegação com Submenus -->
+      <!-- Navegação com Submenus e Permissões -->
       <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto" aria-label="Menu principal">
         <template v-for="item in menuItems" :key="item.key">
-          
+
           <!-- Item simples (Ex: Dashboard) -->
           <RouterLink
-            v-if="item.singleRoute"
+            v-if="item.singleRoute && item.permission"
             :to="{ name: item.singleRoute }"
             :aria-current="activeTab === item.singleRoute ? 'page' : undefined"
             :title="item.label"
@@ -147,8 +168,8 @@ function closeSidebar() {
             <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
           </RouterLink>
 
-          <!-- Item com Submenus -->
-          <div v-else class="space-y-1">
+          <!-- Item com Submenus (só se houver pelo menos 1 filho com permissão) -->
+          <div v-else-if="item.children && hasVisibleChildren(item)" class="space-y-1">
             <button
               type="button"
               class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all group focus:outline-none"
@@ -158,34 +179,34 @@ function closeSidebar() {
                 <i :class="item.icon" class="fa-solid w-5 text-center text-lg group-hover:text-indigo-400 transition-colors"></i>
                 <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
               </div>
-              <i 
-                :class="openMenus[item.key] ? 'rotate-90' : ''"
+              <i
+                :class="[openMenus[item.key] ? 'rotate-90' : '', sidebarExpanded ? 'inline' : 'hidden lg:inline']"
                 class="fa-solid fa-chevron-right text-xs text-slate-500 transition-transform duration-200"
-                v-if="sidebarExpanded || 'lg:inline'"
               ></i>
             </button>
 
-            <!-- Lista de Submenus com Ícones -->
-            <div 
-              v-show="openMenus[item.key] || sidebarExpanded" 
+            <!-- Submenus com verificação individual de permissão -->
+            <div
+              v-show="openMenus[item.key] || sidebarExpanded"
               class="pl-6 space-y-1 transition-all"
             >
-              <RouterLink
-                v-for="sub in item.children"
-                :key="sub.id"
-                :to="{ name: sub.id }"
-                :aria-current="activeTab === sub.id ? 'page' : undefined"
-                :class="
-                  activeTab === sub.id
-                    ? 'text-white bg-indigo-600/80 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-                "
-                class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                @click="closeSidebar"
-              >
-                <i :class="sub.icon" class="fa-solid w-4 text-center text-xs"></i>
-                <span>{{ sub.label }}</span>
-              </RouterLink>
+              <template v-for="sub in item.children" :key="sub.id">
+                <RouterLink
+                  v-if="sub.permission !== false"
+                  :to="{ name: sub.id }"
+                  :aria-current="activeTab === sub.id ? 'page' : undefined"
+                  :class="
+                    activeTab === sub.id
+                      ? 'text-white bg-indigo-600/80 shadow-sm'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  "
+                  class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                  @click="closeSidebar"
+                >
+                  <i :class="sub.icon" class="fa-solid w-4 text-center text-xs"></i>
+                  <span>{{ sub.label }}</span>
+                </RouterLink>
+              </template>
             </div>
           </div>
 

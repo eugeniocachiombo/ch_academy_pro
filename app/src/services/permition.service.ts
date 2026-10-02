@@ -1,30 +1,57 @@
+import { shallowRef } from 'vue'
 import { api } from '@/services/api'
 
-let userRole: Array<{ user_id: number }> = [];
-let rolePermitionList: Array<{ role_id: number }> = [];
+const userRoles = shallowRef<any[]>([])
+const rolePermitions = shallowRef<any[]>([])
 
-init();
-async function init() {
-     userRole = await api.get<unknown, Array<{ user_id: number }>>('/user-roles');
-     rolePermitionList = await api.get<unknown, Array<{ role_id: number }>>('/role-permitions'); 
+let loadPromise: Promise<void> | null = null
+
+/**
+ * Carrega (uma única vez) as roles dos utilizadores e as permissões de cada role.
+ * Pode ser aguardada em qualquer lugar (router guard, login, etc.).
+ * Use force = true para recarregar.
+ */
+export function loadPermitions(force = false): Promise<void> {
+  if (force) loadPromise = null
+
+  if (!loadPromise) {
+    loadPromise = Promise.all([
+      api.get<unknown, any[]>('/user-roles'),
+      api.get<unknown, any[]>('/role-permitions'),
+    ])
+      .then(([roles, perms]) => {
+        userRoles.value = roles
+        rolePermitions.value = perms
+      })
+      .catch((err) => {
+        loadPromise = null // permite tentar de novo
+        throw err
+      })
+  }
+  return loadPromise
 }
 
-export function can(user_id: number | string){
-    
-    const roles = userRole.filter((e) => e.user_id == user_id);
-    if(!roles) return false;
-    
-    const result: Array<any> = [];
-    
-    roles.forEach( (e, i) => {
-        const response = rolePermition(e.role_id);
-        if(!response[i]) return;
-        result.push(response.map((e)=>e?.permition?.name)); 
-    });
-    
-    return result;
+/** Chamar no logout */
+export function resetPermitions(): void {
+  loadPromise = null
+  userRoles.value = []
+  rolePermitions.value = []
 }
 
- function rolePermition(role_id: any){
-    return rolePermitionList.filter((e) => e.role_id == role_id);
+export function getUserRoles(user_id: number | string) {
+  return userRoles.value.filter((e) => e.user_id == user_id)
+}
+
+export function isAdmin(user_id: number | string): boolean {
+  return getUserRoles(user_id).some((e) => e.role_id == 1)
+}
+
+/** Síncrono: lista plana (sem duplicados) com os nomes das permissões do utilizador */
+export function can(user_id: number | string): string[] {
+  const names = getUserRoles(user_id).flatMap((r) =>
+    rolePermitions.value
+      .filter((p) => p.role_id == r.role_id)
+      .map((p) => p?.permition?.name as string | undefined)
+  )
+  return [...new Set(names.filter((n): n is string => !!n))]
 }

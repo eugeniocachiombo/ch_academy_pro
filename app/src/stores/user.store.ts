@@ -1,7 +1,20 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { api } from '@/services/api';
-import { can } from '@/services/permition.service';
+import {
+  can,
+  isAdmin,
+  getUserRoles,
+  loadPermitions,
+  resetPermitions,
+} from '@/services/permition.service';
+
+export interface UserRole {
+  id: number;
+  user_id?: number | string;
+  role_id: number;
+  role?: { id?: number; name?: string };
+}
 
 export interface User {
   id: number;
@@ -37,17 +50,14 @@ export const useUserStore = defineStore('user', () => {
     () => currentUser.value?.name || currentUser.value?.username || 'Utilizador'
   );
 
-  /**
-   * Lê o token guardado (verificando tanto localStorage quanto sessionStorage baseando-se no "remember")
-   */
+  /** Lê o token guardado (localStorage ou sessionStorage, conforme "remember") */
   function readSession(): { token: string; user: User } | null {
     for (const storage of [localStorage, sessionStorage]) {
       try {
         const savedToken = storage.getItem(STORAGE_KEY);
         const savedUser = storage.getItem('user');
         if (savedToken && savedUser) {
-          const parsedUser = JSON.parse(savedUser) as User;
-          return { token: savedToken, user: parsedUser };
+          return { token: savedToken, user: JSON.parse(savedUser) as User };
         }
       } catch {
         /* ignora falhas de parsing ou storage indisponível */
@@ -56,9 +66,7 @@ export const useUserStore = defineStore('user', () => {
     return null;
   }
 
-  /**
-   * Limpa completamente a sessão da memória e dos storages (localStorage e sessionStorage)
-   */
+  /** Limpa a sessão da memória e dos storages */
   function clearSession(): void {
     currentUser.value = null;
     token.value = null;
@@ -68,7 +76,7 @@ export const useUserStore = defineStore('user', () => {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('user');
       localStorage.removeItem('userID');
-      
+
       sessionStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('user');
       sessionStorage.removeItem('userID');
@@ -77,11 +85,8 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /**
-   * Atualiza a sessão na memória, Storages corretos e nos cabeçalhos HTTP do Axios
-   */
+  /** Atualiza a sessão na memória, nos storages e nos cabeçalhos do Axios */
   function setSession(newToken: string | null, user: User | null, remember: boolean = true): void {
-    // Limpa qualquer sessão anterior de ambos os storages antes de definir a nova
     clearSession();
 
     if (newToken && user) {
@@ -102,6 +107,15 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
   }
 
+  /**
+   * Carrega roles e permissões. Só faz sentido com sessão ativa
+   * (o token precisa estar no header antes da requisição).
+   */
+  async function loadAccess(): Promise<void> {
+    if (!token.value) return;
+    await loadPermitions();
+  }
+
   async function login(username: string, password: string, remember: boolean = true): Promise<User | string> {
     isLoading.value = true;
     error.value = null;
@@ -111,6 +125,7 @@ export const useUserStore = defineStore('user', () => {
 
       if (response && response.token && response.user) {
         setSession(response.token, response.user, remember);
+        await loadAccess(); // garante permissões carregadas antes de navegar
         return response.user;
       }
 
@@ -131,11 +146,9 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      const response = await api.post<unknown, User>('/users', payload);
-      return response;
+      return await api.post<unknown, User>('/users', payload);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao realizar o cadastro.';
-      error.value = message;
+      error.value = err.response?.data?.message || 'Erro ao realizar o cadastro.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -144,13 +157,12 @@ export const useUserStore = defineStore('user', () => {
 
   function logout(): void {
     clearSession();
+    resetPermitions();
     error.value = null;
     window.location.href = '/';
   }
 
-  /**
-   * Inicializa o estado do utilizador e configura o Token no arranque da aplicação
-   */
+  /** Inicializa o utilizador e o token no arranque da aplicação */
   function initUser(): void {
     const session = readSession();
 
@@ -171,55 +183,26 @@ export const useUserStore = defineStore('user', () => {
       users.value = response;
       return response;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao carregar utilizadores.';
-      error.value = message;
+      error.value = err.response?.data?.message || 'Erro ao carregar utilizadores.';
       throw err;
     } finally {
       isLoading.value = false;
     }
   }
 
-  // 1. Transforme em um ref para manter a reatividade
-  const userRole = ref<any[]>([]);
-
-  async function initRoles() {
-    try {
-      // 2. Aguarde a resposta da API
-      const response = await api.get<unknown, any[]>('/user-roles');
-      userRole.value = response;
-    } catch {
-      userRole.value = [];
-    }
-  }
-  initRoles();
-
+  /** Síncrono: depende de loadAccess() já ter sido aguardado (login / router guard) */
   function getPermition(permiName: string): boolean {
-    const admin = userRole.value.find((e) => e.user_id == currentUser?.value?.id && e.role_id == 1);
-    if (admin) return true;
-
-    if (!currentUser?.value?.id) return false;
-
-    const permitions = can(currentUser.value.id);
-    const list: string[] = [];
-    permitions.forEach((e) => {
-      list.push(e.join(', '));
-    });
-
-    let result = false;
-    list.forEach((e) => {
-      if (e.includes(permiName)) {
-        result = true;
-      }
-    });
-
-    return result;
+    const id = currentUser.value?.id;
+    if (!id) return false;
+    if (isAdmin(id)) return true;
+    return can(id).includes(permiName); // comparação exata
   }
 
-  function getUserRole(): any {
-    return userRole.value.find((e) => e.user_id == currentUser?.value?.id);
+  function getUserRole(): UserRole | undefined {
+    const id = currentUser.value?.id;
+    return id ? getUserRoles(id)[0] : undefined;
   }
 
-  // Executa a verificação ao instanciar a store
   initUser();
 
   return {
@@ -230,10 +213,11 @@ export const useUserStore = defineStore('user', () => {
     error,
     isAuthenticated,
     userName,
+    loadAccess,
     getPermition,
+    getUserRole,
     clearError,
     clearSession,
-    getUserRole,
     list,
     login,
     register,
