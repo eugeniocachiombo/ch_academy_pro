@@ -19,14 +19,34 @@ export const createUserSchema = z.object({
     status: z.enum(["ACTIVE", "BLOCKED"]).optional()
 });
 
-export const updateUserSchema = createUserSchema.partial();
+// Criamos um schema separado para o Update onde passamos o ID opcionalmente
+export const getUpdateUserSchema = (userId?: number | string) => z.object({
+    name: z.string().transform(v => v === "" ? undefined : v).optional(),
+    username: z.string()
+        .min(3, "Nome de utilizador é obrigatório")
+        .refine(async (username) => {
+            const existingUser = await prisma.user.findUnique({
+                where: { username }
+            });
+            // Se não existe, está livre. 
+            // Se existe, só é inválido se pertencer a OUTRO utilizador diferente do atual (userId)
+            if (!existingUser) return true;
+            if (userId && existingUser.id === Number(userId)) return true;
+            return false;
+        }, {
+            message: "Este nome de utilizador já está em uso, escolha um outro"
+        }).optional(),
+    status: z.enum(["ACTIVE", "BLOCKED"]).optional()
+});
+
+
+export const updateUserSchema = getUpdateUserSchema();
 
 export const loginUserSchema = z.object({
     username: z.string().min(1, "O nome de utilizador é obrigatório"),
     password: z.string().min(1, "A palavra-passe é obrigatória")
 });
 
-// Função para criar o esquema dinamicamente com base no ID do utilizador
 export const getUpdatePasswordSchema = (userId: number) => z.object({
     current_password: z.string()
         .min(1, "A palavra-passe actual é obrigatória")
@@ -74,8 +94,13 @@ class UserRepository extends Crud {
     }
 
     async update(id: string | number, data: unknown) {
-        const validatedData = await updateUserSchema.parseAsync(data);
-        const updateData = {
+        const userId = Number(id);
+        
+        // Usamos o schema dinâmico passando o ID para ignorar o próprio utilizador na validação do username
+        const schema = getUpdateUserSchema(userId);
+        const validatedData = await schema.parseAsync(data);
+        
+        const updateData: any = {
             ...validatedData
         };
 
@@ -88,7 +113,7 @@ class UserRepository extends Crud {
 
         return await prisma.user.update({
             where: {
-                id: Number(id)
+                id: userId
             },
             data: updateData
         });

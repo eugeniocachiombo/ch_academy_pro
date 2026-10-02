@@ -96,10 +96,15 @@ const handleSubmit = async () => {
   internalLoading.value = true
 
   try {
+    const payload = { ...form.value }
+    if (props.isEditing) {
+      delete payload.password
+    }
+
     if (props.isEditing && form.value.id) {
-      await api.put(`/users/${form.value.id}`, form.value)
+      await api.put(`/users/${form.value.id}`, payload)
     } else {
-      await api.post('/users', form.value)
+      await api.post('/users', payload)
     }
     emit('saved')
     emit('close')
@@ -185,10 +190,9 @@ const handleSubmit = async () => {
           <span v-if="hasError('email')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('email') }}</span>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-            Palavra-passe <span v-if="isEditing" class="text-slate-400 dark:text-slate-500 font-normal">(Opcional na edição)</span>
-          </label>
+        <!-- Ocultado dinamicamente quando estiver no modo de edição -->
+        <div v-if="!isEditing">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Palavra-passe</label>
           <input
             v-model="form.password"
             type="password"
