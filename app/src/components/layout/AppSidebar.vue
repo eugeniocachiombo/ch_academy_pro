@@ -95,11 +95,21 @@ function closeSidebar() {
       <!-- Perfil -->
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
-          <img
-            :src="userStore.currentUser?.photo"
-            :alt="userStore.currentUser?.name"
-            class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50"
-          />
+          
+          <!-- Foto do Usuário ou Ícone Fallback -->
+          <template v-if="userStore.currentUser?.photo">
+            <img
+              :src="userStore.currentUser.photo"
+              :alt="userStore.currentUser?.name"
+              class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50 flex-shrink-0"
+            />
+          </template>
+          <template v-else>
+            <div class="w-10 h-10 rounded-lg bg-indigo-600/20 text-indigo-400 ring-2 ring-indigo-500/50 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-user text-sm"></i>
+            </div>
+          </template>
+
           <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden flex-1">
             <h4 class="text-xs font-bold text-white truncate">{{ userStore.currentUser?.name }}</h4>
             <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
