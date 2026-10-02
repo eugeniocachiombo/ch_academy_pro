@@ -1,6 +1,19 @@
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; */
+
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+/* ADICIONAR ESTE BLOCO PARA RESTAURAR O CURSOR EM BOTÕES E ELEMENTOS CLICÁVEIS */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  .p-button:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 html,
 body {
