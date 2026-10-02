@@ -6,19 +6,19 @@ export const settingsRoutes: RouteRecordRaw[] = [
     path: '/configuracoes/ano-letivo', 
     name: 'settings-academic-year', 
     component: UnderConstructionView, 
-    meta: { permission: 'academic_year.manage' } 
+    meta: { permition: 'academic_year.manage' } 
   },
   { 
     path: '/configuracoes/utilizadores', 
     name: 'settings-users', 
     component: () => import('@/views/settings/UsersView.vue'), 
-    meta: { permission: 'user.manage' } 
+    meta: { permition: 'user.manage' } 
   },
   { 
     path: '/configuracoes/funcoes', 
     name: 'settings-roles', 
     component: () => import('@/views/settings/RolesView.vue'), 
-    meta: { permission: 'role.manage' } 
+    meta: { permition: 'role.manage' } 
   },
   { 
     path: '/configuracoes/permissoes', 
@@ -36,6 +36,6 @@ export const settingsRoutes: RouteRecordRaw[] = [
     path: '/configuracoes/vinculos-funcoes',
     name: 'settings-user-roles',
     component: () => import('@/views/settings/UserRolesView.vue'),
-    meta: { permission: 'user_role.manage' }
+    meta: { permition: 'user_role.manage' }
   },
 ]

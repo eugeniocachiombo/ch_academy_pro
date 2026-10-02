@@ -41,16 +41,16 @@ const menuItems = computed(() => [
     label: 'Dashboard',
     icon: 'fa-chart-pie',
     singleRoute: 'dashboard',
-    permission: true,
+    permition: true,
   },
   {
     key: 'academic',
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
-      { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permission: p('classes.manage') },
-      { id: 'academic-grades', label: 'Notas', icon: 'fa-star', permission: p('grades.manage') },
-      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permission: p('attendance.manage') },
+      { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permition: p('classes.manage') },
+      { id: 'academic-grades', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
+      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
     ],
   },
   {
@@ -58,9 +58,9 @@ const menuItems = computed(() => [
     label: 'Financeiro',
     icon: 'fa-wallet',
     children: [
-      { id: 'financial-fees', label: 'Mensalidades', icon: 'fa-file-invoice-dollar', permission: p('fee.manage') },
-      { id: 'financial-bills', label: 'Boletos', icon: 'fa-barcode', permission: p('bill.manage') },
-      { id: 'financial-cashflow', label: 'Caixa', icon: 'fa-cash-register', permission: p('cashflow.manage') },
+      { id: 'financial-fees', label: 'Mensalidades', icon: 'fa-file-invoice-dollar', permition: p('fee.manage') },
+      { id: 'financial-bills', label: 'Boletos', icon: 'fa-barcode', permition: p('bill.manage') },
+      { id: 'financial-cashflow', label: 'Caixa', icon: 'fa-cash-register', permition: p('cashflow.manage') },
     ],
   },
   {
@@ -68,8 +68,8 @@ const menuItems = computed(() => [
     label: 'Alunos',
     icon: 'fa-users',
     children: [
-      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book', permission: p('student.manage') },
-      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus', permission: p('enrollment.manage') },
+      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book', permition: p('student.manage') },
+      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus', permition: p('enrollment.manage') },
     ],
   },
   {
@@ -77,8 +77,8 @@ const menuItems = computed(() => [
     label: 'Professores',
     icon: 'fa-chalkboard-user',
     children: [
-      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge', permission: p('teacher.manage') },
-      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permission: p('schedule.manage') },
+      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge', permition: p('teacher.manage') },
+      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },
   {
@@ -86,8 +86,8 @@ const menuItems = computed(() => [
     label: 'Comunicações',
     icon: 'fa-bullhorn',
     children: [
-      { id: 'communications-wall', label: 'Mural', icon: 'fa-rectangle-ad', permission: p('wall.manage') },
-      { id: 'communications-send', label: 'Enviar', icon: 'fa-paper-plane', permission: p('message.send') },
+      { id: 'communications-wall', label: 'Mural', icon: 'fa-rectangle-ad', permition: p('wall.manage') },
+      { id: 'communications-send', label: 'Enviar', icon: 'fa-paper-plane', permition: p('message.send') },
     ],
   },
   {
@@ -95,9 +95,9 @@ const menuItems = computed(() => [
     label: 'Relatórios',
     icon: 'fa-file-lines',
     children: [
-      { id: 'reports-academic', label: 'Acadêmicos', icon: 'fa-file-contract', permission: p('report_academic.manage') },
-      { id: 'reports-financial', label: 'Financeiros', icon: 'fa-file-invoice', permission: p('report_financial.manage') },
-      { id: 'reports-attendance', label: 'Frequência', icon: 'fa-file-shield', permission: p('report_attendance.manage') },
+      { id: 'reports-academic', label: 'Acadêmicos', icon: 'fa-file-contract', permition: p('report_academic.manage') },
+      { id: 'reports-financial', label: 'Financeiros', icon: 'fa-file-invoice', permition: p('report_financial.manage') },
+      { id: 'reports-attendance', label: 'Frequência', icon: 'fa-file-shield', permition: p('report_attendance.manage') },
     ],
   },
   {
@@ -105,12 +105,12 @@ const menuItems = computed(() => [
     label: 'Configurações',
     icon: 'fa-gears',
     children: [
-      { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permission: p('academic_year.manage') },
-      { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permission: p('user.manage') },
-      { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permission: p('role.manage') },
-      { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permission: p('permition.manage') },
-      { id: 'settings-role-permitions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permission: p('role_permition.manage') },
-      { id: 'settings-user-roles', label: 'Vínculos de Funções', icon: 'fa-users-gear', permission: p('user_role.manage') },
+      { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permition: p('academic_year.manage') },
+      { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permition: p('user.manage') },
+      { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permition: p('role.manage') },
+      { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permition: p('permition.manage') },
+      { id: 'settings-role-permitions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permition: p('role_permition.manage') },
+      { id: 'settings-user-roles', label: 'Vínculos de Funções', icon: 'fa-users-gear', permition: p('user_role.manage') },
     ],
   }
 ])

@@ -17,7 +17,7 @@ declare module 'vue-router' {
     /** Rotas públicas não exigem sessão e não mostram sidebar/cabeçalho. */
     public?: boolean
     /** Permissão necessária para acessar a rota (ex: 'academic_year.manage') */
-    permission?: string
+    permition?: string
   }
 }
 
@@ -71,7 +71,7 @@ router.beforeEach(async (to) => {
       return { name: 'blocked' }
     }
 
-    if (to.meta.permission && !userStore.getPermition(to.meta.permission)) {
+    if (to.meta.permition && !userStore.getPermition(to.meta.permition)) {
       return { name: 'unauthorized' }
     }
   }
