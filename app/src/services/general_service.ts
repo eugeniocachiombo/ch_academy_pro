@@ -5,7 +5,7 @@
  */
 import { computed, reactive, ref } from 'vue'
 import router from '@/router'
-import { clearSession } from '@/services/auth_service'
+import { useUserStore } from '@/stores/user.store'
 
 /* ------------------------------------------------------------------ */
 /* Tipos                                                              */
@@ -19,7 +19,7 @@ export type TabId =
   | 'communications'
   | 'reports'
 
-export type NotificationType = 'success' | 'info'
+export type NotificationType = 'success' | 'error' | 'warning' | 'info'
 
 export type ModalId = 'modal-quick-action' | 'modal-notice'
 
@@ -237,7 +237,16 @@ let toastTimer: ReturnType<typeof setTimeout> | undefined
 export function showNotification(text: string, type: NotificationType = 'success'): void {
   toast.description = text
   toast.type = type
-  toast.title = type === 'success' ? 'Sucesso' : 'Informação'
+
+  // Mapeia os títulos corretamente para cada tipo de notificação
+  const titles: Record<string, string> = {
+    success: 'Sucesso',
+    error: 'Erro',
+    warning: 'Aviso',
+    info: 'Informação',
+  }
+  
+  toast.title = titles[type] || 'Informação'
   toast.visible = true
 
   if (toastTimer) clearTimeout(toastTimer)
@@ -287,7 +296,7 @@ export function closeOverlays(): void {
 /* Sessão                                                             */
 /* ------------------------------------------------------------------ */
 export function logout(): void {
-  clearSession()
+  useUserStore().clearSession()
   searchQuery.value = ''
   sidebarExpanded.value = false
   closeOverlays()

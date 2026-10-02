@@ -1,15 +1,44 @@
 <script setup lang="ts">
-import { currentUser } from '@/services/auth_service'
+import { useUserStore } from '@/stores/user.store'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
+const userStore = useUserStore();
 const links: { id: TabId; label: string; icon: string }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
-  { id: 'academic', label: 'Acadêmico', icon: 'fa-book-open' },
-  { id: 'financial', label: 'Financeiro', icon: 'fa-wallet' },
-  { id: 'students', label: 'Alunos', icon: 'fa-users' },
-  { id: 'teachers', label: 'Professores', icon: 'fa-chalkboard-user' },
-  { id: 'communications', label: 'Comunicações', icon: 'fa-bullhorn' },
-  { id: 'reports', label: 'Relatórios', icon: 'fa-file-lines' },
+  { 
+    id: 'dashboard', 
+    label: 'Dashboard', 
+    icon: 'fa-chart-pie' 
+  },
+  { 
+    id: 'academic', 
+    label: 'Acadêmico', 
+    icon: 'fa-book-open' 
+  },
+  { 
+    id: 'financial', 
+    label: 'Financeiro', 
+    icon: 'fa-wallet' 
+  },
+  { 
+    id: 'students', 
+    label: 'Alunos', 
+    icon: 'fa-users' 
+  },
+  { 
+    id: 'teachers', 
+    label: 'Professores', 
+    icon: 'fa-chalkboard-user' 
+  },
+  { 
+    id: 'communications', 
+    label: 'Comunicações', 
+    icon: 'fa-bullhorn' 
+  },
+  { 
+    id: 'reports', 
+    label: 'Relatórios', 
+    icon: 'fa-file-lines' 
+  },
 ]
 
 function closeSidebar() {
@@ -67,14 +96,14 @@ function closeSidebar() {
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
           <img
-            :src="currentUser?.photo"
-            :alt="currentUser?.name"
+            :src="userStore.currentUser?.photo"
+            :alt="userStore.currentUser?.name"
             class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50"
           />
           <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden flex-1">
-            <h4 class="text-xs font-bold text-white truncate">{{ currentUser?.name }}</h4>
+            <h4 class="text-xs font-bold text-white truncate">{{ userStore.currentUser?.name }}</h4>
             <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{ currentUser?.role }}
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{ userStore.getUserRole()?.role?.name || 'Sem função' }}
             </span>
           </div>
           <button

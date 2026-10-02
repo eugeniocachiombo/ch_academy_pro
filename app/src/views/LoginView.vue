@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { login } from '@/services/auth_service'
+import { useUserStore } from '@/stores/user.store' 
 import { isDark, showNotification, toggleTheme } from '@/services/general_service'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
 const username = ref('')
 const password = ref('')
 const remember = ref(true)
 const showPassword = ref(false)
-const loading = ref(false)
-const error = ref('')
 const usernameInput = ref<HTMLInputElement | null>(null)
 const passwordInput = ref<HTMLInputElement | null>(null)
 
@@ -22,38 +21,43 @@ const features = [
   { icon: 'fa-bullhorn', text: 'Comunicados para pais, alunos e professores' },
 ]
 
-/** Só aceita redirecionamento para rotas internas (evita open redirect). */
 function redirectTarget(): string {
   const r = route.query.redirect
   return typeof r === 'string' && r.startsWith('/') && !r.startsWith('//') ? r : '/'
 }
 
 async function submit() {
-  if (loading.value) return
-  error.value = ''
+  if (userStore.isLoading) return
+  userStore.clearError()
 
   if (!username.value.trim()) {
-    error.value = 'Informe o nome de usuário.'
+    const msg = 'Informe o nome de utilizador.'
+    userStore.error = msg
+    showNotification(msg, 'error')
     usernameInput.value?.focus()
     return
   }
+  
   if (password.value.length < 6) {
-    error.value = 'A senha deve ter pelo menos 6 caracteres.'
+    const msg = 'A senha deve ter pelo menos 6 caracteres.'
+    userStore.error = msg
+    showNotification(msg, 'error')
     passwordInput.value?.focus()
     return
   }
 
-  loading.value = true
   try {
-    const user = await login(username.value, password.value, remember.value)
-    await router.replace(redirectTarget())
-    showNotification(`Bem-vindo(a), ${user.name}!`, 'success')
-  } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Não foi possível entrar. Tente novamente.'
-    password.value = ''
+    const result = await userStore.login(username.value, password.value, remember.value)
+
+    if (result) {
+      await router.replace(redirectTarget())
+      showNotification(`Bem-vindo(a), ${userStore.userName}!`, 'success')
+    }
+  } catch (err: any) {
+    const msg = 'Utilizador não encontrado.'
+    showNotification(msg, 'error')
+    userStore.error = msg
     passwordInput.value?.focus()
-  } finally {
-    loading.value = false
   }
 }
 
@@ -117,12 +121,12 @@ function forgotPassword() {
           </div>
         </div>
 
-        <h1 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">Entrar</h1>
+        <h1 class="text-2xl font-extrabold text-slate-800 dark:text-slate-100">AUTENTICAÇÃO</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Acesse o painel da sua instituição.</p>
 
         <form class="mt-8 space-y-5" novalidate @submit.prevent="submit">
           <div>
-            <label for="login-username" class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">Nome de Usuário</label>
+            <label for="login-username" class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">Utilizador</label>
             <div class="relative">
               <i class="fa-regular fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input
@@ -132,10 +136,10 @@ function forgotPassword() {
                 type="text"
                 autocomplete="username"
                 autofocus
-                placeholder="seu.usuario"
-                :aria-invalid="!!error"
+                placeholder="seu.utilizador"
+                :aria-invalid="!!userStore.error"
                 class="w-full bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl pl-10 pr-3 py-3 text-sm text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                @input="error = ''"
+                @input="userStore.clearError()"
               />
             </div>
           </div>
@@ -154,9 +158,9 @@ function forgotPassword() {
                 :type="showPassword ? 'text' : 'password'"
                 autocomplete="current-password"
                 placeholder="Sua senha"
-                :aria-invalid="!!error"
+                :aria-invalid="!!userStore.error"
                 class="w-full bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl pl-10 pr-11 py-3 text-sm text-slate-700 dark:text-slate-200 placeholder-slate-400 outline-none focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition-all"
-                @input="error = ''"
+                @input="userStore.clearError()"
               />
               <button
                 type="button"
@@ -175,17 +179,17 @@ function forgotPassword() {
             Manter sessão iniciada
           </label>
 
-          <p v-if="error" role="alert" class="flex items-center gap-2 text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl px-3.5 py-2.5">
-            <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+          <p v-if="userStore.error" role="alert" class="flex items-center gap-2 text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-xl px-3.5 py-2.5">
+            <i class="fa-solid fa-circle-exclamation"></i> {{ userStore.error }}
           </p>
 
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="userStore.isLoading"
             class="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 transition-all active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <i v-if="loading" class="fa-solid fa-circle-notch animate-spin"></i>
-            {{ loading ? 'Entrando...' : 'Entrar' }}
+            <i v-if="userStore.isLoading" class="fa-solid fa-circle-notch animate-spin"></i>
+            {{ userStore.isLoading ? 'Entrando...' : 'Entrar' }}
           </button>
         </form>
       </div>
