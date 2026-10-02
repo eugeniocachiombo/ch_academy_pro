@@ -32,10 +32,10 @@ export const settingsRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/settings/RolePermitionsView.vue'), 
     meta: { permition: 'role_permition.manage' } 
   },
-  { 
-    path: '/configuracoes/vinculos-funcoes', 
-    name: 'settings-user-roles', 
-    component: UnderConstructionView, 
-    meta: { permission: 'user_role.manage' } 
+  {
+    path: '/configuracoes/vinculos-funcoes',
+    name: 'settings-user-roles',
+    component: () => import('@/views/settings/UserRolesView.vue'),
+    meta: { permission: 'user_role.manage' }
   },
 ]
