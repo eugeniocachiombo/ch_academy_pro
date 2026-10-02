@@ -35,7 +35,7 @@ interface MenuItem {
 const p = (name: string) => userStore.getPermition(name)
 
 // computed: recalcula sozinho quando as permissões chegarem / mudarem
-const menuItems = computed<MenuItem[]>(() => [
+const menuItems = computed(() => [
   {
     key: 'dashboard',
     label: 'Dashboard',
