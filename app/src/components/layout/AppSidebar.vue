@@ -20,7 +20,7 @@ interface SubMenu {
   id: TabId
   label: string
   icon: string
-  permission?: boolean
+  permition?: boolean
 }
 
 interface MenuItem {
@@ -29,7 +29,7 @@ interface MenuItem {
   icon: string
   children?: SubMenu[]
   singleRoute?: TabId
-  permission?: boolean
+  permition?: boolean
 }
 
 const p = (name: string) => userStore.getPermition(name)
@@ -108,8 +108,8 @@ const menuItems = computed(() => [
       { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permission: p('academic_year.manage') },
       { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permission: p('user.manage') },
       { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permission: p('role.manage') },
-      { id: 'settings-permissions', label: 'Permissões', icon: 'fa-key', permission: p('permission.manage') },
-      { id: 'settings-role-permissions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permission: p('role_permission.manage') },
+      { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permission: p('permition.manage') },
+      { id: 'settings-role-permitions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permission: p('role_permition.manage') },
       { id: 'settings-user-roles', label: 'Vínculos de Funções', icon: 'fa-users-gear', permission: p('user_role.manage') },
     ],
   }
@@ -118,7 +118,7 @@ const menuItems = computed(() => [
 // Menu com submenus só aparece se tiver pelo menos um filho visível
 function hasVisibleChildren(item: MenuItem): boolean {
   if (!item.children) return false
-  return item.children.some((sub) => sub.permission !== false)
+  return item.children.some((sub) => sub.permition !== false)
 }
 
 function toggleSubmenu(key: string) {
@@ -158,7 +158,7 @@ function closeSidebar() {
         <template v-for="item in menuItems" :key="item.key">
 
           <!-- Item simples (Ex: Dashboard) -->
-          <RouterLink v-if="item.singleRoute && item.permission" :to="{ name: item.singleRoute }"
+          <RouterLink v-if="item.singleRoute && item.permition" :to="{ name: item.singleRoute }"
             :aria-current="activeTab === item.singleRoute ? 'page' : undefined" :title="item.label" :class="activeTab === item.singleRoute
                 ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
@@ -187,7 +187,7 @@ function closeSidebar() {
             <!-- Submenus com verificação individual de permissão -->
             <div v-show="openMenus[item.key] || sidebarExpanded" class="pl-6 space-y-1 transition-all">
               <template v-for="sub in item.children" :key="sub.id">
-                <RouterLink v-if="sub.permission !== false" :to="{ name: sub.id }"
+                <RouterLink v-if="sub.permition !== false" :to="{ name: sub.id }"
                   :aria-current="activeTab === sub.id ? 'page' : undefined" :class="activeTab === sub.id
                       ? 'text-white bg-indigo-600/80 shadow-sm'
                       : 'text-slate-400 hover:text-white hover:bg-slate-800/40'

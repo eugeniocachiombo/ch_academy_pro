@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { Crud } from "./base/crud.repository.js";
 
 export const createPermitionSchema = z.object({
-    name: z.string().min(2, "O nome deve ter pelo menos 4 caracteres")
+    name: z.string().min(2, "O nome deve ter pelo menos 4 caracteres"),
+    description: z.string().min(2, "O nome deve ter pelo menos 4 caracteres").optional(),
 });
 
 export const updatePermitionSchema = createPermitionSchema.partial();
