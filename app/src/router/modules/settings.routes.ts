@@ -29,7 +29,7 @@ export const settingsRoutes: RouteRecordRaw[] = [
   { 
     path: '/configuracoes/permissoes-funcoes', 
     name: 'settings-role-permitions', 
-    component: UnderConstructionView, 
+    component: () => import('@/views/settings/RolePermitionsView.vue'), 
     meta: { permition: 'role_permition.manage' } 
   },
   { 
