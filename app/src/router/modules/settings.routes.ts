@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router'
 import UnderConstructionView from '@/views/UnderConstructionView.vue'
-import UsersView from '@/views/settings/UsersView.vue' // Importa o componente real de utilizadores
 
 export const settingsRoutes: RouteRecordRaw[] = [
   { 
@@ -12,13 +11,13 @@ export const settingsRoutes: RouteRecordRaw[] = [
   { 
     path: '/configuracoes/utilizadores', 
     name: 'settings-users', 
-    component: UsersView, // Componente real do CRUD de utilizadores
+    component: () => import('@/views/settings/UsersView.vue'), 
     meta: { permission: 'user.manage' } 
   },
   { 
     path: '/configuracoes/funcoes', 
     name: 'settings-roles', 
-    component: UnderConstructionView, 
+    component: () => import('@/views/settings/RolesView.vue'), 
     meta: { permission: 'role.manage' } 
   },
   { 
