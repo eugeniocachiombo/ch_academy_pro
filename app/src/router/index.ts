@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user.store'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
+import BlockedView from '@/views/BlockedView.vue' // <--- Importe a nova view
 
 // Importação das rotas modularizadas
 import { academicRoutes } from './modules/academic.routes'
@@ -24,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
   { path: '/', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
   { path: '/acesso-negado', name: 'unauthorized', component: UnauthorizedView, meta: { public: true } },
+  { path: '/conta-bloqueada', name: 'blocked', component: BlockedView, meta: { public: true } }, // <--- Nova rota pública
 
   // Agrupando todas as rotas dos módulos via spread operator (...)
   ...academicRoutes,
@@ -61,6 +63,12 @@ router.beforeEach(async (to) => {
       await userStore.loadAccess()
     } catch {
       return { name: 'login' }
+    }
+
+    // --- NOVO: Se o utilizador estiver bloqueado, redireciona para a página de bloqueio ---
+    // (Garante que não entra em loop se já estiver indo para a rota 'blocked')
+    if (userStore.currentUser?.status === 'BLOCKED' && to.name !== 'blocked') {
+      return { name: 'blocked' }
     }
 
     if (to.meta.permission && !userStore.getPermition(to.meta.permission)) {
