@@ -14,10 +14,9 @@ const isModalOpen = ref(false)
 const isPasswordModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedUser = ref<User | null>(null)
-const formData = ref<RegisterPayload & { id?: number; email?: string } | null>(null)
-const formErrors = ref<Record<string, string> | null>(null)
+const formData = ref<(RegisterPayload & { id?: number; email?: string }) | null>(null)
+const passwordFormErrors = ref<any>(null)
 
-// Campos para o modal de alteração de senha (agora com 3 campos)
 const passwordForm = ref({
   current_password: '',
   password: '',
@@ -59,7 +58,6 @@ const openCreateModal = () => {
   isEditing.value = false
   selectedUser.value = null
   formData.value = { name: '', username: '', email: '', password: '' }
-  formErrors.value = null
   isModalOpen.value = true
 }
 
@@ -73,7 +71,6 @@ const openEditModal = (user: User) => {
     email: user.email || '',
     password: '',
   }
-  formErrors.value = null
   isModalOpen.value = true
   activeDropdownId.value = null
 }
@@ -85,7 +82,7 @@ const openPasswordModal = (user: User) => {
     password: '',
     password_confirmation: '',
   }
-  formErrors.value = null
+  passwordFormErrors.value = null
   isPasswordModalOpen.value = true
   activeDropdownId.value = null
 }
@@ -94,43 +91,46 @@ const closeModal = () => {
   isModalOpen.value = false
   selectedUser.value = null
   formData.value = null
-  formErrors.value = null
   userStore.clearError()
 }
 
-const handleSave = async (payload: RegisterPayload & { id?: number; email?: string }) => {
-  formErrors.value = null
-  try {
-    if (isEditing.value && selectedUser.value) {
-      await api.put(`/users/${selectedUser.value.id}`, payload)
-    } else {
-      await userStore.register(payload)
-    }
-    await userStore.list()
-    closeModal()
-  } catch (err: any) {
-    if (err.response?.status === 422 && err.response?.data?.errors) {
-      formErrors.value = err.response.data.errors
-    } else {
-      // Mensagem customizada e informativa em vez de texto genérico
-      formErrors.value = { general: err.response?.data?.message || 'Ocorreu um erro ao salvar o registo. Por favor, reveja os dados informados.' }
-    }
+const handleSaved = async () => {
+  await userStore.list()
+  closeModal()
+}
+
+const getPasswordFieldError = (field: string) => {
+  if (!passwordFormErrors.value) return ''
+  const errorObj = passwordFormErrors.value.errors || passwordFormErrors.value
+  const fieldError = errorObj[field]
+  if (!fieldError) return ''
+  return Array.isArray(fieldError) ? fieldError[0] : fieldError
+}
+
+const getPasswordGeneralMessage = () => {
+  if (!passwordFormErrors.value) return ''
+  if (passwordFormErrors.value.message && !passwordFormErrors.value.errors) {
+    return passwordFormErrors.value.message
   }
+  return passwordFormErrors.value.general || ''
 }
 
 const handleUpdatePassword = async () => {
   if (!selectedUser.value) return
-  formErrors.value = null
+  passwordFormErrors.value = null
+
   try {
-    await api.patch(`/users/${selectedUser.value.id}/password`, passwordForm.value)
+    await api.put(`/users/${selectedUser.value.id}/password`, passwordForm.value)
     isPasswordModalOpen.value = false
     selectedUser.value = null
     alert('Palavra-passe actualizada com sucesso!')
   } catch (err: any) {
-    if (err.response?.status === 422 && err.response?.data?.errors) {
-      formErrors.value = err.response.data.errors
+    if (err.response?.data) {
+      passwordFormErrors.value = err.response.data
     } else {
-      formErrors.value = { general: err.response?.data?.message || 'Erro ao alterar palavra-passe. Verifique os dados introduzidos.' }
+      passwordFormErrors.value = { 
+        general: err.message || 'Erro ao alterar palavra-passe. Verifique os dados introduzidos.' 
+      }
     }
   }
 }
@@ -150,15 +150,12 @@ const deleteUser = async (id: number) => {
   activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
   try {
-    // await api.delete(`/users/${id}`)
-    // await userStore.list()
   } catch {}
 }
 </script>
 
 <template>
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-    <!-- Cabeçalho -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Gestão de Utilizadores</h1>
@@ -173,7 +170,6 @@ const deleteUser = async (id: number) => {
       </button>
     </div>
 
-    <!-- Cards de Estatísticas / Filtros Rápidos -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div 
         @click="statusFilter = 'all'"
@@ -193,7 +189,7 @@ const deleteUser = async (id: number) => {
         :class="['p-5 rounded-2xl border cursor-pointer transition-all', statusFilter === 'active' ? 'bg-emerald-600/10 border-emerald-500/50 shadow-lg shadow-emerald-500/5' : 'bg-slate-900 border-slate-800 hover:border-slate-700']"
       >
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Utilizadores Ativos</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Utilizadores Activos</span>
           <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
             <i class="fa-solid fa-user-check text-sm"></i>
           </div>
@@ -215,9 +211,8 @@ const deleteUser = async (id: number) => {
       </div>
     </div>
 
-    <!-- Barra de Pesquisa e Filtros -->
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-4">
-      <div class="relative flex-1 w-full">
+      <div class="relactive flex-1 w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
         <input
           v-model="searchQuery"
@@ -233,19 +228,17 @@ const deleteUser = async (id: number) => {
           class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 w-full md:w-44"
         >
           <option value="all">Todos os Status</option>
-          <option value="active">Ativos</option>
+          <option value="active">Activos</option>
           <option value="blocked">Bloqueados</option>
         </select>
       </div>
     </div>
 
-    <!-- Alerta Global -->
     <div v-if="userStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
       <i class="fa-solid fa-circle-exclamation text-lg"></i>
       <span>{{ userStore.error }}</span>
     </div>
 
-    <!-- Tabela -->
     <div class="bg-slate-900 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
       <div class="overflow-x-auto min-h-[300px]">
         <table class="w-full text-left border-collapse">
@@ -292,10 +285,10 @@ const deleteUser = async (id: number) => {
                 <td class="py-4 px-6">
                   <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', user.isBlocked ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20']">
                     <span :class="['w-1.5 h-1.5 rounded-full', user.isBlocked ? 'bg-red-400' : 'bg-emerald-400']"></span>
-                    {{ user.isBlocked ? 'Bloqueado' : 'Ativo' }}
+                    {{ user.isBlocked ? 'Bloqueado' : 'Activo' }}
                   </span>
                 </td>
-                <td class="py-4 px-6 text-right relative">
+                <td class="py-4 px-6 text-right relactive">
                   <div class="inline-block text-left">
                     <button
                       @click="activeDropdownId = activeDropdownId === user.id ? null : user.id"
@@ -348,18 +341,15 @@ const deleteUser = async (id: number) => {
       </div>
     </div>
 
-    <!-- Modal de Criar / Editar -->
     <UsersFormView
       :is-open="isModalOpen"
       :is-editing="isEditing"
       :is-loading="userStore.isLoading"
-      :errors="formErrors"
       :initial-data="formData"
       @close="closeModal"
-      @save="handleSave"
+      @saved="handleSaved"
     />
 
-    <!-- Modal Dedicado para Alterar Palavra-passe (Com 3 Campos) -->
     <div v-if="isPasswordModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -378,24 +368,21 @@ const deleteUser = async (id: number) => {
           Actualize as credenciais de acesso para o utilizador <span class="text-white font-mono">@{{ selectedUser?.username }}</span>.
         </p>
 
-        <!-- Mensagem de erro global do modal de senha se houver -->
-        <div v-if="formErrors?.general || formErrors?.password" class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
-          {{ formErrors?.general || formErrors?.password }}
+        <div v-if="getPasswordGeneralMessage()" class="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
+          {{ getPasswordGeneralMessage() }}
         </div>
 
-        <!-- Campo 1: Palavra-passe Atual -->
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Palavra-passe Atual</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Palavra-passe Actual</label>
           <input
             v-model="passwordForm.current_password"
             type="password"
             placeholder="••••••••"
             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
           />
-          <span v-if="formErrors?.current_password" class="text-[11px] text-red-400 mt-1 block">{{ formErrors.current_password }}</span>
+          <span v-if="getPasswordFieldError('current_password')" class="text-[11px] text-red-400 mt-1 block">{{ getPasswordFieldError('current_password') }}</span>
         </div>
 
-        <!-- Campo 2: Nova Palavra-passe -->
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nova Palavra-passe</label>
           <input
@@ -404,10 +391,9 @@ const deleteUser = async (id: number) => {
             placeholder="••••••••"
             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
           />
-          <span v-if="formErrors?.password && typeof formErrors.password === 'string' && formErrors.password !== (formErrors?.general || '')" class="text-[11px] text-red-400 mt-1 block">{{ formErrors.password }}</span>
+          <span v-if="getPasswordFieldError('password')" class="text-[11px] text-red-400 mt-1 block">{{ getPasswordFieldError('password') }}</span>
         </div>
 
-        <!-- Campo 3: Confirmar Nova Palavra-passe -->
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Confirmar Nova Palavra-passe</label>
           <input
@@ -416,7 +402,7 @@ const deleteUser = async (id: number) => {
             placeholder="••••••••"
             class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
           />
-          <span v-if="formErrors?.password_confirmation" class="text-[11px] text-red-400 mt-1 block">{{ formErrors.password_confirmation }}</span>
+          <span v-if="getPasswordFieldError('password_confirmation')" class="text-[11px] text-red-400 mt-1 block">{{ getPasswordFieldError('password_confirmation') }}</span>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
