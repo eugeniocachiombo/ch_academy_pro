@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user.store'
+import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -7,7 +8,6 @@ declare module 'vue-router' {
     public?: boolean
   }
 }
-
 
 const routes: RouteRecordRaw[] = [
   { 
@@ -21,36 +21,94 @@ const routes: RouteRecordRaw[] = [
     name: 'dashboard', 
     component: () => import('@/views/DashboardView.vue') 
   },
+  
+  // Módulo Acadêmico
   { 
-    path: '/academico', 
-    name: 'academic', 
-    component: () => import('@/views/AcademicView.vue') 
+    path: '/academico/turmas', 
+    name: 'academic-classes', 
+    component: UnderConstructionView 
   },
   { 
-    path: '/financeiro', 
-    name: 'financial', 
-    component: () => import('@/views/FinancialView.vue') 
+    path: '/academico/notas', 
+    name: 'academic-grades', 
+    component: UnderConstructionView 
   },
   { 
-    path: '/alunos', 
-    name: 'students', 
-    component: () => import('@/views/StudentsView.vue') 
+    path: '/academico/frequencia', 
+    name: 'academic-attendance', 
+    component: UnderConstructionView 
+  },
+
+  // Módulo Financeiro
+  { 
+    path: '/financeiro/mensalidades', 
+    name: 'financial-fees', 
+    component: UnderConstructionView 
   },
   { 
-    path: '/professores', 
-    name: 'teachers', 
-    component: () => import('@/views/TeachersView.vue') 
+    path: '/financeiro/boletos', 
+    name: 'financial-bills', 
+    component: UnderConstructionView 
   },
   { 
-    path: '/comunicacoes', 
-    name: 'communications', 
-    component: () => import('@/views/CommunicationsView.vue') 
+    path: '/financeiro/caixa', 
+    name: 'financial-cashflow', 
+    component: UnderConstructionView 
+  },
+
+  // Módulo Alunos
+  { 
+    path: '/alunos/diretorio', 
+    name: 'students-directory', 
+    component: UnderConstructionView 
   },
   { 
-    path: '/relatorios', 
-    name: 'reports', 
-    component: () => import('@/views/ReportsView.vue') 
+    path: '/alunos/matricula', 
+    name: 'students-enrollment', 
+    component: UnderConstructionView 
   },
+
+  // Módulo Professores
+  { 
+    path: '/professores/corpo-docente', 
+    name: 'teachers-directory', 
+    component: UnderConstructionView 
+  },
+  { 
+    path: '/professores/horarios', 
+    name: 'teachers-schedule', 
+    component: UnderConstructionView 
+  },
+
+  // Módulo Comunicações
+  { 
+    path: '/comunicacoes/mural', 
+    name: 'communications-wall', 
+    component: UnderConstructionView 
+  },
+  { 
+    path: '/comunicacoes/enviar', 
+    name: 'communications-send', 
+    component: UnderConstructionView 
+  },
+
+  // Módulo Relatórios
+  { 
+    path: '/relatorios/academicos', 
+    name: 'reports-academic', 
+    component: UnderConstructionView 
+  },
+  { 
+    path: '/relatorios/financeiros', 
+    name: 'reports-financial', 
+    component: UnderConstructionView 
+  },
+  { 
+    path: '/relatorios/frequencia', 
+    name: 'reports-attendance', 
+    component: UnderConstructionView 
+  },
+
   { 
     path: '/:pathMatch(.*)*', 
     redirect: { name: 'dashboard' } 
@@ -62,7 +120,6 @@ const router = createRouter({
   routes,
 })
 
-// Guarda de navegação: sem sessão só se acede a rotas públicas; com sessão, /login volta ao painel
 router.beforeEach((to) => {
   const userStore = useUserStore()
   if (!to.meta.public && !userStore.isAuthenticated) {

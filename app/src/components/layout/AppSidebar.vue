@@ -1,45 +1,103 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useUserStore } from '@/stores/user.store'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
-const userStore = useUserStore();
-const links: { id: TabId; label: string; icon: string }[] = [
-  { 
-    id: 'dashboard', 
-    label: 'Dashboard', 
-    icon: 'fa-chart-pie' 
+const userStore = useUserStore()
+
+// Estado para controlar quais menus com submenu estão expandidos
+const openMenus = ref<Record<string, boolean>>({
+  academic: false,
+  financial: false,
+  students: false,
+  teachers: false,
+  communications: false,
+  reports: false,
+})
+
+interface SubMenu {
+  id: TabId
+  label: string
+  icon: string // Adicionado suporte a ícones no submenu
+}
+
+interface MenuItem {
+  key: string
+  label: string
+  icon: string
+  children?: SubMenu[]
+  singleRoute?: TabId
+}
+
+const menuItems: MenuItem[] = [
+  {
+    key: 'dashboard',
+    label: 'Dashboard',
+    icon: 'fa-chart-pie',
+    singleRoute: 'dashboard',
   },
-  { 
-    id: 'academic', 
-    label: 'Acadêmico', 
-    icon: 'fa-book-open' 
+  {
+    key: 'academic',
+    label: 'Acadêmico',
+    icon: 'fa-book-open',
+    children: [
+      { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard' },
+      { id: 'academic-grades', label: 'Notas', icon: 'fa-star' },
+      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user' },
+    ],
   },
-  { 
-    id: 'financial', 
-    label: 'Financeiro', 
-    icon: 'fa-wallet' 
+  {
+    key: 'financial',
+    label: 'Financeiro',
+    icon: 'fa-wallet',
+    children: [
+      { id: 'financial-fees', label: 'Mensalidades', icon: 'fa-file-invoice-dollar' },
+      { id: 'financial-bills', label: 'Boletos', icon: 'fa-barcode' },
+      { id: 'financial-cashflow', label: 'Caixa', icon: 'fa-cash-register' },
+    ],
   },
-  { 
-    id: 'students', 
-    label: 'Alunos', 
-    icon: 'fa-users' 
+  {
+    key: 'students',
+    label: 'Alunos',
+    icon: 'fa-users',
+    children: [
+      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book' },
+      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus' },
+    ],
   },
-  { 
-    id: 'teachers', 
-    label: 'Professores', 
-    icon: 'fa-chalkboard-user' 
+  {
+    key: 'teachers',
+    label: 'Professores',
+    icon: 'fa-chalkboard-user',
+    children: [
+      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge' },
+      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days' },
+    ],
   },
-  { 
-    id: 'communications', 
-    label: 'Comunicações', 
-    icon: 'fa-bullhorn' 
+  {
+    key: 'communications',
+    label: 'Comunicações',
+    icon: 'fa-bullhorn',
+    children: [
+      { id: 'communications-wall', label: 'Mural', icon: 'fa-rectangle-ad' },
+      { id: 'communications-send', label: 'Enviar', icon: 'fa-paper-plane' },
+    ],
   },
-  { 
-    id: 'reports', 
-    label: 'Relatórios', 
-    icon: 'fa-file-lines' 
+  {
+    key: 'reports',
+    label: 'Relatórios',
+    icon: 'fa-file-lines',
+    children: [
+      { id: 'reports-academic', label: 'Acadêmicos', icon: 'fa-file-contract' },
+      { id: 'reports-financial', label: 'Financeiros', icon: 'fa-file-invoice' },
+      { id: 'reports-attendance', label: 'Frequência', icon: 'fa-file-shield' },
+    ],
   },
 ]
+
+function toggleSubmenu(key: string) {
+  openMenus.value[key] = !openMenus.value[key]
+}
 
 function closeSidebar() {
   sidebarExpanded.value = false
@@ -47,7 +105,6 @@ function closeSidebar() {
 </script>
 
 <template>
-  <!-- Reserva o espaço da barra recolhida; a barra expandida flutua por cima no mobile -->
   <div class="relative flex-shrink-0 w-20 lg:w-64">
     <div v-if="sidebarExpanded" class="fixed inset-0 bg-slate-900/50 z-[25] lg:hidden" aria-hidden="true" @click="toggleSidebar"></div>
 
@@ -68,35 +125,76 @@ function closeSidebar() {
         </div>
       </div>
 
-      <!-- Navegação -->
+      <!-- Navegação com Submenus -->
       <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto" aria-label="Menu principal">
-        <RouterLink
-          v-for="link in links"
-          :key="link.id"
-          :to="{ name: link.id }"
-          :aria-current="activeTab === link.id ? 'page' : undefined"
-          :title="link.label"
-          :class="
-            activeTab === link.id
-              ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
-          "
-          class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-          @click="closeSidebar"
-        >
-          <i
-            :class="[link.icon, activeTab !== link.id && 'group-hover:text-indigo-400 transition-colors']"
-            class="fa-solid w-5 text-center text-lg"
-          ></i>
-          <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ link.label }}</span>
-        </RouterLink>
+        <template v-for="item in menuItems" :key="item.key">
+          
+          <!-- Item simples (Ex: Dashboard) -->
+          <RouterLink
+            v-if="item.singleRoute"
+            :to="{ name: item.singleRoute }"
+            :aria-current="activeTab === item.singleRoute ? 'page' : undefined"
+            :title="item.label"
+            :class="
+              activeTab === item.singleRoute
+                ? 'text-white bg-indigo-600 shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+            "
+            class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl font-medium transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            @click="closeSidebar"
+          >
+            <i :class="[item.icon, activeTab !== item.singleRoute && 'group-hover:text-indigo-400 transition-colors']" class="fa-solid w-5 text-center text-lg"></i>
+            <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
+          </RouterLink>
+
+          <!-- Item com Submenus -->
+          <div v-else class="space-y-1">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium text-slate-400 hover:text-white hover:bg-slate-800/80 transition-all group focus:outline-none"
+              @click="toggleSubmenu(item.key)"
+            >
+              <div class="flex items-center gap-3.5">
+                <i :class="item.icon" class="fa-solid w-5 text-center text-lg group-hover:text-indigo-400 transition-colors"></i>
+                <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
+              </div>
+              <i 
+                :class="openMenus[item.key] ? 'rotate-90' : ''"
+                class="fa-solid fa-chevron-right text-xs text-slate-500 transition-transform duration-200"
+                v-if="sidebarExpanded || 'lg:inline'"
+              ></i>
+            </button>
+
+            <!-- Lista de Submenus com Ícones -->
+            <div 
+              v-show="openMenus[item.key] || sidebarExpanded" 
+              class="pl-6 space-y-1 transition-all"
+            >
+              <RouterLink
+                v-for="sub in item.children"
+                :key="sub.id"
+                :to="{ name: sub.id }"
+                :aria-current="activeTab === sub.id ? 'page' : undefined"
+                :class="
+                  activeTab === sub.id
+                    ? 'text-white bg-indigo-600/80 shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                "
+                class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all"
+                @click="closeSidebar"
+              >
+                <i :class="sub.icon" class="fa-solid w-4 text-center text-xs"></i>
+                <span>{{ sub.label }}</span>
+              </RouterLink>
+            </div>
+          </div>
+
+        </template>
       </nav>
 
       <!-- Perfil -->
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
-          
-          <!-- Foto do Usuário ou Ícone Fallback -->
           <template v-if="userStore.currentUser?.photo">
             <img
               :src="userStore.currentUser.photo"
