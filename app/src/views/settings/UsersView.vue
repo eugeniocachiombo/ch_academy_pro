@@ -125,7 +125,7 @@ const handleUpdatePassword = async () => {
     await api.patch(`/users/${selectedUser.value.id}/password`, passwordForm.value)
     isPasswordModalOpen.value = false
     selectedUser.value = null
-    alert('Palavra-passe atualizada com sucesso!')
+    alert('Palavra-passe actualizada com sucesso!')
   } catch (err: any) {
     if (err.response?.status === 422 && err.response?.data?.errors) {
       formErrors.value = err.response.data.errors
@@ -375,7 +375,7 @@ const deleteUser = async (id: number) => {
         </div>
 
         <p class="text-xs text-slate-400">
-          Atualize as credenciais de acesso para o utilizador <span class="text-white font-mono">@{{ selectedUser?.username }}</span>.
+          Actualize as credenciais de acesso para o utilizador <span class="text-white font-mono">@{{ selectedUser?.username }}</span>.
         </p>
 
         <!-- Mensagem de erro global do modal de senha se houver -->
@@ -430,7 +430,7 @@ const deleteUser = async (id: number) => {
             @click="handleUpdatePassword"
             class="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30"
           >
-            Atualizar Password
+            Actualizar Password
           </button>
         </div>
       </div>

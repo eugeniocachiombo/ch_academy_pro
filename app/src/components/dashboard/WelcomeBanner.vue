@@ -34,7 +34,7 @@ onBeforeUnmount(() => timer && clearTimeout(timer))
           <i class="fa-solid fa-download"></i> Exportar Dados
         </button>
         <button :disabled="refreshing" @click="refresh" class="bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs px-5 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2">
-          <i :class="{ 'animate-spin': refreshing }" class="fa-solid fa-rotate"></i> Atualizar
+          <i :class="{ 'animate-spin': refreshing }" class="fa-solid fa-rotate"></i> Actualizar
         </button>
       </div>
     </div>

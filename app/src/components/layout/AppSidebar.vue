@@ -106,7 +106,7 @@ const menuItems = computed(() => [
     icon: 'fa-gears',
     children: [
       { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permission: p('academic_year.manage') },
-      { id: 'settings-users', label: 'Usuários', icon: 'fa-user-gear', permission: p('user.manage') },
+      { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permission: p('user.manage') },
       { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permission: p('role.manage') },
       { id: 'settings-permissions', label: 'Permissões', icon: 'fa-key', permission: p('permission.manage') },
       { id: 'settings-role-permissions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permission: p('role_permission.manage') },

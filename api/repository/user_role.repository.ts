@@ -3,7 +3,7 @@ import { Crud } from "./base/crud.repository.js";
 import { prisma } from '../lib/prisma';
 
 export const createUserRoleSchema = z.object({
-    user_id: z.number("O usuário é obrigatório"),
+    user_id: z.number("O utilizador é obrigatório"),
     role_id: z.number("A função é obrigatória")
 });
 

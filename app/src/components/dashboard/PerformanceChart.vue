@@ -56,12 +56,12 @@ function create() {
   })
 }
 
-// Atualiza os dados no gráfico existente (sem destruir e recriar)
+// Actualiza os dados no gráfico existente (sem destruir e recriar)
 watch(period, (value) => {
   if (!chart) return
   chart.data.datasets[0].data = dataByPeriod[value]
   chart.update()
-  showNotification('Gráfico atualizado com sucesso!', 'success')
+  showNotification('Gráfico actualizado com sucesso!', 'success')
 })
 
 // Ao trocar o tema, recria o gráfico com as cores novas

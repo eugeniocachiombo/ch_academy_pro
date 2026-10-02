@@ -85,7 +85,7 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  /** Atualiza a sessão na memória, nos storages e nos cabeçalhos do Axios */
+  /** Actualiza a sessão na memória, nos storages e nos cabeçalhos do Axios */
   function setSession(newToken: string | null, user: User | null, remember: boolean = true): void {
     clearSession();
 
