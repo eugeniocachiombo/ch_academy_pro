@@ -36,7 +36,7 @@ export interface AuthResponse {
   user: User;
 }
 
-const STORAGE_KEY = 'edusmart-auth-token';
+const STORAGE_KEY = 'ch-academic-auth-token';
 
 export const useUserStore = defineStore('user', () => {
   const currentUser = ref<User | null>(null);

@@ -13,7 +13,7 @@ const filtered = computed(() => teachers.filter((t) => matchesSearch(t.name, t.s
 <template>
   <div class="space-y-6">
     <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 lg:p-8 shadow-xs border border-slate-100 dark:border-slate-800">
-      <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Corpo Docente EduSmart</h3>
+      <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Corpo Docente Ch Academic</h3>
       <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Professores e especialistas ativos na instituição.</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div v-for="t in filtered" :key="t.name" class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center gap-4">

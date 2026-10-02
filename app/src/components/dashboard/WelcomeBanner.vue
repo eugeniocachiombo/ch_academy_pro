@@ -23,7 +23,7 @@ onBeforeUnmount(() => timer && clearTimeout(timer))
     <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
       <div>
         <span class="bg-indigo-500/30 text-indigo-200 font-semibold text-[11px] px-3 py-1 rounded-full uppercase tracking-widest border border-indigo-400/30">Visão Geral Diária</span>
-        <h2 class="text-2xl lg:text-3xl font-extrabold mt-3 tracking-tight">Painel Executivo EduSmart PRO</h2>
+        <h2 class="text-2xl lg:text-3xl font-extrabold mt-3 tracking-tight">Painel Executivo CH ACADEMIC PRO</h2>
         <p class="text-indigo-200 text-sm mt-1 max-w-xl">Monitore a frequência escolar, fluxo de caixa, desempenho acadêmico e indicadores críticos em tempo real.</p>
       </div>
       <div class="flex items-center gap-3">

@@ -78,7 +78,7 @@ function forgotPassword() {
           <i class="fa-solid fa-graduation-cap text-2xl"></i>
         </div>
         <div>
-          <p class="font-extrabold text-xl tracking-wide leading-none">EDUSMART</p>
+          <p class="font-extrabold text-xl tracking-wide leading-none">CH ACADEMIC</p>
           <p class="text-xs font-semibold tracking-widest text-indigo-300 mt-1">PRO SYSTEM</p>
         </div>
       </div>
@@ -95,7 +95,7 @@ function forgotPassword() {
         </ul>
       </div>
 
-      <p class="relative text-xs text-indigo-300">© {{ new Date().getFullYear() }} EduSmart PRO</p>
+      <p class="relative text-xs text-indigo-300">© {{ new Date().getFullYear() }} CH Academic PRO</p>
     </aside>
 
     <!-- Formulário -->
@@ -116,7 +116,7 @@ function forgotPassword() {
             <i class="fa-solid fa-graduation-cap text-xl"></i>
           </div>
           <div>
-            <p class="font-extrabold text-lg tracking-wide leading-none text-slate-800 dark:text-slate-100">EDUSMART</p>
+            <p class="font-extrabold text-lg tracking-wide leading-none text-slate-800 dark:text-slate-100">CH ACADEMIC</p>
             <p class="text-[10px] font-bold tracking-widest text-indigo-600 dark:text-indigo-400 mt-1">PRO SYSTEM</p>
           </div>
         </div>

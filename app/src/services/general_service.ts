@@ -153,7 +153,7 @@ export function addCommunication(title: string, audience: string, body: string):
 /* ------------------------------------------------------------------ */
 /* Tema (claro / escuro)                                              */
 /* ------------------------------------------------------------------ */
-const THEME_KEY = 'edusmart-theme'
+const THEME_KEY = 'ch-academic-theme'
 
 function readSavedTheme(): 'dark' | 'light' | null {
   try {

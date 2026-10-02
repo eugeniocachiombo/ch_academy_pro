@@ -12,7 +12,7 @@ const unread = ref(1)
 const draft = ref('')
 const list = ref<HTMLElement | null>(null)
 const messages = ref<ChatMessage[]>([
-  { id: 1, from: 'support', text: 'Olá! Seja bem-vindo ao suporte técnico EduSmart PRO. Como podemos auxiliar a gestão da sua instituição hoje?' },
+  { id: 1, from: 'support', text: 'Olá! Seja bem-vindo ao suporte técnico CH ACADEMIC PRO. Como podemos auxiliar a gestão da sua instituição hoje?' },
 ])
 
 let nextId = 2
@@ -64,7 +64,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
     </button>
 
     <Transition name="pop">
-      <div v-if="open" class="absolute bottom-20 right-0 w-[calc(100vw-3rem)] max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col origin-bottom-right" role="dialog" aria-label="Suporte EduSmart PRO">
+      <div v-if="open" class="absolute bottom-20 right-0 w-[calc(100vw-3rem)] max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col origin-bottom-right" role="dialog" aria-label="Suporte Ch Academic PRO">
         <div class="bg-gradient-to-r from-indigo-900 to-violet-900 p-4 text-white flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="relative">
@@ -72,7 +72,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
               <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-indigo-900"></span>
             </div>
             <div>
-              <h4 class="text-xs font-bold">Suporte EduSmart PRO</h4>
+              <h4 class="text-xs font-bold">Suporte Ch Academic PRO</h4>
               <span class="text-[10px] text-emerald-400 font-medium">Online agora • Resposta rápida</span>
             </div>
           </div>

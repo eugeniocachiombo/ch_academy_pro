@@ -147,7 +147,7 @@ function closeSidebar() {
           <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden">
             <h1
               class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
-              EDUSMART</h1>
+              CH ACADEMIC</h1>
             <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-400">PRO SYSTEM</span>
           </div>
         </div>
