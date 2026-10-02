@@ -1,12 +1,17 @@
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
 model User {
-  id        Int        @id @default(autoincrement())
-  name      String
-  username  String     @unique @default("empty")
-  email     String?
-  password  String     @default("empty")
-  status    String? // Ou pode usar o enum Status se preferir
-  person_id Int? // nullable
-  person    Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  persons   Person[]   @relation("UserPersons")
-  userRoles UserRole[]
+  id                    Int        @id @default(autoincrement())
+  name                  String
+  username              String     @unique @default("empty")
+  email                 String?
+  password              String     @default("empty")
+  status                UserStatus @default(ACTIVE)
+  person_id             Int?
+  person                Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
+  persons               Person[]   @relation("UserPersons")
+  userRoles             UserRole[]
 }

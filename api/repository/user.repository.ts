@@ -15,7 +15,8 @@ export const createUserSchema = z.object({
         }, {
             message: "Este nome de utilizador já está em uso, escolha um outro"
         }),
-    password: z.string().min(6, "A palavra-passe deve ter pelo menos 6 caracteres")
+    password: z.string().min(6, "A palavra-passe deve ter pelo menos 6 caracteres"),
+    status: z.enum(["ACTIVE", "BLOCKED"]).optional()
 });
 
 export const updateUserSchema = createUserSchema.partial();

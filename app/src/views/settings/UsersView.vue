@@ -31,22 +31,30 @@ onMounted(async () => {
   } catch {}
 })
 
-const totalCount = computed(() => userStore.users.length)
-const activeCount = computed(() => userStore.users.filter((u: any) => !u.isBlocked).length)
-const blockedCount = computed(() => userStore.users.filter((u: any) => u.isBlocked).length)
+const totalCount = computed(() => userStore.users.filter((u: any) => u != null).length)
+
+const activeCount = computed(() => 
+  userStore.users.filter((u: any) => u && u.status === 'ACTIVE').length
+)
+
+const blockedCount = computed(() => 
+  userStore.users.filter((u: any) => u && u.status === 'BLOCKED').length
+)
 
 const filteredUsers = computed(() => {
   return userStore.users.filter((u: any) => {
+    if (!u) return false
+
     const matchesSearch =
       !searchQuery.value ||
       u.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      u.username.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      u.username?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchQuery.value.toLowerCase())
 
     const matchesStatus =
       statusFilter.value === 'all' ||
-      (statusFilter.value === 'active' && !u.isBlocked) ||
-      (statusFilter.value === 'blocked' && u.isBlocked)
+      (statusFilter.value === 'active' && u.status === 'ACTIVE') ||
+      (statusFilter.value === 'blocked' && u.status === 'BLOCKED')
 
     const matchesRole = roleFilter.value === 'all' || u.role === roleFilter.value
 
@@ -120,7 +128,7 @@ const handleUpdatePassword = async () => {
   passwordFormErrors.value = null
 
   try {
-    await api.put(`/users/${selectedUser.value.id}/password`, passwordForm.value)
+    await api.patch(`/users/${selectedUser.value.id}/password`, passwordForm.value)
     isPasswordModalOpen.value = false
     selectedUser.value = null
     alert('Palavra-passe actualizada com sucesso!')
@@ -137,12 +145,17 @@ const handleUpdatePassword = async () => {
 
 const toggleBlockUser = async (user: any) => {
   activeDropdownId.value = null
-  const actionName = user.isBlocked ? 'desbloquear' : 'bloquear'
+  const newStatus = user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE'
+  const actionName = newStatus === 'BLOCKED' ? 'bloquear' : 'desbloquear'
+  
   if (!confirm(`Tem certeza de que deseja ${actionName} o utilizador @${user.username}?`)) return
+  
   try {
-    user.isBlocked = !user.isBlocked
-  } catch (err) {
-    alert('Erro ao alterar status do utilizador.')
+    await api.put(`/users/${user.id}`, { status: newStatus })
+    // Recarrega a lista do Pinia para atualizar os dados de forma consistente
+    await userStore.list()
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Erro ao alterar status do utilizador.')
   }
 }
 
@@ -150,7 +163,11 @@ const deleteUser = async (id: number) => {
   activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
   try {
-  } catch {}
+    await api.delete(`/users/${id}`)
+    await userStore.list()
+  } catch (err: any) {
+    alert(err.response?.data?.message || 'Erro ao eliminar utilizador.')
+  }
 }
 </script>
 
@@ -212,7 +229,7 @@ const deleteUser = async (id: number) => {
     </div>
 
     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-4">
-      <div class="relactive flex-1 w-full">
+      <div class="relative flex-1 w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
         <input
           v-model="searchQuery"
@@ -273,7 +290,7 @@ const deleteUser = async (id: number) => {
                 <td class="py-4 px-6 font-medium text-white flex items-center gap-3.5">
                   <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-indigo-500/20 shadow-inner">
                     <img v-if="user.photo" :src="user.photo" class="w-full h-full rounded-xl object-cover" />
-                    <span v-else>{{ (user.name || user.username).substring(0, 2).toUpperCase() }}</span>
+                    <span v-else>{{ (user.name || user.username || 'U').substring(0, 2).toUpperCase() }}</span>
                   </div>
                   <div>
                     <div class="font-semibold text-slate-200">{{ user.name || 'Sem nome' }}</div>
@@ -283,12 +300,12 @@ const deleteUser = async (id: number) => {
                 <td class="py-4 px-6 text-slate-300 font-mono text-xs">@{{ user.username }}</td>
                 <td class="py-4 px-6 text-slate-400 text-xs">{{ user.email || '-' }}</td>
                 <td class="py-4 px-6">
-                  <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', user.isBlocked ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20']">
-                    <span :class="['w-1.5 h-1.5 rounded-full', user.isBlocked ? 'bg-red-400' : 'bg-emerald-400']"></span>
-                    {{ user.isBlocked ? 'Bloqueado' : 'Activo' }}
+                  <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', user.status === 'BLOCKED' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20']">
+                    <span :class="['w-1.5 h-1.5 rounded-full', user.status === 'BLOCKED' ? 'bg-red-400' : 'bg-emerald-400']"></span>
+                    {{ user.status === 'BLOCKED' ? 'Bloqueado' : 'Activo' }}
                   </span>
                 </td>
-                <td class="py-4 px-6 text-right relactive">
+                <td class="py-4 px-6 text-right relative">
                   <div class="inline-block text-left">
                     <button
                       @click="activeDropdownId = activeDropdownId === user.id ? null : user.id"
@@ -318,8 +335,8 @@ const deleteUser = async (id: number) => {
                         @click="toggleBlockUser(user)"
                         class="w-full px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white flex items-center gap-2.5 transition-colors"
                       >
-                        <i :class="user.isBlocked ? 'fa-solid fa-user-check text-emerald-400' : 'fa-solid fa-user-lock text-orange-400'"></i>
-                        <span>{{ user.isBlocked ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
+                        <i :class="user.status === 'BLOCKED' ? 'fa-solid fa-user-check text-emerald-400' : 'fa-solid fa-user-lock text-orange-400'"></i>
+                        <span>{{ user.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
                       </button>
 
                       <div class="h-px bg-slate-800 my-1"></div>
