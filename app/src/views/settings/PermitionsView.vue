@@ -5,6 +5,9 @@ import { useUserStore } from '@/stores/user.store'
 import { showNotification } from '@/services/general_service'
 import PermitionFormView from './PermitionsFormView.vue'
 
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 const permitionStore = usePermitionStore()
 const userStore = useUserStore()
 
@@ -86,7 +89,6 @@ const deletePermition = async (id: number) => {
 
 <template>
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-    <!-- Cabeçalho -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Gestão de Permissões</h1>
@@ -102,7 +104,6 @@ const deletePermition = async (id: number) => {
       </button>
     </div>
 
-    <!-- Cards de Estatísticas -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg shadow-indigo-500/5 transition-all">
         <div class="flex items-center justify-between">
@@ -115,7 +116,6 @@ const deletePermition = async (id: number) => {
       </div>
     </div>
 
-    <!-- Filtros e Pesquisa -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-4">
       <div class="relative flex-1 w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm"></i>
@@ -128,91 +128,100 @@ const deletePermition = async (id: number) => {
       </div>
     </div>
 
-    <!-- Erro global -->
     <div v-if="permitionStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 text-sm flex items-center gap-3">
       <i class="fa-solid fa-circle-exclamation text-lg"></i>
       <span>{{ permitionStore.error }}</span>
     </div>
 
-    <!-- Tabela -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
-      <div class="overflow-x-auto min-h-[300px]">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              <th class="py-4 px-6">ID</th>
-              <th class="py-4 px-6">Nome / Slug</th>
-              <th class="py-4 px-6">Descrição</th>
-              <th class="py-4 px-6">Criado em</th>
-              <th class="py-4 px-6 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
-            <template v-if="permitionStore.isLoading && !filteredPermitions.length">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
-                  <p class="text-xs">A carregar permissões...</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else-if="filteredPermitions.length === 0">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-                  <p class="text-xs">Nenhuma permissão encontrada.</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else>
-              <tr v-for="permition in (filteredPermitions as any)" :key="permition.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                <td class="py-4 px-6 font-mono text-xs text-slate-500 dark:text-slate-400">#{{ permition.id }}</td>
-                <td class="py-4 px-6 font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ permition.name }}</td>
-                <td class="py-4 px-6 text-slate-600 dark:text-slate-300 text-xs">{{ permition.description || '-' }}</td>
-                <td class="py-4 px-6 text-xs text-slate-500 dark:text-slate-400">
-                  {{ permition.createdAt ? new Date(permition.createdAt).toLocaleDateString() : '-' }}
-                </td>
-                <td class="py-4 px-6 text-right relative">
-                  <div v-if="p('permition.edit') || p('permition.delete')" class="inline-block text-left">
-                    <button
-                      @click="activeDropdownId = activeDropdownId === permition.id ? null : permition.id"
-                      class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
-                    >
-                      <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                    </button>
+    <div class="custom-datatable-wrapper bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+      <DataTable
+        :value="filteredPermitions"
+        :loading="permitionStore.isLoading"
+        paginator
+        :rows="10"
+        :rowsPerPageOptions="[5, 10, 20, 50]"
+        tableStyle="min-width: 50rem"
+        class="custom-datatable"
+      >
+        <template #empty>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
+            <p class="text-xs">Nenhuma permissão encontrada.</p>
+          </div>
+        </template>
+        <template #loading>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
+            <p class="text-xs">A carregar permissões...</p>
+          </div>
+        </template>
 
-                    <div v-if="activeDropdownId === permition.id" class="absolute right-6 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
-                      <button
-                        v-if="p('permition.edit')"
-                        @click="openEditModal(permition)"
-                        class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
-                        <span>Editar Permissão</span>
-                      </button>
+        <Column field="id" header="ID" sortable style="width: 10%">
+          <template #body="slotProps">
+            <span class="font-mono text-xs text-slate-500 dark:text-slate-400">#{{ slotProps.data.id }}</span>
+          </template>
+        </Column>
 
-                      <div v-if="p('permition.edit') && p('permition.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+        <Column field="name" header="Nome / Slug" sortable style="width: 25%">
+          <template #body="slotProps">
+            <span class="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ slotProps.data.name }}</span>
+          </template>
+        </Column>
 
-                      <button
-                        v-if="p('permition.delete')"
-                        @click="deletePermition(permition.id)"
-                        class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-trash"></i>
-                        <span>Eliminar Permissão</span>
-                      </button>
-                    </div>
-                  </div>
-                  <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+        <Column field="description" header="Descrição" style="width: 35%">
+          <template #body="slotProps">
+            <span class="text-slate-600 dark:text-slate-300 text-xs">{{ slotProps.data.description || '-' }}</span>
+          </template>
+        </Column>
+
+        <Column field="createdAt" header="Criado em" sortable style="width: 15%">
+          <template #body="slotProps">
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ slotProps.data.createdAt ? new Date(slotProps.data.createdAt).toLocaleDateString() : '-' }}
+            </span>
+          </template>
+        </Column>
+
+        <Column header="Ações" style="width: 15%" :exportable="false">
+          <template #body="slotProps">
+            <div class="text-right relative">
+              <div v-if="p('permition.edit') || p('permition.delete')" class="inline-block text-left">
+                <button
+                  @click="activeDropdownId = activeDropdownId === slotProps.data.id ? null : slotProps.data.id"
+                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
+                >
+                  <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+                </button>
+
+                <div v-if="activeDropdownId === slotProps.data.id" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
+                  <button
+                    v-if="p('permition.edit')"
+                    @click="openEditModal(slotProps.data)"
+                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
+                    <span>Editar Permissão</span>
+                  </button>
+
+                  <div v-if="p('permition.edit') && p('permition.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+
+                  <button
+                    v-if="p('permition.delete')"
+                    @click="deletePermition(slotProps.data.id)"
+                    class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Eliminar Permissão</span>
+                  </button>
+                </div>
+              </div>
+              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+            </div>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
-    <!-- Modal de Formulário -->
     <PermitionFormView
       :is-open="isModalOpen"
       :is-editing="isEditing"
