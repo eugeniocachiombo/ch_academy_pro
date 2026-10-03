@@ -12,6 +12,7 @@ import { academicYearRoutes } from "./routes/academic_year.route.js";
 import { courseRoutes } from "./routes/course.route.js";
 import { courseGradeRoutes } from "./routes/course_grade.route.js";
 import { subjectRoutes } from "./routes/subject.route.js";
+import { gradeSubjectRoutes } from "./routes/grade_subject.route.js";
 const app = express();
 
 app.use(cors({
@@ -33,6 +34,7 @@ app.use("/api", academicYearRoutes);
 app.use("/api", courseRoutes);
 app.use("/api", courseGradeRoutes);
 app.use("/api", subjectRoutes);
+app.use("/api", gradeSubjectRoutes);
 
 app.get("/", (req, res) => {
   res.json({

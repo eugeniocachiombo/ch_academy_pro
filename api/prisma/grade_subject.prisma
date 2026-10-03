@@ -1,0 +1,13 @@
+model GradeSubject {
+  id        Int      @id @default(autoincrement())
+  gradeId   Int
+  subjectId Int
+  
+  grade     AcademicGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  subject   Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([gradeId, subjectId])
+  @@map("grade_subjects")
+}

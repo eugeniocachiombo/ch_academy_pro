@@ -6,5 +6,7 @@ model Subject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  gradeSubjects GradeSubject[]
+
   @@map("subjects")
 }

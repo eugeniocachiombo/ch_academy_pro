@@ -3,7 +3,9 @@ model AcademicGrade {
   name         String
   createdAt    DateTime?     @default(now())
   updatedAt    DateTime?     @updatedAt
+  
   courseGrades CourseGrade[]
+  gradeSubjects GradeSubject[]
 
   @@map("academic_grades")
 }
