@@ -8,6 +8,7 @@
     "postinstall": "prisma generate && pnpm run build",
     "build": "prisma migrate deploy && esbuild server.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/server.js --packages=external",
     "start": "node dist/server.js",
+    "seed": "tsx prisma/seed.ts",
     "dev": "tsx watch server.ts"
   },
   "keywords": [],
