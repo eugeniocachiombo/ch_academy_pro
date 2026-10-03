@@ -95,7 +95,7 @@ const handleSubmit = async () => {
       <div class="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-            <i :class="isEditing ? 'fa-solid fa-graduation-cap' : 'fa-solid fa-book'"></i>
+            <i class="fa-solid fa-graduation-cap"></i>
           </div>
           <div>
             <h3 class="font-bold text-slate-900 dark:text-white text-base">{{ isEditing ? 'Editar Curso' : 'Novo Curso' }}</h3>

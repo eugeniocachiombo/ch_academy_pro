@@ -102,7 +102,7 @@ const deleteRole = async (id: number) => {
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
-        <i class="fa-solid fa-shield-plus text-sm"></i>
+        <i class="fa-solid fa-plus-circle text-sm"></i>
         <span>Nova Função</span>
       </button>
     </div>

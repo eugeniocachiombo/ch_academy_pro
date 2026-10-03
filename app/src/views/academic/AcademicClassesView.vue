@@ -121,7 +121,7 @@ const confirmDelete = (academicClass: AcademicClass) => {
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
-        <i class="fa-solid fa-graduation-cap text-sm"></i>
+        <i class="fa-solid fa-chalkboard text-sm"></i>
         <span>Nova Turma</span>
       </button>
     </div>
@@ -138,7 +138,7 @@ const confirmDelete = (academicClass: AcademicClass) => {
           <div
             class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center"
           >
-            <i class="fa-solid fa-school text-sm"></i>
+            <i class="fa-solid fa-chalkboard text-sm"></i>
           </div>
         </div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>

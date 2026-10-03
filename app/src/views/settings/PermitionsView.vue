@@ -109,7 +109,7 @@ const deletePermition = async (id: number) => {
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total de Permissões</span>
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-            <i class="fa-solid fa-shield-keyhole text-sm"></i>
+            <i class="fa-solid fa-key text-sm"></i>
           </div>
         </div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>

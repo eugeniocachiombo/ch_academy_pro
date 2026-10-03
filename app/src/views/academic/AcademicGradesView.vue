@@ -135,7 +135,7 @@ const confirmDelete = (academicGrade: AcademicGrade) => {
           <div
             class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center"
           >
-            <i class="fa-solid fa-school-flag text-sm"></i>
+            <i class="fa-solid fa-layer-group text-sm"></i>
           </div>
         </div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>
