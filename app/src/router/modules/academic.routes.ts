@@ -5,7 +5,7 @@ export const academicRoutes: RouteRecordRaw[] = [
   { 
     path: '/academico/turmas', 
     name: 'academic-classes', 
-    component: UnderConstructionView, 
+    component: () => import('@/views/academic/AcademicClassesView.vue'), 
     meta: { permission: 'classes.manage' } 
   },
   { 
