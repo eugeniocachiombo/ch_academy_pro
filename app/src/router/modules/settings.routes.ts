@@ -1,12 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router'
-import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 export const settingsRoutes: RouteRecordRaw[] = [
   { 
-    path: '/configuracoes/ano-letivo', 
+    path: '/configuracoes/anos-lectivos', 
     name: 'settings-academic-year', 
-    component: UnderConstructionView, 
-    meta: { permition: 'academic_year.manage' } 
+    component: () => import('@/views/academic/AcademicYearsView.vue'), 
+    meta: { permission: 'academic_years.manage' } 
   },
   { 
     path: '/configuracoes/utilizadores', 
