@@ -66,7 +66,11 @@ const handleSubmit = async () => {
   internalLoading.value = true
 
   try {
-    const payload = { ...form.value }
+    const payload = { 
+      name: form.value.name,
+      isCurrent: Boolean(form.value.isCurrent)
+    }
+    
     if (props.isEditing && form.value.id) {
       await academicYearStore.update(form.value.id, payload)
     } else {
@@ -134,7 +138,7 @@ const handleSubmit = async () => {
             class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
           />
           <label for="isCurrent" class="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
-            Definir como Ano Lectivo Actual
+            Definir como Ano Lectivo Actual (Apenas um pode estar activo)
           </label>
         </div>
 
