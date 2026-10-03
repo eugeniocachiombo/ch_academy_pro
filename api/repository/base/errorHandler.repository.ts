@@ -46,5 +46,12 @@ export function errorReport(res: Response, error: unknown) {
         return res.status(404).json({ message: "Registo não encontrado" });
     }
 
+    if( error?.response?.data?.errors){
+        return res.status(400).json({
+            message: "Verifique os campos do formulário",
+            errors: error?.response?.data?.errors
+        });
+    }
+
     return res.status(500).json({ message: "Erro interno do servidor" });
 }
