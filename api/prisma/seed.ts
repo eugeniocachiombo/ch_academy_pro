@@ -17,14 +17,14 @@ async function main() {
   console.log("Seed processado para o utilizador:", adminUser.username);
 
   const adminRole = await prisma.role.upsert({
-    where: { name: "ADMIN" },
+    where: { name: "admin" },
     update: {},
     create: {
-      name: "ADMIN",
+      name: "admin",
     },
   });
 
-  console.log("Role criada/atualizada:", adminRole.name);
+  console.log("Role criada/actualizada:", adminRole.name);
 
   await prisma.userRole.upsert({
     where: {
@@ -71,6 +71,8 @@ async function main() {
     { action: "create", label: "Criar" },
     { action: "update", label: "Actualizar" },
     { action: "delete", label: "Eliminar" },
+    { action: "pdf", label: "Eliminar" },
+    { action: "excel", label: "Eliminar" },
   ];
 
   for (const mod of modules) {
