@@ -5,6 +5,9 @@ import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import UsersFormView from './UsersFormView.vue'
 
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 const userStore = useUserStore()
 
 const p = (name: string) => userStore.getPermition(name)
@@ -187,7 +190,6 @@ const deleteUser = async (id: number) => {
 
 <template>
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-    <!-- Cabeçalho -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Gestão de Utilizadores</h1>
@@ -203,7 +205,6 @@ const deleteUser = async (id: number) => {
       </button>
     </div>
 
-    <!-- Cards de Estatísticas -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div 
         @click="statusFilter = 'all'"
@@ -245,7 +246,6 @@ const deleteUser = async (id: number) => {
       </div>
     </div>
 
-    <!-- Filtros e Pesquisa -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-4">
       <div class="relative flex-1 w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm"></i>
@@ -269,118 +269,126 @@ const deleteUser = async (id: number) => {
       </div>
     </div>
 
-    <!-- Erro global -->
     <div v-if="userStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 text-sm flex items-center gap-3">
       <i class="fa-solid fa-circle-exclamation text-lg"></i>
       <span>{{ userStore.error }}</span>
     </div>
 
-    <!-- Tabela -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
-      <div class="overflow-x-auto min-h-[300px]">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              <th class="py-4 px-6">Utilizador</th>
-              <th class="py-4 px-6">Username</th>
-              <th class="py-4 px-6">Email</th>
-              <th class="py-4 px-6">Status</th>
-              <th class="py-4 px-6 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
-            <template v-if="userStore.isLoading && !filteredUsers.length">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
-                  <p class="text-xs">A carregar utilizadores...</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else-if="filteredUsers.length === 0">
-              <tr>
-                <td colspan="5" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-                  <p class="text-xs">Nenhum utilizador encontrado.</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else>
-              <tr v-for="user in (filteredUsers as any)" :key="user.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                <td class="py-4 px-6 font-medium text-slate-900 dark:text-white flex items-center gap-3.5">
-                  <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-500 dark:text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-indigo-500/20 shadow-inner">
-                    <img v-if="user.photo" :src="user.photo" class="w-full h-full rounded-xl object-cover" />
-                    <span v-else>{{ (user.name || user.username || 'U').substring(0, 2).toUpperCase() }}</span>
-                  </div>
-                  <div>
-                    <div class="font-semibold text-slate-800 dark:text-slate-200">{{ user.name || 'Sem nome' }}</div>
-                    <div class="text-xs text-slate-400 dark:text-slate-500">ID: #{{ user.id }}</div>
-                  </div>
-                </td>
-                <td class="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono text-xs">@{{ user.username }}</td>
-                <td class="py-4 px-6 text-slate-500 dark:text-slate-400 text-xs">{{ user.email || '-' }}</td>
-                <td class="py-4 px-6">
-                  <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', user.status === 'BLOCKED' ? 'bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20']">
-                    <span :class="['w-1.5 h-1.5 rounded-full', user.status === 'BLOCKED' ? 'bg-red-500 dark:bg-red-400' : 'bg-emerald-500 dark:bg-emerald-400']"></span>
-                    {{ user.status === 'BLOCKED' ? 'Bloqueado' : 'Activo' }}
-                  </span>
-                </td>
-                <td class="py-4 px-6 text-right relative">
-                  <div v-if="p('user.edit') || p('user.delete')" class="inline-block text-left">
-                    <button
-                      @click="activeDropdownId = activeDropdownId === user.id ? null : user.id"
-                      class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
-                    >
-                      <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                    </button>
+    <div class="custom-datatable-wrapper bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+      <DataTable
+        :value="filteredUsers"
+        :loading="userStore.isLoading"
+        paginator
+        :rows="10"
+        :rowsPerPageOptions="[5, 10, 20, 50]"
+        tableStyle="min-width: 50rem"
+        class="custom-datatable"
+      >
+        <template #empty>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
+            <p class="text-xs">Nenhum utilizador encontrado.</p>
+          </div>
+        </template>
+        <template #loading>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
+            <p class="text-xs">A carregar utilizadores...</p>
+          </div>
+        </template>
 
-                    <div v-if="activeDropdownId === user.id" class="absolute right-6 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
-                      <button
-                        v-if="p('user.edit')"
-                        @click="openEditModal(user)"
-                        class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
-                        <span>Editar Dados</span>
-                      </button>
+        <Column field="name" header="Utilizador" sortable style="width: 30%">
+          <template #body="slotProps">
+            <div class="font-medium text-slate-900 dark:text-white flex items-center gap-3.5">
+              <div class="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-500 dark:text-indigo-400 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-indigo-500/20 shadow-inner">
+                <img v-if="slotProps.data.photo" :src="slotProps.data.photo" class="w-full h-full rounded-xl object-cover" />
+                <span v-else>{{ (slotProps.data.name || slotProps.data.username || 'U').substring(0, 2).toUpperCase() }}</span>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ slotProps.data.name || 'Sem nome' }}</div>
+                <div class="text-xs text-slate-400 dark:text-slate-500">ID: #{{ slotProps.data.id }}</div>
+              </div>
+            </div>
+          </template>
+        </Column>
 
-                      <button
-                        v-if="p('user.edit')"
-                        @click="openPasswordModal(user)"
-                        class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-key text-amber-500 dark:text-amber-400"></i>
-                        <span>Alterar Password</span>
-                      </button>
+        <Column field="username" header="Username" sortable style="width: 20%">
+          <template #body="slotProps">
+            <span class="text-slate-600 dark:text-slate-300 font-mono text-xs">@{{ slotProps.data.username }}</span>
+          </template>
+        </Column>
 
-                      <button
-                        v-if="p('user.edit')"
-                        @click="toggleBlockUser(user)"
-                        class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                      >
-                        <i :class="user.status === 'BLOCKED' ? 'fa-solid fa-user-check text-emerald-500 dark:text-emerald-400' : 'fa-solid fa-user-lock text-orange-500 dark:text-orange-400'"></i>
-                        <span>{{ user.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
-                      </button>
+        <Column field="email" header="Email" sortable style="width: 25%">
+          <template #body="slotProps">
+            <span class="text-slate-500 dark:text-slate-400 text-xs">{{ slotProps.data.email || '-' }}</span>
+          </template>
+        </Column>
 
-                      <div v-if="p('user.edit') && p('user.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+        <Column field="status" header="Status" sortable style="width: 15%">
+          <template #body="slotProps">
+            <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', slotProps.data.status === 'BLOCKED' ? 'bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20']">
+              <span :class="['w-1.5 h-1.5 rounded-full', slotProps.data.status === 'BLOCKED' ? 'bg-red-500 dark:bg-red-400' : 'bg-emerald-500 dark:bg-emerald-400']"></span>
+              {{ slotProps.data.status === 'BLOCKED' ? 'Bloqueado' : 'Activo' }}
+            </span>
+          </template>
+        </Column>
 
-                      <button
-                        v-if="p('user.delete')"
-                        @click="deleteUser(user.id)"
-                        class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-trash"></i>
-                        <span>Eliminar Conta</span>
-                      </button>
-                    </div>
-                  </div>
-                  <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+        <Column header="Ações" style="width: 10%" :exportable="false">
+          <template #body="slotProps">
+            <div class="text-right relative">
+              <div v-if="p('user.edit') || p('user.delete')" class="inline-block text-left">
+                <button
+                  @click="activeDropdownId = activeDropdownId === slotProps.data.id ? null : slotProps.data.id"
+                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
+                >
+                  <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+                </button>
+
+                <div v-if="activeDropdownId === slotProps.data.id" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
+                  <button
+                    v-if="p('user.edit')"
+                    @click="openEditModal(slotProps.data)"
+                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
+                    <span>Editar Dados</span>
+                  </button>
+
+                  <button
+                    v-if="p('user.edit')"
+                    @click="openPasswordModal(slotProps.data)"
+                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-key text-amber-500 dark:text-amber-400"></i>
+                    <span>Alterar Password</span>
+                  </button>
+
+                  <button
+                    v-if="p('user.edit')"
+                    @click="toggleBlockUser(slotProps.data)"
+                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
+                  >
+                    <i :class="slotProps.data.status === 'BLOCKED' ? 'fa-solid fa-user-check text-emerald-500 dark:text-emerald-400' : 'fa-solid fa-user-lock text-orange-500 dark:text-orange-400'"></i>
+                    <span>{{ slotProps.data.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
+                  </button>
+
+                  <div v-if="p('user.edit') && p('user.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+
+                  <button
+                    v-if="p('user.delete')"
+                    @click="deleteUser(slotProps.data.id)"
+                    class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Eliminar Conta</span>
+                  </button>
+                </div>
+              </div>
+              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+            </div>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <UsersFormView
@@ -392,7 +400,6 @@ const deleteUser = async (id: number) => {
       @saved="handleSaved"
     />
 
-    <!-- Modal de Palavra-passe -->
     <div v-if="isPasswordModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">

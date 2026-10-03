@@ -7,6 +7,9 @@ import { api } from '@/services/api'
 import cryptoService from '@/services/crypto.service'
 import RoleFormView from './RolesFormView.vue'
 
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+
 const roleStore = useRoleStore()
 const userStore = useUserStore()
 
@@ -136,83 +139,90 @@ const deleteRole = async (id: number) => {
       <span>{{ roleStore.error }}</span>
     </div>
 
-    <!-- Tabela -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
-      <div class="overflow-x-auto min-h-[300px]">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              <th class="py-4 px-6">ID</th>
-              <th class="py-4 px-6">Nome da Função</th>
-              <th class="py-4 px-6">Criado em</th>
-              <th class="py-4 px-6 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-sm">
-            <template v-if="roleStore.isLoading && !filteredRoles.length">
-              <tr>
-                <td colspan="4" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
-                  <p class="text-xs">A carregar funções...</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else-if="filteredRoles.length === 0">
-              <tr>
-                <td colspan="4" class="py-12 text-center text-slate-400 dark:text-slate-500">
-                  <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-                  <p class="text-xs">Nenhuma função encontrada.</p>
-                </td>
-              </tr>
-            </template>
-            <template v-else>
-              <tr v-for="role in (filteredRoles as any)" :key="role.id" class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                <td class="py-4 px-6 font-mono text-xs text-slate-500 dark:text-slate-400">#{{ role.id }}</td>
-                <td class="py-4 px-6 font-semibold text-slate-900 dark:text-white">{{ role.name }}</td>
-                <td class="py-4 px-6 text-xs text-slate-500 dark:text-slate-400">
-                  {{ role.createdAt ? new Date(role.createdAt).toLocaleDateString() : '-' }}
-                </td>
-                <td class="py-4 px-6 text-right relative">
-                  <!-- Só mostra o botão de ações se tiver pelo menos uma permissão de edição ou eliminação -->
-                  <div v-if="p('role.edit') || p('role.delete')" class="inline-block text-left">
-                    <button
-                      @click="activeDropdownId = activeDropdownId === role.id ? null : role.id"
-                      class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
-                    >
-                      <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                    </button>
+    <!-- Tabela com PrimeVue DataTable -->
+    <div class="custom-datatable-wrapper bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+      <DataTable
+        :value="filteredRoles"
+        :loading="roleStore.isLoading"
+        paginator
+        :rows="10"
+        :rowsPerPageOptions="[5, 10, 20, 50]"
+        tableStyle="min-width: 50rem"
+        class="custom-datatable"
+      >
+        <template #empty>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
+            <p class="text-xs">Nenhuma função encontrada.</p>
+          </div>
+        </template>
+        <template #loading>
+          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
+            <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
+            <p class="text-xs">A carregar funções...</p>
+          </div>
+        </template>
 
-                    <div v-if="activeDropdownId === role.id" class="absolute right-6 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
-                      <!-- Opção de Editar (protegida por 'role.edit') -->
-                      <button
-                        v-if="p('role.edit')"
-                        @click="openEditModal(role)"
-                        class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
-                        <span>Editar Função</span>
-                      </button>
+        <Column field="id" header="ID" sortable style="width: 15%">
+          <template #body="slotProps">
+            <span class="font-mono text-xs text-slate-500 dark:text-slate-400">#{{ slotProps.data.id }}</span>
+          </template>
+        </Column>
 
-                      <div v-if="p('role.edit') && p('role.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+        <Column field="name" header="Nome da Função" sortable style="width: 40%">
+          <template #body="slotProps">
+            <span class="font-semibold text-slate-900 dark:text-white text-sm">{{ slotProps.data.name }}</span>
+          </template>
+        </Column>
 
-                      <!-- Opção de Eliminar (protegida por 'role.delete') -->
-                      <button
-                        v-if="p('role.delete')"
-                        @click="deleteRole(role.id)"
-                        class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                      >
-                        <i class="fa-solid fa-trash"></i>
-                        <span>Eliminar Função</span>
-                      </button>
-                    </div>
-                  </div>
-                  <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
+        <Column field="createdAt" header="Criado em" sortable style="width: 25%">
+          <template #body="slotProps">
+            <span class="text-xs text-slate-500 dark:text-slate-400">
+              {{ slotProps.data.createdAt ? new Date(slotProps.data.createdAt).toLocaleDateString() : '-' }}
+            </span>
+          </template>
+        </Column>
+
+        <Column header="Ações" style="width: 20%" :exportable="false">
+          <template #body="slotProps">
+            <div class="text-right relative">
+              <div v-if="p('role.edit') || p('role.delete')" class="inline-block text-left">
+                <button
+                  @click="activeDropdownId = activeDropdownId === slotProps.data.id ? null : slotProps.data.id"
+                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
+                >
+                  <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+                </button>
+
+                <div v-if="activeDropdownId === slotProps.data.id" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
+                  <!-- Opção de Editar (protegida por 'role.edit') -->
+                  <button
+                    v-if="p('role.edit')"
+                    @click="openEditModal(slotProps.data)"
+                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
+                    <span>Editar Função</span>
+                  </button>
+
+                  <div v-if="p('role.edit') && p('role.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+
+                  <!-- Opção de Eliminar (protegida por 'role.delete') -->
+                  <button
+                    v-if="p('role.delete')"
+                    @click="deleteRole(slotProps.data.id)"
+                    class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Eliminar Função</span>
+                  </button>
+                </div>
+              </div>
+              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+            </div>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <!-- Modal de Formulário (RoleFormView) -->
