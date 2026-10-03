@@ -1,0 +1,9 @@
+model AcademicYear {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  isCurrent Boolean   @default(false)
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("academic_years")
+}
