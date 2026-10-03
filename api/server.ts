@@ -10,6 +10,7 @@ import { academicGradeRoutes } from "./routes/academic_grade.route.js";
 import { academicRoomRoutes } from "./routes/academic_room.route.js";
 import { academicYearRoutes } from "./routes/academic_year.route.js";
 import { courseRoutes } from "./routes/course.route.js";
+import { courseGradeRoutes } from "./routes/course_grade.route.js";
 const app = express();
 
 app.use(cors({
@@ -29,6 +30,7 @@ app.use("/api", academicGradeRoutes);
 app.use("/api", academicRoomRoutes);
 app.use("/api", academicYearRoutes);
 app.use("/api", courseRoutes);
+app.use("/api", courseGradeRoutes);
 
 app.get("/", (req, res) => {
   res.json({

@@ -1,8 +1,9 @@
 model AcademicGrade {
-  id        Int       @id @default(autoincrement())
-  name      String
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  id           Int           @id @default(autoincrement())
+  name         String
+  createdAt    DateTime?     @default(now())
+  updatedAt    DateTime?     @updatedAt
+  courseGrades CourseGrade[]
 
   @@map("academic_grades")
 }

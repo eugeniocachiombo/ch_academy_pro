@@ -1,10 +1,11 @@
 model Course {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  code        String    @unique
-  description String?
-  createdAt   DateTime? @default(now())
-  updatedAt   DateTime? @updatedAt
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  code         String        @unique
+  description  String?
+  createdAt    DateTime?     @default(now())
+  updatedAt    DateTime?     @updatedAt
+  courseGrades CourseGrade[]
 
   @@map("courses")
 }
