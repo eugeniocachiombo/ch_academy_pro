@@ -108,7 +108,7 @@ const confirmDelete = (course: Course) => {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          Gestão de Cursos
+          Cursos
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
           Configure e gira os cursos ministrados na instituição.

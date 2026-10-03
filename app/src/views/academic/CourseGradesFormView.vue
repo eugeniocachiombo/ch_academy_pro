@@ -151,7 +151,7 @@ const handleSubmit = async () => {
             <i class="fa-solid fa-layer-group text-sm"></i>
           </div>
           <div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">{{ isEditing ? 'Editar Classes do Curso' : 'Atribuir Classes a Curso' }}</h3>
+            <h3 class="font-bold text-slate-900 dark:text-white text-base">{{ isEditing ? 'Editar Classes por Curso' : 'Atribuir Classes a Curso' }}</h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">Selecione o curso e escolha todas as classes aplicáveis.</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ const handleSubmit = async () => {
 
         <!-- Seleção Múltipla de Classes -->
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Classes do Curso (Múltipla Seleção)</label>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Classes por Curso (Múltipla Seleção)</label>
           <MultiSelect
             v-model="form.gradeIds"
             :options="gradeOptions"
