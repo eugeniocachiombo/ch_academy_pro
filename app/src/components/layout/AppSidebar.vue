@@ -48,6 +48,7 @@ const menuItems = computed(() => [
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
+      { id: 'academic-courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'academic-grades', label: 'Classes', icon: 'fa-layer-group', permition: p('grades.manage') },
       { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permition: p('classes.manage') },
       { id: 'academic-rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
