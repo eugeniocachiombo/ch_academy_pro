@@ -1,0 +1,8 @@
+model AcademicRoom {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@map("academic_rooms")
+}
