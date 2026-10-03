@@ -2,7 +2,6 @@ import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 
 async function main() {
-  // 1. Criar ou atualizar o Utilizador Administrador
   const hashedPassword = await bcrypt.hash("secret", 10);
   const adminUser = await prisma.user.upsert({
     where: { username: "admin" },
@@ -17,18 +16,16 @@ async function main() {
 
   console.log("Seed processado para o utilizador:", adminUser.username);
 
-  // 2. Criar ou atualizar a Role (Perfil) "ADMIN"
   const adminRole = await prisma.role.upsert({
-    where: { name: "admin" },
+    where: { name: "ADMIN" },
     update: {},
     create: {
-      name: "admin",
+      name: "ADMIN",
     },
   });
 
   console.log("Role criada/atualizada:", adminRole.name);
 
-  // 3. Associar a Role ao Utilizador (Tabela UserRole)
   await prisma.userRole.upsert({
     where: {
       user_id_role_id: {
@@ -43,70 +40,72 @@ async function main() {
     },
   });
 
-  // 4. Lista exata de Permissões baseada nos itens do menu do frontend
-  const permissionsToCreate = [
-    // Acadêmico
-    "classes.manage",
-    "grades.manage",
-    "attendance.manage",
-    
-    // Financeiro
-    "fee.manage",
-    "bill.manage",
-    "cashflow.manage",
-    
-    // Alunos
-    "student.manage",
-    "enrollment.manage",
-    
-    // Professores
-    "teacher.manage",
-    "schedule.manage",
-    
-    // Comunicações
-    "wall.manage",
-    "message.send",
-    
-    // Relatórios
-    "report_academic.manage",
-    "report_financial.manage",
-    "report_attendance.manage",
-    
-    // Configurações
-    "academic_year.manage",
-    "user.manage",
-    "role.manage",
-    "permition.manage",
-    "role_permition.manage",
-    "user_role.manage",
+  // Lista base dos módulos/recursos do sistema
+  const modules = [
+    { key: "classes", label: "Turmas" },
+    { key: "grades", label: "Notas" },
+    { key: "attendance", label: "Frequência" },
+    { key: "fee", label: "Mensalidades" },
+    { key: "bill", label: "Boletos" },
+    { key: "cashflow", label: "Caixa Financeiro" },
+    { key: "student", label: "Diretório de Alunos" },
+    { key: "enrollment", label: "Matrículas" },
+    { key: "teacher", label: "Corpo Docente" },
+    { key: "schedule", label: "Horários" },
+    { key: "wall", label: "Mural de Avisos" },
+    { key: "message", label: "Comunicações/Mensagens" },
+    { key: "report_academic", label: "Relatórios Acadêmicos" },
+    { key: "report_financial", label: "Relatórios Financeiros" },
+    { key: "report_attendance", label: "Relatórios de Frequência" },
+    { key: "academic_year", label: "Ano Letivo" },
+    { key: "user", label: "Utilizadores" },
+    { key: "role", label: "Funções/Perfis" },
+    { key: "permition", label: "Permissões do Sistema" },
+    { key: "role_permition", label: "Permissões de Funções" },
+    { key: "user_role", label: "Vínculos de Funções" },
   ];
 
-  for (const permName of permissionsToCreate) {
-    const permission = await prisma.permition.upsert({
-      where: { name: permName }, // Garante que a coluna 'name' possui restrição @unique no Prisma Schema
-      update: {},
-      create: {
-        name: permName,
-      },
-    });
+  // Ações disponíveis e suas descrições amigáveis
+  const actions = [
+    { action: "manage", label: "Gerir" },
+    { action: "create", label: "Criar" },
+    { action: "update", label: "Actualizar" },
+    { action: "delete", label: "Eliminar" },
+  ];
 
-    // 5. Associar cada Permissão à Role ADMIN (Tabela RolePermition)
-    // await prisma.rolePermition.upsert({
-    //   where: {
-    //     role_id_permition_id: {
+  for (const mod of modules) {
+    for (const act of actions) {
+      const permName = `${mod.key}.${act.action}`;
+      const permDescription = `${act.label} ${mod.label.toLowerCase()}`;
+
+      const permission = await prisma.permition.upsert({
+        where: { name: permName },
+        update: {
+          description: permDescription,
+        },
+        create: {
+          name: permName,
+          description: permDescription,
+        },
+      });
+
+    //   await prisma.rolePermition.upsert({
+    //     where: {
+    //       role_id_permition_id: {
+    //         role_id: adminRole.id,
+    //         permition_id: permission.id,
+    //       },
+    //     },
+    //     update: {},
+    //     create: {
     //       role_id: adminRole.id,
     //       permition_id: permission.id,
     //     },
-    //   },
-    //   update: {},
-    //   create: {
-    //     role_id: adminRole.id,
-    //     permition_id: permission.id,
-    //   },
-    // });
+    //   });
+    }
   }
 
-  console.log("Todas as permissões do menu e associações foram criadas com sucesso!");
+  console.log("Todas as permissões (manage, create, update, delete) e associações foram criadas com sucesso!");
 }
 
 main()
