@@ -71,8 +71,8 @@ async function main() {
     { action: "create", label: "Criar" },
     { action: "update", label: "Actualizar" },
     { action: "delete", label: "Eliminar" },
-    { action: "pdf", label: "Eliminar" },
-    { action: "excel", label: "Eliminar" },
+    { action: "pdf", label: "Baixar PDF" },
+    { action: "excel", label: "Baixar Excel" },
   ];
 
   for (const mod of modules) {
