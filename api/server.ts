@@ -6,6 +6,7 @@ import { permitionRoutes } from "./routes/permition.routes.js";
 import { userRoleRoutes } from "./routes/user_role.routes.js";
 import { rolePermitionRoutes } from "./routes/role_permition.routes.js";
 import { academicClassRoutes } from "./routes/academic_class.route.js";
+import { academicGradeRoutes } from "./routes/academic_grade.route.js";
 const app = express();
 
 app.use(cors({
@@ -21,6 +22,7 @@ app.use("/api", permitionRoutes);
 app.use("/api", userRoleRoutes);
 app.use("/api", rolePermitionRoutes);
 app.use("/api", academicClassRoutes);
+app.use("/api", academicGradeRoutes);
 
 app.get("/", (req, res) => {
   res.json({
