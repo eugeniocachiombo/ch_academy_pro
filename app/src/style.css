@@ -215,32 +215,196 @@ body {
 }
 
 .dark .custom-datatable .p-paginator .p-dropdown {
-  background: rgba(30, 41, 59, 0.8) ;
+  background: rgba(30, 41, 59, 0.8);
   border-color: #1e293b !important;
   color: #cbd5e1 !important;
 }
 
-.dark .p-select-panel,
-.dark .p-dropdown-panel,
-.dark .p-select-overlay {
-  background-color: rgba(30, 41, 59, 0.8) ; /* Igual ao fundo da página/cards dark:bg-slate-900 */
-  border-color: #1e293b !important;
+
+/* ==========================================================
+   GLOBAL STYLES FOR PRIME VUE SELECT & MULTISELECT (LIGHT/DARK)
+   ========================================================== */
+
+/* Estado Base - Light Mode */
+.p-select,
+.p-multiselect {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.75rem !important;
+  padding: 0.25rem 0.5rem !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+  transition: all 0.2s ease !important;
 }
 
-.dark .p-select-panel .p-select-option:hover,
-.dark .p-dropdown-panel .p-dropdown-item:hover {
-  background-color: rgba(30, 41, 59, 0.8) ;
+.p-select:not(.p-disabled):hover,
+.p-multiselect:not(.p-disabled):hover {
+  border-color: #6366f1 !important;
+}
+
+.p-select:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+}
+
+.p-select-label,
+.p-multiselect-label {
+  padding: 0.35rem 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important;
+}
+
+.p-placeholder {
+  color: #94a3b8 !important;
+}
+
+.p-select-dropdown,
+.p-multiselect-dropdown {
+  color: #64748b !important;
+}
+
+.p-multiselect-token {
+  background: #e0e7ff !important;
+  color: #4f46e5 !important;
+  border-radius: 9999px !important;
+  padding: 0.125rem 0.625rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+
+/* Estado Base - Dark Mode (Via classe .dark no HTML/Body) */
+.dark .p-select,
+.dark .p-multiselect {
+  background-color: #020617 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .p-select:not(.p-disabled):hover,
+.dark .p-multiselect:not(.p-disabled):hover {
+  border-color: #6366f1 !important;
+}
+
+.dark .p-select:not(.p-disabled).p-focus,
+.dark .p-multiselect:not(.p-disabled).p-focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+}
+
+.dark .p-select-label,
+.dark .p-multiselect-label {
+  color: #f8fafc !important;
+}
+
+.dark .p-placeholder {
+  color: #64748b !important;
+}
+
+.dark .p-select-dropdown,
+.dark .p-multiselect-dropdown {
+  color: #94a3b8 !important;
+}
+
+.dark .p-multiselect-token {
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: #818cf8 !important;
+}
+
+
+/* ==========================================================
+   PAINEL FLUTUANTE (DROPDOWN / OVERLAY) GLOBAL
+   ========================================================== */
+
+/* Light Mode Overlay */
+.p-select-panel,
+.p-multiselect-panel,
+.p-select-overlay,
+.p-dropdown-panel {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1) !important;
+  border-radius: 1rem !important;
+}
+
+.p-select-header,
+.p-multiselect-header {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 0.75rem !important;
+}
+
+.p-select-header input,
+.p-multiselect-header input {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem !important;
+}
+
+.p-select-option,
+.p-multiselect-option,
+.p-dropdown-item {
+  color: #334155 !important;
+  padding: 0.625rem 1rem !important;
+}
+
+.p-select-option:hover,
+.p-multiselect-option:hover,
+.p-dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+
+/* Dark Mode Overlay */
+.dark .p-select-panel,
+.dark .p-multiselect-panel,
+.dark .p-select-overlay,
+.dark .p-dropdown-panel {
+  background-color: #090d16 !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5) !important;
+  border-radius: 1rem !important;
+}
+
+.dark .p-select-header,
+.dark .p-multiselect-header {
+  background-color: #020617 !important;
+  border-bottom: 1px solid #1e293b !important;
+  padding: 0.75rem !important;
+}
+
+.dark .p-select-header input,
+.dark .p-multiselect-header input {
+  background-color: #090d16 !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem !important;
+}
+
+.dark .p-select-option,
+.dark .p-multiselect-option,
+.dark .p-dropdown-item {
+  color: #cbd5e1 !important;
+  padding: 0.625rem 1rem !important;
+}
+
+.dark .p-select-option:hover,
+.dark .p-multiselect-option:hover,
+.dark .p-dropdown-item:hover {
+  background-color: rgba(99, 102, 241, 0.15) !important;
   color: #ffffff !important;
 }
 
-.dark .custom-datatable .p-paginator .p-select,
-.dark .custom-datatable .p-paginator .p-dropdown {
-  background-color: #0f172a !important; /* Mesmo fundo da página/cards (dark:bg-slate-900) */
-  border-color: #1e293b !important;
-  color: #cbd5e1 !important;
-}
-
-.dark .custom-datatable .p-paginator .p-select .p-select-label,
-.dark .custom-datatable .p-paginator .p-dropdown .p-dropdown-label {
-  color: #cbd5e1 !important;
+.dark .p-select-option.p-select-option-selected,
+.dark .p-multiselect-option.p-multiselect-option-selected,
+.dark .p-dropdown-item.p-highlight {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
 }
