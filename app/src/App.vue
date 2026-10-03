@@ -10,7 +10,6 @@ import ChatWidget from '@/components/shared/ChatWidget.vue'
 import { closeOverlays, showNotification } from '@/services/general_service'
 
 const route = useRoute()
-// Rotas públicas (ex.: login) não mostram sidebar, cabeçalho, chat nem modais
 const isPublic = computed(() => route.meta.public === true)
 
 let welcomeTimer: ReturnType<typeof setTimeout> | undefined
@@ -19,7 +18,6 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') closeOverlays()
 }
 
-// A mensagem de boas-vindas só aparece depois de entrar no painel
 watch(
   isPublic,
   (publicRoute) => {

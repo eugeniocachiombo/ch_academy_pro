@@ -106,3 +106,141 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+.custom-datatable .p-datatable-header {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-datatable .p-datatable-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.custom-datatable .p-datatable-thead > tr > th {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 1rem 1.5rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: none !important;
+}
+
+.dark .custom-datatable .p-datatable-thead > tr > th {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  color: #94a3b8 !important;
+  border-bottom-color: #1e293b !important;
+}
+
+.custom-datatable .p-datatable-tbody > tr {
+  background-color: transparent !important;
+  transition: background-color 0.2s ease;
+}
+
+.custom-datatable .p-datatable-tbody > tr:hover {
+  background-color: #f8fafc !important;
+}
+
+.dark .custom-datatable .p-datatable-tbody > tr:hover {
+  background-color: rgba(30, 41, 59, 0.3) !important;
+}
+
+.custom-datatable .p-datatable-tbody > tr > td {
+  padding: 1rem 1.5rem !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #334155 !important;
+}
+
+.dark .custom-datatable .p-datatable-tbody > tr > td {
+  border-bottom-color: rgba(30, 41, 59, 0.6) !important;
+  color: #cbd5e1 !important;
+}
+
+.custom-datatable .p-paginator {
+  background-color: transparent !important;
+  border-top: 1px solid #e2e8f0 !important;
+  padding: 1rem 1.5rem !important;
+  color: #64748b !important;
+}
+
+.dark .custom-datatable .p-paginator {
+  border-top-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.custom-datatable .p-paginator .p-paginator-pages .p-paginator-page {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: #64748b !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+.dark .custom-datatable .p-paginator .p-paginator-pages .p-paginator-page {
+  color: #94a3b8 !important;
+}
+
+.custom-datatable .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+}
+
+.custom-datatable .p-paginator .p-paginator-first,
+.custom-datatable .p-paginator .p-paginator-prev,
+.custom-datatable .p-paginator .p-paginator-next,
+.custom-datatable .p-paginator .p-paginator-last {
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  border-radius: 0.75rem !important;
+}
+
+.dark .custom-datatable .p-paginator .p-paginator-first,
+.dark .custom-datatable .p-paginator .p-paginator-prev,
+.dark .custom-datatable .p-paginator .p-paginator-next,
+.dark .custom-datatable .p-paginator .p-paginator-last {
+  color: #94a3b8 !important;
+}
+
+.custom-datatable .p-paginator .p-dropdown {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.75rem !important;
+  color: #334155 !important;
+}
+
+.dark .custom-datatable .p-paginator .p-dropdown {
+  background: rgba(30, 41, 59, 0.8) ;
+  border-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+.dark .p-select-panel,
+.dark .p-dropdown-panel,
+.dark .p-select-overlay {
+  background-color: rgba(30, 41, 59, 0.8) ; /* Igual ao fundo da página/cards dark:bg-slate-900 */
+  border-color: #1e293b !important;
+}
+
+.dark .p-select-panel .p-select-option:hover,
+.dark .p-dropdown-panel .p-dropdown-item:hover {
+  background-color: rgba(30, 41, 59, 0.8) ;
+  color: #ffffff !important;
+}
+
+.dark .custom-datatable .p-paginator .p-select,
+.dark .custom-datatable .p-paginator .p-dropdown {
+  background-color: #0f172a !important; /* Mesmo fundo da página/cards (dark:bg-slate-900) */
+  border-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+.dark .custom-datatable .p-paginator .p-select .p-select-label,
+.dark .custom-datatable .p-paginator .p-dropdown .p-dropdown-label {
+  color: #cbd5e1 !important;
+}
