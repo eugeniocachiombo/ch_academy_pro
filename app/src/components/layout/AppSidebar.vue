@@ -57,6 +57,13 @@ const menuItems = computed(() => [
       { id: 'academic-course-grades', label: 'Classes por Cursos', icon: 'fa-network-wired', permition: p('course-grades.manage') },
       { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
       { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
+      
+      // a desenvolver
+      { id: 'academic-enrollments', label: 'Matrículas', icon: 'fa-user-plus', permition: p('enrollments.manage') },
+      { id: 'academic-schedules', label: 'Grade Horária', icon: 'fa-calendar-days', permition: p('schedules.manage') },
+      { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
+      { id: 'academic-teachers', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacher-allocations.manage') },
+      { id: 'academic-transcripts', label: 'Históricos e Declarações', icon: 'fa-scroll', permition: p('transcripts.manage') },
     ],
   },
   {
@@ -74,8 +81,9 @@ const menuItems = computed(() => [
     label: 'Alunos',
     icon: 'fa-users',
     children: [
-      { id: 'students-directory', label: 'Diretório', icon: 'fa-address-book', permition: p('student.manage') },
-      { id: 'students-enrollment', label: 'Matrícula', icon: 'fa-user-plus', permition: p('enrollment.manage') },
+      { id: 'students', label: 'Alunos', icon: 'fa-address-book', permition: p('student.manage') },
+      { id: 'students-enrollment', label: 'Processo de Matrícula', icon: 'fa-user-plus', permition: p('enrollment.manage') },
+      { id: 'students-transfers', label: 'Transferências / Declarações', icon: 'fa-exchange-alt', permition: p('transfer.manage') },
     ],
   },
   {

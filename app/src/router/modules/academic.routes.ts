@@ -56,4 +56,35 @@ export const academicRoutes: RouteRecordRaw[] = [
     component: UnderConstructionView, 
     meta: { permission: 'attendance.manage' } 
   },
+  // Novas rotas adicionadas
+  { 
+    path: '/academico/matriculas', 
+    name: 'academic-enrollments', 
+    component: UnderConstructionView, 
+    meta: { permission: 'enrollments.manage' } 
+  },
+  { 
+    path: '/academico/horarios', 
+    name: 'academic-schedules', 
+    component: UnderConstructionView, 
+    meta: { permission: 'schedules.manage' } 
+  },
+  { 
+    path: '/academico/avaliacoes', 
+    name: 'academic-evaluations', 
+    component: UnderConstructionView, 
+    meta: { permission: 'evaluations.manage' } 
+  },
+  { 
+    path: '/academico/professores', 
+    name: 'academic-teachers', 
+    component: UnderConstructionView, 
+    meta: { permission: 'teacher-allocations.manage' } 
+  },
+  { 
+    path: '/academico/historicos', 
+    name: 'academic-transcripts', 
+    component: UnderConstructionView, 
+    meta: { permission: 'transcripts.manage' } 
+  },
 ]

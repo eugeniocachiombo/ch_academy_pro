@@ -3,8 +3,8 @@ import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 export const studentsRoutes: RouteRecordRaw[] = [
   { 
-    path: '/alunos/diretorio', 
-    name: 'students-directory', 
+    path: '/alunos', 
+    name: 'students', 
     component: UnderConstructionView, 
     meta: { permission: 'student.manage' } 
   },
@@ -13,5 +13,11 @@ export const studentsRoutes: RouteRecordRaw[] = [
     name: 'students-enrollment', 
     component: UnderConstructionView, 
     meta: { permission: 'enrollment.manage' } 
+  },
+  { 
+    path: '/alunos/transferencias', 
+    name: 'students-transfers', 
+    component: UnderConstructionView, 
+    meta: { permission: 'transfer.manage' } 
   },
 ]
