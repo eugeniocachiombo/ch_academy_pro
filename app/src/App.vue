@@ -8,6 +8,7 @@ import QuickActionModal from '@/components/shared/QuickActionModal.vue'
 import NoticeModal from '@/components/shared/NoticeModal.vue'
 import ChatWidget from '@/components/shared/ChatWidget.vue'
 import { closeOverlays, showNotification } from '@/services/general_service'
+import Toast from 'primevue/toast'
 
 const route = useRoute()
 const isPublic = computed(() => route.meta.public === true)
@@ -54,6 +55,6 @@ onBeforeUnmount(() => {
     <QuickActionModal />
     <NoticeModal />
   </template>
-
+  <Toast />
   <ToastNotification />
 </template>
