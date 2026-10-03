@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { type RegisterPayload } from '@/stores/user.store'
+import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 
 interface ApiErrorResponse {
@@ -108,6 +109,7 @@ const handleSubmit = async () => {
     }
     emit('saved')
     emit('close')
+    showNotification('Utilizador guardado com sucesso.', 'success')
   } catch (err: any) {
     if (err.response?.data) {
       formErrors.value = err.response.data
@@ -116,6 +118,7 @@ const handleSubmit = async () => {
         message: err.message || 'Ocorreu um erro ao salvar o registo.' 
       }
     }
+    showNotification('Erro ao guardar utilizador.', 'error')
   } finally {
     internalLoading.value = false
   }

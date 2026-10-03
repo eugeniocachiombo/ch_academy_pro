@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { type CreateRolePayload } from '@/stores/role.store'
+import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import cryptoService from '@/services/crypto.service'
 
@@ -77,6 +78,7 @@ const handleSubmit = async () => {
     }
     emit('saved')
     emit('close')
+    showNotification('Função guardada com sucesso.', 'success')
   } catch (err: any) {
     if (err.response?.data) {
       formErrors.value = err.response.data
@@ -85,6 +87,7 @@ const handleSubmit = async () => {
         message: err.message || 'Ocorreu um erro ao salvar o registo.' 
       }
     }
+    showNotification('Erro ao guardar função.', 'error')
   } finally {
     internalLoading.value = false
   }

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoleStore, type Role, type CreateRolePayload } from '@/stores/role.store'
 import { useUserStore } from '@/stores/user.store'
+import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import cryptoService from '@/services/crypto.service'
 import RoleFormView from './RolesFormView.vue'
@@ -65,6 +66,7 @@ const closeModal = () => {
 const handleSaved = async () => {
   await roleStore.list()
   closeModal()
+  showNotification('Função guardada com sucesso.', 'success')
 }
 
 const deleteRole = async (id: number) => {
@@ -75,8 +77,10 @@ const deleteRole = async (id: number) => {
     const encryptedId = cryptoService.encryptId(String(id))
     await api.delete(`/roles/${encryptedId}`)
     await roleStore.list()
+    showNotification('Função eliminada com sucesso.', 'success')
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Erro ao eliminar função.')
+    const errorMsg = err.response?.data?.message || 'Erro ao eliminar função.'
+    showNotification(errorMsg, 'error')
   }
 }
 </script>

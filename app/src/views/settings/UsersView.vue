@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore, type User, type RegisterPayload } from '@/stores/user.store'
+import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import UsersFormView from './UsersFormView.vue'
 
 const userStore = useUserStore()
+
+const p = (name: string) => userStore.getPermition(name)
 
 const searchQuery = ref('')
 const statusFilter = ref<'all' | 'active' | 'blocked'>('all')
@@ -63,6 +66,7 @@ const filteredUsers = computed(() => {
 })
 
 const openCreateModal = () => {
+  if (!p('user.create')) return
   isEditing.value = false
   selectedUser.value = null
   formData.value = { name: '', username: '', email: '', password: '' }
@@ -70,6 +74,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (user: User) => {
+  if (!p('user.edit')) return
   isEditing.value = true
   selectedUser.value = user
   formData.value = {
@@ -84,6 +89,7 @@ const openEditModal = (user: User) => {
 }
 
 const openPasswordModal = (user: User) => {
+  if (!p('user.edit')) return
   selectedUser.value = user
   passwordForm.value = {
     current_password: '',
@@ -105,6 +111,7 @@ const closeModal = () => {
 const handleSaved = async () => {
   await userStore.list()
   closeModal()
+  showNotification('Utilizador guardado com sucesso.', 'success')
 }
 
 const getPasswordFieldError = (field: string) => {
@@ -131,7 +138,7 @@ const handleUpdatePassword = async () => {
     await api.patch(`/users/${selectedUser.value.id}/password`, passwordForm.value)
     isPasswordModalOpen.value = false
     selectedUser.value = null
-    alert('Palavra-passe actualizada com sucesso!')
+    showNotification('Palavra-passe actualizada com sucesso.', 'success')
   } catch (err: any) {
     if (err.response?.data) {
       passwordFormErrors.value = err.response.data
@@ -140,10 +147,12 @@ const handleUpdatePassword = async () => {
         general: err.message || 'Erro ao alterar palavra-passe. Verifique os dados introduzidos.' 
       }
     }
+    showNotification('Erro ao alterar palavra-passe.', 'error')
   }
 }
 
 const toggleBlockUser = async (user: any) => {
+  if (!p('user.edit')) return
   activeDropdownId.value = null
   const newStatus = user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE'
   const actionName = newStatus === 'BLOCKED' ? 'bloquear' : 'desbloquear'
@@ -153,19 +162,25 @@ const toggleBlockUser = async (user: any) => {
   try {
     await api.put(`/users/${user.id}`, { status: newStatus })
     await userStore.list()
+    showNotification(`Utilizador ${actionName === 'bloquear' ? 'bloqueado' : 'desbloqueado'} com sucesso.`, 'success')
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Erro ao alterar status do utilizador.')
+    const errorMsg = err.response?.data?.message || 'Erro ao alterar status do utilizador.'
+    showNotification(errorMsg, 'error')
   }
 }
 
 const deleteUser = async (id: number) => {
+  if (!p('user.delete')) return
   activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
+  
   try {
     await api.delete(`/users/${id}`)
     await userStore.list()
+    showNotification('Utilizador eliminado com sucesso.', 'success')
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Erro ao eliminar utilizador.')
+    const errorMsg = err.response?.data?.message || 'Erro ao eliminar utilizador.'
+    showNotification(errorMsg, 'error')
   }
 }
 </script>
@@ -179,6 +194,7 @@ const deleteUser = async (id: number) => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Administre permissões, contas, segurança e acessos ao sistema.</p>
       </div>
       <button
+        v-if="p('user.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -310,7 +326,7 @@ const deleteUser = async (id: number) => {
                   </span>
                 </td>
                 <td class="py-4 px-6 text-right relative">
-                  <div class="inline-block text-left">
+                  <div v-if="p('user.edit') || p('user.delete')" class="inline-block text-left">
                     <button
                       @click="activeDropdownId = activeDropdownId === user.id ? null : user.id"
                       class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
@@ -320,6 +336,7 @@ const deleteUser = async (id: number) => {
 
                     <div v-if="activeDropdownId === user.id" class="absolute right-6 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
                       <button
+                        v-if="p('user.edit')"
                         @click="openEditModal(user)"
                         class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
                       >
@@ -328,6 +345,7 @@ const deleteUser = async (id: number) => {
                       </button>
 
                       <button
+                        v-if="p('user.edit')"
                         @click="openPasswordModal(user)"
                         class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
                       >
@@ -336,6 +354,7 @@ const deleteUser = async (id: number) => {
                       </button>
 
                       <button
+                        v-if="p('user.edit')"
                         @click="toggleBlockUser(user)"
                         class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
                       >
@@ -343,9 +362,10 @@ const deleteUser = async (id: number) => {
                         <span>{{ user.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
                       </button>
 
-                      <div class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
+                      <div v-if="p('user.edit') && p('user.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
 
                       <button
+                        v-if="p('user.delete')"
                         @click="deleteUser(user.id)"
                         class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
                       >
@@ -354,6 +374,7 @@ const deleteUser = async (id: number) => {
                       </button>
                     </div>
                   </div>
+                  <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
                 </td>
               </tr>
             </template>

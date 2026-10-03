@@ -71,10 +71,8 @@ const handleSubmit = async () => {
     const payload = { ...form.value }
 
     if (props.isEditing && form.value.id) {
-      // Uso da store para atualizar (a store trata da encriptação e da API)
       await permitionStore.update(form.value.id, payload)
     } else {
-      // Uso da store para criar
       await permitionStore.create(payload)
     }
     emit('saved')
