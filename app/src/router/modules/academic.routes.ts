@@ -27,6 +27,12 @@ export const academicRoutes: RouteRecordRaw[] = [
     meta: { permission: 'courses.manage' } 
   },
   { 
+    path: '/academico/disciplinas', 
+    name: 'academic-subjects', 
+    component: () => import('@/views/academic/SubjectsView.vue'), 
+    meta: { permission: 'subjects.manage' } 
+  },
+  { 
     path: '/academico/curso-classes', 
     name: 'academic-course-grades', 
     component: () => import('@/views/academic/CourseGradesView.vue'), 

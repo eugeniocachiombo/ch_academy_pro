@@ -51,6 +51,7 @@ const menuItems = computed(() => [
       { id: 'academic-courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'academic-grades', label: 'Classes', icon: 'fa-layer-group', permition: p('grades.manage') },
       { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permition: p('classes.manage') },
+      { id: 'academic-subjects', label: 'Disciplinas', icon: 'fa-book', permition: p('subjects.manage') }, 
       { id: 'academic-rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
       { id: 'academic-course-grades', label: 'Classes dos Cursos', icon: 'fa-network-wired', permition: p('course-grades.manage') },
       { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
