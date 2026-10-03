@@ -182,7 +182,7 @@ const deletePermition = async (id: number) => {
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 15%" :exportable="false">
+        <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
             <div class="text-right relative">
               <div v-if="p('permition.edit') || p('permition.delete')" class="inline-block text-left">
@@ -215,7 +215,7 @@ const deletePermition = async (id: number) => {
                   </button>
                 </div>
               </div>
-              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+              <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
             </div>
           </template>
         </Column>

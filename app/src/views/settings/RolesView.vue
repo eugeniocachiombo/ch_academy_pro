@@ -183,7 +183,7 @@ const deleteRole = async (id: number) => {
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 20%" :exportable="false">
+        <Column header="Acções" style="width: 20%" :exportable="false">
           <template #body="slotProps">
             <div class="text-right relative">
               <div v-if="p('role.edit') || p('role.delete')" class="inline-block text-left">
@@ -218,7 +218,7 @@ const deleteRole = async (id: number) => {
                   </button>
                 </div>
               </div>
-              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+              <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
             </div>
           </template>
         </Column>

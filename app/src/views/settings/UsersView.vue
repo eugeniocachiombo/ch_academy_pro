@@ -333,7 +333,7 @@ const deleteUser = async (id: number) => {
           </template>
         </Column>
 
-        <Column header="Ações" style="width: 10%" :exportable="false">
+        <Column header="Acções" style="width: 10%" :exportable="false">
           <template #body="slotProps">
             <div class="text-right relative">
               <div v-if="p('user.edit') || p('user.delete')" class="inline-block text-left">
@@ -384,7 +384,7 @@ const deleteUser = async (id: number) => {
                   </button>
                 </div>
               </div>
-              <span v-else class="text-xs text-slate-400 italic">Sem ações</span>
+              <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
             </div>
           </template>
         </Column>
