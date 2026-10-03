@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usePermitionStore, type Permition, type CreatePermitionPayload } from '@/stores/permition.store'
+import { usePermitionStore, type Permition } from '@/stores/permition.store'
 import { useUserStore } from '@/stores/user.store'
-import { api } from '@/services/api'
-import cryptoService from '@/services/crypto.service'
+import { showNotification } from '@/services/general_service'
 import PermitionFormView from './PermitionsFormView.vue'
 
 const permitionStore = usePermitionStore()
@@ -15,7 +14,7 @@ const searchQuery = ref('')
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedPermition = ref<Permition | null>(null)
-const formData = ref<(CreatePermitionPayload & { id?: number }) | null>(null)
+const formData = ref<(any & { id?: number }) | null>(null)
 
 const activeDropdownId = ref<number | null>(null)
 
@@ -51,7 +50,7 @@ const openEditModal = (permition: Permition) => {
   formData.value = {
     id: permition.id,
     name: permition.name || '',
-    description: permition.description || '',
+    description: (permition as any).description || '',
   }
   isModalOpen.value = true
   activeDropdownId.value = null
@@ -67,18 +66,20 @@ const closeModal = () => {
 const handleSaved = async () => {
   await permitionStore.list()
   closeModal()
+  showNotification('Permissão guardada com sucesso.', 'success')
 }
 
 const deletePermition = async (id: number) => {
   if (!p('permition.delete')) return
   activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente esta permissão?')) return
+
   try {
-    const encryptedId = cryptoService.encryptId(String(id))
-    await api.delete(`/permitions/${encryptedId}`) // ou `/permissions/${encryptedId}` dependendo da sua API, ajustado para o padrão
-    await permitionStore.list()
+    await permitionStore.remove(id)
+    showNotification('Permissão eliminada com sucesso.', 'success')
   } catch (err: any) {
-    alert(err.response?.data?.message || 'Erro ao eliminar permissão.')
+    const errorMsg = permitionStore.error || 'Erro ao eliminar permissão.'
+    showNotification(errorMsg, 'error')
   }
 }
 </script>

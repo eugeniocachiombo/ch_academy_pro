@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { type CreatePermitionPayload } from '@/stores/permition.store'
-import { api } from '@/services/api'
-import cryptoService from '@/services/crypto.service'
+import { usePermitionStore } from '@/stores/permition.store'
 
 interface ApiErrorResponse {
   message?: string
@@ -14,7 +12,7 @@ const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
   isLoading: boolean
-  initialData?: (CreatePermitionPayload & { id?: number }) | null
+  initialData?: (any & { id?: number }) | null
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +20,9 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
-const form = ref<CreatePermitionPayload & { id?: number }>({
+const permitionStore = usePermitionStore()
+
+const form = ref<any & { id?: number }>({
   name: '',
   description: '',
 })
@@ -71,10 +71,11 @@ const handleSubmit = async () => {
     const payload = { ...form.value }
 
     if (props.isEditing && form.value.id) {
-      const encryptedId = cryptoService.encryptId(String(form.value.id))
-      await api.put(`/permitions/${encryptedId}`, payload)
+      // Uso da store para atualizar (a store trata da encriptação e da API)
+      await permitionStore.update(form.value.id, payload)
     } else {
-      await api.post('/permitions', payload)
+      // Uso da store para criar
+      await permitionStore.create(payload)
     }
     emit('saved')
     emit('close')
