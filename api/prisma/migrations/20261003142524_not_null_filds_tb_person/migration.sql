@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Person" ALTER COLUMN "phone" DROP NOT NULL,
+ALTER COLUMN "municipality" DROP NOT NULL,
+ALTER COLUMN "neighborhood" DROP NOT NULL,
+ALTER COLUMN "province" DROP NOT NULL;

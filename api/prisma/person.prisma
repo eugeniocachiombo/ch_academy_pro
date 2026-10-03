@@ -1,17 +1,28 @@
 model Person {
-  id         Int      @id @default(autoincrement())
-  firstname  String
-  middlename String
-  lastname   String
-  birthday   DateTime @db.Date()
-  gender     String
-  phone      Int
+  id                Int      @id @default(autoincrement())
+  firstname         String
+  middlename        String?
+  lastname          String
+  birthday          DateTime @db.Date()
+  gender            String
+  bi_number         String   @unique
+  nif               String?  @unique
+  phone             String?
+  alternative_phone String?
+  email             String?  @unique
+  province          String?
+  municipality      String?
+  neighborhood      String?
+  street            String?
+  house_number      String?
 
-  user_id Int
-  user    User @relation("UserPersons", fields: [user_id], references: [id], onDelete: Cascade)
+  user_id Int?
+  user    User? @relation("UserPersons", fields: [user_id], references: [id], onDelete: Cascade)
 
-  // Relação inversa opcional caso o User aponte para Person via person_id
-  createdAt  DateTime? @default(now())
-  updatedAt  DateTime? @updatedAt
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
   UserAsMain User[]
+  student    Student?
+  teacher    Teacher?
 }

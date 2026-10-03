@@ -1,0 +1,12 @@
+model Student {
+  id             Int       @id @default(autoincrement())
+  student_number Int       @unique @default(autoincrement())
+  person_id      Int       @unique
+  person         Person    @relation(fields: [person_id], references: [id], onDelete: Cascade)
+  guardian_name  String
+  guardian_phone String
+  guardian_bi    String?
+  origin_school  String?
+  createdAt      DateTime? @default(now())
+  updatedAt      DateTime? @updatedAt
+}
