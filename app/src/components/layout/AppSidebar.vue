@@ -48,8 +48,9 @@ const menuItems = computed(() => [
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
+      { id: 'academic-grades', label: 'Classes', icon: 'fa-layer-group', permition: p('grades.manage') },
       { id: 'academic-classes', label: 'Turmas', icon: 'fa-chalkboard', permition: p('classes.manage') },
-      { id: 'academic-grades', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
+      { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
       { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
     ],
   },
