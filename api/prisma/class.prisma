@@ -5,5 +5,6 @@ model Class {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  groupconfigs Groupconfig[]
+  groupconfigs   Groupconfig[]
+  subjectclasses Subjectclass[]
 }
