@@ -5,6 +5,6 @@ model Province {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   municipalities Municipality[]
-  school         School[]
-  student        Student[]
+  schools         School[]
+  students       Student[]
 }

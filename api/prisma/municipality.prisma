@@ -6,6 +6,6 @@ model Municipality {
   updatedAt   DateTime? @updatedAt
 
   province Province  @relation(fields: [province_id], references: [id], onDelete: Cascade)
-  school   School[]
-  student  Student[]
+  schools   School[]
+  students  Student[]
 }

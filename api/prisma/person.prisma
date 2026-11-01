@@ -16,15 +16,17 @@ model Person {
   street            String?
   house_number      String?
 
+  student_id  Int?
+  teacherId  Int?
+
   user_id Int?
+
   user    User? @relation("UserPersons", fields: [user_id], references: [id], onDelete: Cascade)
+  student    Student? @relation(fields: [student_id], references: [id])
+  teacher    Teacher? @relation(fields: [teacherId], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  UserAsMain User[]
-  student    Student? @relation(fields: [studentId], references: [id])
-  teacher    Teacher? @relation(fields: [teacherId], references: [id])
-  studentId  Int?
-  teacherId  Int?
+  users User[]
 }
