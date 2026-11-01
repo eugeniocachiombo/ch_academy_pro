@@ -4,6 +4,8 @@ import { userRoutes } from "./routes/user.routes.js";
 import { authRoutes } from "./routes/auth.route.js";
 import { roleRoutes } from "./routes/role.routes.js";
 import { permitionRoutes } from "./routes/permition.routes.js";
+import { userRoleRoutes } from "./routes/user-role.routes.js";
+import { rolePermitionRoutes } from "./routes/role-permition.routes.js";
 
 const app = express();
 
@@ -18,6 +20,8 @@ app.use("/api", userRoutes);
 app.use("/api", authRoutes);
 app.use("/api", roleRoutes);
 app.use("/api", permitionRoutes);
+app.use("/api", userRoleRoutes);
+app.use("/api", rolePermitionRoutes);
 
 app.get("/", (req, res) => {
   res.json({
