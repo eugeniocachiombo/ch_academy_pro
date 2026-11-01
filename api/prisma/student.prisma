@@ -18,4 +18,5 @@ model Student {
   province        Province?       @relation(fields: [provinceId], references: [id])
   provinceId      Int?
   studentparents  Studentparent[]
+  registers       Register[]
 }

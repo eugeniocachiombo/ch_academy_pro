@@ -1,0 +1,22 @@
+model Groupconfig {
+  id        Int    @id @default(autoincrement())
+  name      String
+  year_id   Int
+  course_id Int
+  class_id  Int
+  period_id Int
+  room_id   Int
+
+  year   Year   @relation(fields: [year_id], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  period Period @relation(fields: [period_id], references: [id], onDelete: Cascade)
+  room   Room   @relation(fields: [room_id], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime?          @default(now())
+  updatedAt         DateTime?          @updatedAt
+  registers         Register[]
+  teacherocupations Teacherocupation[]
+
+  @@unique([year_id, course_id, class_id, period_id, room_id])
+}
