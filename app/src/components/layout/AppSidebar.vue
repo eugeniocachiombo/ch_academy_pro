@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useUserStore } from '@/stores/user.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
 // Estado para controlar quais menus com submenu estão expandidos
 const openMenus = ref<Record<string, boolean>>({
@@ -32,7 +32,7 @@ interface MenuItem {
   permition?: boolean
 }
 
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 
 // computed: recalcula sozinho quando as permissões chegarem / mudarem
 const menuItems = computed(() => [
@@ -227,8 +227,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
       <!-- Perfil -->
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
-          <template v-if="userStore.currentUser?.photo">
-            <img :src="userStore.currentUser.photo" :alt="userStore.currentUser?.name"
+          <template v-if="authStore.currentUser?.photo">
+            <img :src="authStore.currentUser.photo" :alt="authStore.currentUser?.name"
               class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50 flex-shrink-0" />
           </template>
           <template v-else>
@@ -239,10 +239,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
           </template>
 
           <div class="overflow-hidden flex-1">
-            <h4 class="text-xs font-bold text-white truncate">{{ userStore.currentUser?.name }}</h4>
+            <h4 class="text-xs font-bold text-white truncate">{{ authStore.currentUser?.name }}</h4>
             <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{
-                userStore.getUserRole()?.role?.name || 'Sem função' }}
+                authStore.getUserRole()?.role?.name || 'Sem função' }}
             </span>
           </div>
           <button

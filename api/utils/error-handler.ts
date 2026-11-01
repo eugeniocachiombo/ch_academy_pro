@@ -1,7 +1,6 @@
 import { Response } from "express";
 import { ZodError } from "zod";
-import { Prisma } from "../generated/prisma/client";
-import { CrudError } from "../repository/base/crud.errors";
+import { CrudError } from "../repository/base/crud.errors.js";
 
 export function errorReport(res: Response, error: unknown) {
     if (error instanceof ZodError) {
@@ -22,12 +21,14 @@ export function errorReport(res: Response, error: unknown) {
         return res.status(statusMap[error.code] || 400).json({ message: error.message });
     }
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        switch (error.code) {
+    // Tratamento de erros do Prisma via código de erro (sem importar instâncias pesadas)
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+        const prismaError = error as { code: string; meta?: any };
+        switch (prismaError.code) {
             case "P2002": {
-                const target = error.meta?.target;
+                const target = prismaError.meta?.target;
                 const field = Array.isArray(target) ? target.join(", ") : target;
-                const model = error.meta?.modelName || "Registo";
+                const model = prismaError.meta?.modelName || "Registo";
                 return res.status(409).json({
                     message: field 
                         ? `Já existe um(a) ${model} com este(a) ${field}.`
@@ -39,19 +40,22 @@ export function errorReport(res: Response, error: unknown) {
             case "P2003":
                 return res.status(400).json({ message: "Falha na relação entre dados (Chave estrangeira inválida)." });
             default:
-                return res.status(400).json({ message: "Erro na operação de base de dados", code: error.code });
+                return res.status(400).json({ message: "Erro na operação de base de dados", code: prismaError.code });
         }
     }
 
-    if (error instanceof Error && error.message === "NOT_FOUND") {
-        return res.status(404).json({ message: "Registo não encontrado" });
-    }
+    if (error instanceof Error) {
+        if (error.message === "NOT_FOUND") {
+            return res.status(404).json({ message: "Registo não encontrado" });
+        }
+        if (error.message === "INVALID_CREDENTIALS") {
+            return res.status(401).json({ message: "Nome de utilizador ou palavra-passe incorretos." });
+        }
+        if (error.message === "USER_BLOCKED") {
+            return res.status(403).json({ message: "Este utilizador está bloqueado." });
+        }
 
-    if ((error as any)?.response?.data?.errors) {
-        return res.status(400).json({
-            message: "Verifique os campos do formulário",
-            errors: (error as any).response.data.errors
-        });
+        return res.status(400).json({ message: error.message || "Ocorreu um erro na requisição." });
     }
 
     return res.status(500).json({ message: "Erro interno do servidor" });
