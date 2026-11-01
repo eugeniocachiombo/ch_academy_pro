@@ -8,7 +8,7 @@ model Year {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  groupconfigs       Groupconfig[]
-  registers          Register[]
+  groupconfigs      Groupconfig[]
+  registers         Register[]
   teacherocupations Teacherocupation[]
 }
