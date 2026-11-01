@@ -5,7 +5,7 @@
  */
 import { computed, reactive, ref } from 'vue'
 import router from '@/router'
-import { useUserStore } from '@/stores/user.store'
+import { useAuthStore } from '@/stores/auth.store'
 
 /* ------------------------------------------------------------------ */
 /* Tipos                                                              */
@@ -296,7 +296,7 @@ export function closeOverlays(): void {
 /* Sessão                                                             */
 /* ------------------------------------------------------------------ */
 export function logout(): void {
-  useUserStore().clearSession()
+  useAuthStore().clearSession()
   searchQuery.value = ''
   sidebarExpanded.value = false
   closeOverlays()
