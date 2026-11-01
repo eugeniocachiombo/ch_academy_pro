@@ -17,7 +17,7 @@ model Person {
   house_number      String?
 
   student_id Int?
-  teacher_id  Int?
+  teacher_id Int?
 
   user_id Int?
 
