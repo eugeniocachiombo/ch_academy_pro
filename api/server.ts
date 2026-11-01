@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { userRoutes } from "./routes/user.routes.js";
 import { authRoutes } from "./routes/auth.route.js";
+import { roleRoutes } from "./routes/role.routes.js";
+import { permitionRoutes } from "./routes/permition.routes.js";
 
 const app = express();
 
@@ -14,6 +16,8 @@ app.use(cors({
 app.use(express.json());
 app.use("/api", userRoutes);
 app.use("/api", authRoutes);
+app.use("/api", roleRoutes);
+app.use("/api", permitionRoutes);
 
 app.get("/", (req, res) => {
   res.json({
