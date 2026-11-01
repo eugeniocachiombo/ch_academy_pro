@@ -1,0 +1,13 @@
+model Studentparent {
+  id         Int @id @default(autoincrement())
+  student_id Int
+  parent_id  Int
+
+  student Student @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  parent  Parent  @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([student_id, parent_id])
+}

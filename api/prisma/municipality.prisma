@@ -1,0 +1,11 @@
+model Municipality {
+  id          Int       @id @default(autoincrement())
+  name        String
+  province_id Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  province Province  @relation(fields: [province_id], references: [id], onDelete: Cascade)
+  school   School[]
+  student  Student[]
+}

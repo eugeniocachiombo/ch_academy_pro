@@ -1,5 +1,7 @@
 enum UserStatus {
   ACTIVE
+  INDEBT
+  GIVEUP
   BLOCKED
 }
 
@@ -18,4 +20,8 @@ model User {
   person    Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
   persons   Person[]   @relation("UserPersons")
   userRoles UserRole[]
+  student   Student[]
+  parent    Parent?
+  schools   School[]
+  teacher   Teacher?
 }

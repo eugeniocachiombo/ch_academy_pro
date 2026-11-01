@@ -23,6 +23,8 @@ model Person {
   updatedAt DateTime? @updatedAt
 
   UserAsMain User[]
-  student    Student?
-  teacher    Teacher?
+  student    Student? @relation(fields: [studentId], references: [id])
+  teacher    Teacher? @relation(fields: [teacherId], references: [id])
+  studentId  Int?
+  teacherId  Int?
 }

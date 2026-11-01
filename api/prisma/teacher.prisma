@@ -1,11 +1,14 @@
 model Teacher {
-  id              Int     @id @default(autoincrement())
-  teacher_number  Int     @unique @default(autoincrement())
-  person_id       Int     @unique
-  person          Person  @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  academic_degree String?
-  specialty       String?
+  id         Int     @id @default(autoincrement())
+  codenumber Int     @unique @default(autoincrement())
+  user_id    Int     @unique
+  degree_id  Int
+  specialty  String?
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  degree Degree @relation(fields: [degree_id], references: [id], onDelete: Cascade)
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
+  people    Person[]
 }

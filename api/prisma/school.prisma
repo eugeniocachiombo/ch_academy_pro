@@ -1,0 +1,18 @@
+model School {
+  id                Int       @id @default(autoincrement())
+  name              String
+  registed_by       Int?
+  nif               String?
+  alternative_phone String?
+  email             String?
+  province_id       Int?
+  municipality_id   Int?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime? @updatedAt
+
+  responsable    User?         @relation(fields: [registed_by], references: [id])
+  municipality   Municipality? @relation(fields: [municipalityId], references: [id])
+  municipalityId Int?
+  province       Province?     @relation(fields: [provinceId], references: [id])
+  provinceId     Int?
+}

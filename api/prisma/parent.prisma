@@ -1,0 +1,12 @@
+model Parent {
+  id             Int             @id @default(autoincrement())
+  fullname       String
+  phone          String
+  phonealt       String?
+  ocupation      String?
+  user_id        Int             @unique
+  user           User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  createdAt      DateTime?       @default(now())
+  updatedAt      DateTime?       @updatedAt
+  studentparents Studentparent[]
+}

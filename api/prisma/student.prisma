@@ -1,12 +1,21 @@
 model Student {
-  id             Int       @id @default(autoincrement())
-  student_number Int       @unique @default(autoincrement())
-  person_id      Int       @unique
-  person         Person    @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  guardian_name  String
-  guardian_phone String
-  guardian_bi    String?
-  origin_school  String?
-  createdAt      DateTime? @default(now())
-  updatedAt      DateTime? @updatedAt
+  id              Int             @id @default(autoincrement())
+  processnum      Int             @unique @default(autoincrement())
+  user_id         Int             @unique
+  user            User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  province_id     String?
+  municipality_id String?
+  address         String?
+  fathername      String?
+  mothername      String?
+  phone           String?
+  origin_school   String?
+  createdAt       DateTime?       @default(now())
+  updatedAt       DateTime?       @updatedAt
+  municipality    Municipality?   @relation(fields: [municipalityId], references: [id])
+  municipalityId  Int?
+  people          Person[]
+  province        Province?       @relation(fields: [provinceId], references: [id])
+  provinceId      Int?
+  studentparents  Studentparent[]
 }
