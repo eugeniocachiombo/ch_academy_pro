@@ -10,9 +10,26 @@ model School {
   created_at        DateTime  @default(now())
   updated_at        DateTime? @updatedAt
 
-  responsable    User?         @relation(fields: [registed_by], references: [id])
-  municipality   Municipality? @relation(fields: [municipalityId], references: [id])
-  municipalityId Int?
-  province       Province?     @relation(fields: [provinceId], references: [id])
-  provinceId     Int?
+  municipality      Municipality?      @relation(fields: [municipalityId], references: [id])
+  municipalityId    Int?
+  province          Province?          @relation(fields: [provinceId], references: [id])
+  provinceId        Int?
+  classcourses      Classcourse[]
+  courses           Course[]
+  groups            Group[]
+  groupconfigs      Groupconfig[]
+  parents           Parent[]
+  periods           Period[]
+  permitions        Permition[]
+  registers         Register[]
+  roles             Role[]
+  rooms             Room[]
+  students          Student[]
+  studentparents    Studentparent[]
+  subjectclasses    Subjectclass[]
+  teachers          Teacher[]
+  teacherocupations Teacherocupation[]
+  users             User[]
+  userRoles         UserRole[]
+  years             Year[]
 }

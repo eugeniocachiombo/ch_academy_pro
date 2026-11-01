@@ -13,15 +13,16 @@ model User {
   password  String     @default("empty")
   status    UserStatus @default(ACTIVE)
   person_id Int?
+  school_id Int?
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  person    Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  persons   Person[]   @relation("UserPersons")
-  userRoles UserRole[]
-  student   Student[]
-  parent    Parent?
-  schools   School[]
-  teacher   Teacher?
+  person        Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
+  persons       Person[]   @relation("UserPersons")
+  studentschool School?    @relation(fields: [school_id], references: [id])
+  userRoles     UserRole[]
+  student       Student[]
+  parent        Parent?
+  teacher       Teacher?
 }

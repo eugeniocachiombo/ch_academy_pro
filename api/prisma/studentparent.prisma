@@ -2,9 +2,11 @@ model Studentparent {
   id         Int @id @default(autoincrement())
   student_id Int
   parent_id  Int
+  school_id  Int
 
   student Student @relation(fields: [student_id], references: [id], onDelete: Cascade)
   parent  Parent  @relation(fields: [parent_id], references: [id], onDelete: Cascade)
+  school  School  @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

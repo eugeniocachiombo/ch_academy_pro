@@ -4,6 +4,9 @@ model Year {
   startdate DateTime?
   enddate   DateTime?
   isCurrent Boolean   @default(false)
+  school_id Int
+
+  school School @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

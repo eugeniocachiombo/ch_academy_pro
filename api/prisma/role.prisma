@@ -2,6 +2,9 @@ model Role {
   id          Int     @id @default(autoincrement())
   name        String  @unique
   description String?
+  school_id   Int?
+
+  school School? @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

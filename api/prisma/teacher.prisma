@@ -4,9 +4,11 @@ model Teacher {
   user_id    Int     @unique
   degree_id  Int
   specialty  String?
+  school_id  Int
 
   user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
   degree Degree @relation(fields: [degree_id], references: [id], onDelete: Cascade)
+  school School @relation(fields: [school_id], references: [id])
 
   createdAt         DateTime?          @default(now())
   updatedAt         DateTime?          @updatedAt
