@@ -6,4 +6,6 @@ model Subject {
   updatedAt         DateTime           @updatedAt
   teacherocupations Teacherocupation[]
   subjectclasses    Subjectclass[]
+  presences         Presence[]
+  tests             Test[]
 }

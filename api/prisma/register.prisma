@@ -21,8 +21,10 @@ model Register {
   groupconfig Groupconfig @relation(fields: [groupconfig_id], references: [id], onDelete: Cascade)
   school      School      @relation(fields: [school_id], references: [id])
 
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  createdAt DateTime?  @default(now())
+  updatedAt DateTime?  @updatedAt
+  presences Presence[]
+  tests     Test[]
 
   @@unique([year_id, student_id, groupconfig_id])
 }

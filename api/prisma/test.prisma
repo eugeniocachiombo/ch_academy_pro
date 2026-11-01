@@ -1,0 +1,19 @@
+model Test {
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  school_id     Int
+  register_id   Int
+  subject_id    Int
+  testtype_id   Int
+  periodtest_id Int
+  value         Decimal
+
+  school     School     @relation(fields: [school_id], references: [id])
+  register   Register   @relation(fields: [register_id], references: [id])
+  subject    Subject    @relation(fields: [subject_id], references: [id])
+  periodtest Periodtest @relation(fields: [periodtest_id], references: [id])
+  testtype   Testtype   @relation(fields: [testtype_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}

@@ -1,0 +1,11 @@
+model Periodstudy {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  school_id Int
+  school    School @relation(fields: [school_id], references: [id])
+
+  createdAt   DateTime?    @default(now())
+  updatedAt   DateTime?    @updatedAt
+  periodtests Periodtest[]
+}

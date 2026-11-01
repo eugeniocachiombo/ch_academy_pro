@@ -32,4 +32,9 @@ model School {
   users             User[]
   userRoles         UserRole[]
   years             Year[]
+  periodstudies     Periodstudy[]
+  periodtests       Periodtest[]
+  presences         Presence[]
+  tests             Test[]
+  testtypes         Testtype[]
 }
