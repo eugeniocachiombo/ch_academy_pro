@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { useUserStore } from '@/stores/user.store'
+import { useAuthStore } from '@/stores/auth.store'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
 import BlockedView from '@/views/BlockedView.vue' // <--- Importe a nova view
 
@@ -45,33 +45,33 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  const userStore = useUserStore()
+  const authStore = useAuthStore()
 
   // 1. Autenticação (a store já faz initUser() ao ser criada)
-  if (!to.meta.public && !userStore.isAuthenticated) {
+  if (!to.meta.public && !authStore.isAuthenticated) {
     return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : undefined }
   }
 
   // 2. Já autenticado tentando acessar o login
-  if (to.name === 'login' && userStore.isAuthenticated) {
+  if (to.name === 'login' && authStore.isAuthenticated) {
     return { name: 'dashboard' }
   }
 
   // 3. Rotas protegidas: espera roles/permissões e valida a permissão da rota
   if (!to.meta.public) {
     try {
-      await userStore.loadAccess()
+      await authStore.loadAccess()
     } catch {
       return { name: 'login' }
     }
 
     // --- NOVO: Se o utilizador estiver bloqueado, redireciona para a página de bloqueio ---
     // (Garante que não entra em loop se já estiver indo para a rota 'blocked')
-    if (userStore.currentUser?.status === 'BLOCKED' && to.name !== 'blocked') {
+    if (authStore.currentUser?.status === 'BLOCKED' && to.name !== 'blocked') {
       return { name: 'blocked' }
     }
 
-    if (to.meta.permition && !userStore.getPermition(to.meta.permition)) {
+    if (to.meta.permition && !authStore.getPermition(to.meta.permition)) {
       return { name: 'unauthorized' }
     }
   }
