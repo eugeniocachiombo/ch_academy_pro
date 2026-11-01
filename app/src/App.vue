@@ -9,6 +9,7 @@ import NoticeModal from '@/components/shared/NoticeModal.vue'
 import ChatWidget from '@/components/shared/ChatWidget.vue'
 import { closeOverlays, showNotification } from '@/services/general_service'
 import Toast from 'primevue/toast'
+import AppBottomNav from '@/components/layout/AppBottomNav.vue'
 
 const route = useRoute()
 const isPublic = computed(() => route.meta.public === true)
@@ -51,9 +52,10 @@ onBeforeUnmount(() => {
       </main>
     </div>
 
-    <ChatWidget />
+    <!-- <ChatWidget /> -->
     <QuickActionModal />
     <NoticeModal />
+    <AppBottomNav />
   </template>
   <Toast />
   <ToastNotification />

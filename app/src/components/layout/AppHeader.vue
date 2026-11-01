@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { activeTab, isDark, tabTitles, toggleSidebar, toggleTheme, openModal, searchQuery, switchTab } from '@/services/general_service'
+import { activeTab, isDark, tabTitles, toggleTheme, openModal, searchQuery, switchTab } from '@/services/general_service'
+import { useNotifications } from '@/composables/useNotifications'
 
 const notificationsOpen = ref(false)
 const bellRoot = ref<HTMLElement | null>(null)
 
-const notifications = [
-  { icon: 'fa-user-plus', color: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400', title: 'Nova matrícula realizada', text: 'Matheus Lima entrou no 9º Ano B.', time: 'Há 5 minutos' },
-  { icon: 'fa-file-invoice-dollar', color: 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400', title: 'Mensalidade Paga', text: 'Boleto #4921 quitado via PIX.', time: 'Há 22 minutos' },
-  { icon: 'fa-triangle-exclamation', color: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400', title: 'Alerta de Frequência', text: 'Turma 6º Ano A com baixa presença.', time: 'Há 1 hora' },
-]
-const unread = ref(notifications.length)
+const { notifications, unread, markAllRead } = useNotifications()
 
 /* Fecha o dropdown ao clicar fora ou apertar Esc */
 function onDocumentClick(e: MouseEvent) {
@@ -40,13 +36,6 @@ function onSearchEnter() {
 <template>
   <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0 shadow-xs">
     <div class="flex items-center gap-4">
-      <button
-        class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors lg:hidden"
-        aria-label="Abrir ou fechar menu"
-        @click="toggleSidebar"
-      >
-        <i class="fa-solid fa-bars-staggered text-lg"></i>
-      </button>
       <div>
         <span class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase">Portal Institucional</span>
         <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 leading-none">{{ tabTitles[activeTab] }}</h2>
@@ -87,7 +76,8 @@ function onSearchEnter() {
       </button>
 
       <!-- Notificações -->
-      <div ref="bellRoot" class="relative">
+      <!-- No mobile as notificações ficam no menu inferior -->
+      <div ref="bellRoot" class="relative hidden lg:block">
         <button
           class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors relative"
           aria-label="Notificações"
@@ -118,7 +108,7 @@ function onSearchEnter() {
             </div>
           </div>
           <div v-if="unread > 0" class="px-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <button class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" @click="unread = 0">Marcar todas como lidas</button>
+            <button class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300" @click="markAllRead">Marcar todas como lidas</button>
           </div>
         </div>
       </div>

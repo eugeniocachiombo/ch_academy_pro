@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/user.store'
 import { activeTab, sidebarExpanded, toggleSidebar, logout, type TabId } from '@/services/general_service'
 
@@ -142,15 +142,22 @@ function toggleSubmenu(key: string) {
 function closeSidebar() {
   sidebarExpanded.value = false
 }
+
+/* No mobile a barra é uma gaveta: Esc fecha */
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeSidebar()
+}
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
-  <div class="relative flex-shrink-0 w-20 lg:w-64">
+  <div class="relative flex-shrink-0 lg:w-64">
     <div v-if="sidebarExpanded" class="fixed inset-0 bg-slate-900/50 z-[25] lg:hidden" aria-hidden="true"
       @click="toggleSidebar"></div>
 
-    <aside :class="sidebarExpanded ? 'w-64' : 'w-20 lg:w-64'"
-      class="absolute inset-y-0 left-0 bg-slate-900 text-slate-300 flex flex-col transition-all duration-300 z-30 shadow-xl dark:border-r dark:border-slate-800">
+    <aside :class="sidebarExpanded ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+      class="fixed lg:absolute inset-y-0 left-0 w-72 max-w-[85vw] lg:w-64 bg-slate-900 text-slate-300 flex flex-col transition-transform duration-300 z-30 shadow-xl dark:border-r dark:border-slate-800">
       <!-- Logo -->
       <div class="h-16 flex items-center px-4 lg:px-6 border-b border-slate-800 bg-slate-950/50">
         <div class="flex items-center gap-3">
@@ -158,7 +165,7 @@ function closeSidebar() {
             class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
             <i class="fa-solid fa-graduation-cap text-xl"></i>
           </div>
-          <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden">
+          <div class="overflow-hidden">
             <h1
               class="font-extrabold text-lg tracking-wide bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
               CH ACADEMIC</h1>
@@ -181,7 +188,7 @@ function closeSidebar() {
             @click="closeSidebar">
             <i :class="[item.icon, activeTab !== item.singleRoute && 'group-hover:text-indigo-400 transition-colors']"
               class="fa-solid w-5 text-center text-lg"></i>
-            <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
+            <span>{{ item.label }}</span>
           </RouterLink>
 
           <!-- Item com Submenus (só se houver pelo menos 1 filho com permissão) -->
@@ -192,14 +199,14 @@ function closeSidebar() {
               <div class="flex items-center gap-3.5">
                 <i :class="item.icon"
                   class="fa-solid w-5 text-center text-lg group-hover:text-indigo-400 transition-colors"></i>
-                <span :class="sidebarExpanded ? 'inline' : 'hidden lg:inline'">{{ item.label }}</span>
+                <span>{{ item.label }}</span>
               </div>
-              <i :class="[openMenus[item.key] ? 'rotate-90' : '', sidebarExpanded ? 'inline' : 'hidden lg:inline']"
+              <i :class="openMenus[item.key] ? 'rotate-90' : ''"
                 class="fa-solid fa-chevron-right text-xs text-slate-500 transition-transform duration-200"></i>
             </button>
 
             <!-- Submenus com verificação individual de permissão -->
-            <div v-show="openMenus[item.key] || sidebarExpanded" class="pl-6 space-y-1 transition-all">
+            <div v-show="openMenus[item.key]" class="pl-6 space-y-1 transition-all">
               <template v-for="sub in item.children" :key="sub.id">
                 <RouterLink v-if="sub.permition !== false" :to="{ name: sub.id }"
                   :aria-current="activeTab === sub.id ? 'page' : undefined" :class="activeTab === sub.id
@@ -231,14 +238,14 @@ function closeSidebar() {
             </div>
           </template>
 
-          <div :class="sidebarExpanded ? 'block' : 'hidden lg:block'" class="overflow-hidden flex-1">
+          <div class="overflow-hidden flex-1">
             <h4 class="text-xs font-bold text-white truncate">{{ userStore.currentUser?.name }}</h4>
             <span class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{
                 userStore.getUserRole()?.role?.name || 'Sem função' }}
             </span>
           </div>
-          <button :class="sidebarExpanded ? 'block' : 'hidden lg:block'"
+          <button
             class="text-slate-400 hover:text-red-400 transition-colors p-1" title="Sair" aria-label="Sair"
             @click="logout">
             <i class="fa-solid fa-power-off"></i>
