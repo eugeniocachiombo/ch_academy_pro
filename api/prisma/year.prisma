@@ -15,4 +15,5 @@ model Year {
   registers         Register[]
   teacherocupations Teacherocupation[]
   periodtests       Periodtest[]
+  serviceprices     Serviceprice[]
 }

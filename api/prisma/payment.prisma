@@ -1,0 +1,32 @@
+enum ServicePriceStatus {
+  PENDING
+  PAID
+  LATE
+}
+
+model Payment {
+  id        Int @id @default(autoincrement())
+  refnumber Int @unique @default(autoincrement())
+
+  register_id     Int
+  serviceprice_id Int
+  paymethod_id    Int
+
+  month    String
+  value    Decimal
+  taxlimit Decimal
+  descount Int
+  tax      Int
+  total    Decimal
+
+  school_id Int
+  status    ServicePriceStatus @default(PENDING)
+
+  register     Register     @relation(fields: [register_id], references: [id])
+  serviceprice Serviceprice @relation(fields: [serviceprice_id], references: [id])
+  paymethod    Paymethod    @relation(fields: [paymethod_id], references: [id])
+  school       School       @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}

@@ -1,0 +1,19 @@
+model Serviceprice {
+  id         Int     @id @default(autoincrement())
+  school_id  Int
+  year_id    Int
+  service_id Int
+  course_id  Int
+  class_id   Int
+  value      Decimal
+
+  school  School  @relation(fields: [school_id], references: [id])
+  year    Year    @relation(fields: [year_id], references: [id])
+  service Service @relation(fields: [service_id], references: [id])
+  course  Course  @relation(fields: [course_id], references: [id])
+  class   Class   @relation(fields: [class_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+  payments  Payment[]
+}

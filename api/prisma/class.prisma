@@ -8,4 +8,5 @@ model Class {
   groupconfigs   Groupconfig[]
   subjectclasses Subjectclass[]
   classcourses   Classcourse[]
+  serviceprices  Serviceprice[]
 }

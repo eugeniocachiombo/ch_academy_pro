@@ -37,4 +37,8 @@ model School {
   presences         Presence[]
   tests             Test[]
   testtypes         Testtype[]
+  payments          Payment[]
+  paymethods        Paymethod[]
+  services          Service[]
+  serviceprices     Serviceprice[]
 }

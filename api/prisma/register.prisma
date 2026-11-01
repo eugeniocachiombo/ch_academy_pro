@@ -25,6 +25,7 @@ model Register {
   updatedAt DateTime?  @updatedAt
   presences Presence[]
   tests     Test[]
+  payments  Payment[]
 
   @@unique([year_id, student_id, groupconfig_id])
 }
