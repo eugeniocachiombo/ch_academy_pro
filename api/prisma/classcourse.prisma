@@ -1,0 +1,11 @@
+model Classcourse {
+  id        Int @id @default(autoincrement())
+  course_id Int
+  class_id  Int
+
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [class_id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}
