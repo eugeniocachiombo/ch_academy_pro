@@ -1,19 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { userRoutes } from "./routes/user.routes.js";
-import { roleRoutes } from "./routes/role.routes.js";
-import { permitionRoutes } from "./routes/permition.routes.js";
-import { userRoleRoutes } from "./routes/user_role.routes.js";
-import { rolePermitionRoutes } from "./routes/role_permition.routes.js";
-import { academicClassRoutes } from "./routes/academic_class.route.js";
-import { academicGradeRoutes } from "./routes/academic_grade.route.js";
-import { academicRoomRoutes } from "./routes/academic_room.route.js";
-import { academicYearRoutes } from "./routes/academic_year.route.js";
-import { courseRoutes } from "./routes/course.route.js";
-import { courseGradeRoutes } from "./routes/course_grade.route.js";
-import { subjectRoutes } from "./routes/subject.route.js";
-import { gradeSubjectRoutes } from "./routes/grade_subject.route.js";
-import { studentRoutes } from "./routes/student.route.js";
+import { authRoutes } from "./routes/auth.route.js";
 
 const app = express();
 
@@ -25,19 +13,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use("/api", userRoutes);
-app.use("/api", roleRoutes);
-app.use("/api", permitionRoutes);
-app.use("/api", userRoleRoutes);
-app.use("/api", rolePermitionRoutes);
-app.use("/api", academicClassRoutes);
-app.use("/api", academicGradeRoutes);
-app.use("/api", academicRoomRoutes);
-app.use("/api", academicYearRoutes);
-app.use("/api", courseRoutes);
-app.use("/api", courseGradeRoutes);
-app.use("/api", subjectRoutes);
-app.use("/api", gradeSubjectRoutes);
-app.use("/api", studentRoutes);
+app.use("/api", authRoutes);
 
 app.get("/", (req, res) => {
   res.json({

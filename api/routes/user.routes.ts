@@ -1,87 +1,18 @@
-import { Router, Request, Response } from "express";
-import { userRepository } from "../repository/user.repository.js";
-import { errorReport } from "../repository/base/errorHandler.repository.js";
-import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+import userService from "../services/user.service.js";
+import { CrudRoutes } from "./base/crud.routes.js";
+import { errorReport } from "../utils/error-handler.js";
 
-const userRoutes = Router();
-const JWT_SECRET = String(process.env.JWT_SECRET);
-
-// Rota de Login
-userRoutes.post("/users/login", async (req: Request, res: Response) => {
-    try {
-        
-        const user = await userRepository.login(req.body);
-
-        // Gera o token JWT com validade (ex: 8 horas)
-        const token = jwt.sign(
-            { id: user.id, username: user.username },
-            JWT_SECRET,
-            { expiresIn: "8h" }
-        );
-
-        return res.status(200).json({
-            token,
-            user
-        });
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
-
-userRoutes.post("/users", async (req: Request, res: Response) => {
-    try {
-        const newUser = await userRepository.create(req.body);
-        return res.status(201).json(newUser);
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
-
-userRoutes.get("/users", async (_req: Request, res: Response) => {
-    try {
-        const users = await userRepository.list();
-        return res.status(200).json(users);
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
-
-userRoutes.get("/users/:id", async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params.id);
-        const user = await userRepository.find(id);
-        return res.status(200).json(user);
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
-
-userRoutes.put("/users/:id", async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params.id);
-        const updatedUser = await userRepository.update(id, req.body);
-        return res.status(200).json(updatedUser);
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
-
-userRoutes.delete("/users/:id", async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params.id);
-        await userRepository.delete(id);
-        return res.status(200).json({ message: "Registo apagado com sucesso" });
-    } catch (error) {
-        return errorReport(res, error);
-    }
-});
+const userRoutes = new CrudRoutes(userService, 'users').router;
 
 userRoutes.put("/users/:id/password", async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params.id);
-        console.log(id)
-        await userRepository.updatePassword(id, req.body);
-        return res.status(200).json({ message: "Palavra-passe actualizada com sucesso." });
+        const ctx = {
+            schoolId: (req as any).schoolId || req.headers['x-school-id'],
+            isSuperAdmin: (req as any).isSuperAdmin || false
+        };
+        const result = await userService.update(ctx, String(req.params.id), req.body);
+        return res.status(200).json(result);
     } catch (error) {
         return errorReport(res, error);
     }

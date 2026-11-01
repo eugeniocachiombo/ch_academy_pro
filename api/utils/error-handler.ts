@@ -1,14 +1,25 @@
 import { Response } from "express";
 import { ZodError } from "zod";
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma } from "../generated/prisma/client";
+import { CrudError } from "../repository/base/crud.errors";
 
 export function errorReport(res: Response, error: unknown) {
-    
     if (error instanceof ZodError) {
         return res.status(400).json({
             message: "Verifique os campos do formulário",
             errors: error.flatten().fieldErrors
         });
+    }
+
+    if (error instanceof CrudError) {
+        const statusMap: Record<string, number> = {
+            NOT_FOUND: 404,
+            CHURCH_REQUIRED: 400,
+            SCHOOL_REQUIRED: 400,
+            FORBIDDEN: 403,
+            INVALID_MODEL: 400,
+        };
+        return res.status(statusMap[error.code] || 400).json({ message: error.message });
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
@@ -17,28 +28,18 @@ export function errorReport(res: Response, error: unknown) {
                 const target = error.meta?.target;
                 const field = Array.isArray(target) ? target.join(", ") : target;
                 const model = error.meta?.modelName || "Registo";
-                
                 return res.status(409).json({
                     message: field 
                         ? `Já existe um(a) ${model} com este(a) ${field}.`
                         : "Já existe um registo com estes dados."
                 });
             }
-            case "P2025": {
-                return res.status(404).json({
-                    message: "Registo não encontrado no sistema"
-                });
-            }
-            case "P2003": {
-                return res.status(400).json({
-                    message: "Falha na relação entre dados (Chave estrangeira inválida)."
-                });
-            }
+            case "P2025":
+                return res.status(404).json({ message: "Registo não encontrado no sistema" });
+            case "P2003":
+                return res.status(400).json({ message: "Falha na relação entre dados (Chave estrangeira inválida)." });
             default:
-                return res.status(400).json({
-                    message: "Erro na operação de base de dados",
-                    code: error.code
-                });
+                return res.status(400).json({ message: "Erro na operação de base de dados", code: error.code });
         }
     }
 
@@ -46,10 +47,10 @@ export function errorReport(res: Response, error: unknown) {
         return res.status(404).json({ message: "Registo não encontrado" });
     }
 
-    if( error?.response?.data?.errors){
+    if ((error as any)?.response?.data?.errors) {
         return res.status(400).json({
             message: "Verifique os campos do formulário",
-            errors: error?.response?.data?.errors
+            errors: (error as any).response.data.errors
         });
     }
 
