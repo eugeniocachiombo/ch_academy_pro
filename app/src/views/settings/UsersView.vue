@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore, type User, type RegisterPayload } from '@/stores/user.store'
+import { useAuthStore,} from '@/stores/auth.store'
 import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import UsersFormView from './UsersFormView.vue'
@@ -9,8 +10,9 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 
 const searchQuery = ref('')
 const statusFilter = ref<'all' | 'active' | 'blocked'>('all')
