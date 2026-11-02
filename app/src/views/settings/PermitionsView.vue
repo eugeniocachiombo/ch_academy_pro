@@ -4,14 +4,16 @@ import { usePermitionStore, type Permition } from '@/stores/permition.store'
 import { useUserStore } from '@/stores/user.store'
 import { showNotification } from '@/services/general_service'
 import PermitionFormView from './PermitionsFormView.vue'
+import { useAuthStore } from '@/stores/auth.store'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 const permitionStore = usePermitionStore()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 
 const searchQuery = ref('')
 const isModalOpen = ref(false)

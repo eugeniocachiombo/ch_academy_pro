@@ -4,6 +4,7 @@ import { useRoleStore } from '@/stores/role.store'
 import { usePermitionStore } from '@/stores/permition.store'
 import { useRolePermitionStore } from '@/stores/rolePermition.store'
 import { useUserStore } from '@/stores/user.store'
+import { useAuthStore } from '@/stores/auth.store'
 
 type Id = number | string
 
@@ -11,8 +12,9 @@ const roleStore = useRoleStore()
 const permitionStore = usePermitionStore()
 const rolePermitionStore = useRolePermitionStore()
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 const canEdit = () => p('role_permition.edit') || p('role_permition.manage')
 
 // Compara IDs independentemente de serem number ou string

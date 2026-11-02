@@ -3,14 +3,16 @@ import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user.store'
 import { useRoleStore } from '@/stores/role.store'
 import { useUserRoleStore } from '@/stores/userRole.store'
+import { useAuthStore } from '@/stores/auth.store'
 
 type Id = number | string
 
 const userStore = useUserStore()
 const roleStore = useRoleStore()
 const userRoleStore = useUserRoleStore()
+const authStore = useAuthStore()
 
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 const canEdit = () => p('user_role.edit') || p('user_role.manage')
 
 // Compara IDs independentemente de serem number ou string

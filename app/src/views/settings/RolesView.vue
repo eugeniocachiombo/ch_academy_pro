@@ -6,15 +6,15 @@ import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import cryptoService from '@/services/crypto.service'
 import RoleFormView from './RolesFormView.vue'
+import { useAuthStore } from '@/stores/auth.store'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 const roleStore = useRoleStore()
-const userStore = useUserStore()
+const authStore = useAuthStore()
 
-// Função auxiliar para verificar permissões baseada no seu padrão
-const p = (name: string) => userStore.getPermition(name)
+const p = (name: string) => authStore.getPermition(name)
 
 const searchQuery = ref('')
 const isModalOpen = ref(false)
