@@ -29,7 +29,8 @@ class AuthService {
             { 
                 userId: user.id, 
                 schoolId: user.school_id,
-                username: user.username 
+                username: user.username, 
+                isSuperAdmin: user.userRoles.some((e) => e.role.name == "admin" || e.role.id == 1) 
             },
             secret,
             { expiresIn: expiresIn as any }

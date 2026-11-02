@@ -41,4 +41,5 @@ model School {
   paymethods        Paymethod[]
   services          Service[]
   serviceprices     Serviceprice[]
+  rolePermitions    RolePermition[]
 }

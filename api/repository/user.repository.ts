@@ -7,7 +7,10 @@ class UserRepository extends BaseRepository {
     }
 
     async findByUsername(username: string) {
-        return await prisma.user.findUnique({ where: { username } });
+        return await prisma.user.findUnique({
+            where: { username },
+            include: { userRoles: { include: { role: true } } },
+        });
     }
 }
 

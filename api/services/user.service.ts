@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { BaseService } from './base.service.js';
 import { userRepository } from '../repository/user.repository.js';
-import { createUserSchema, getUpdateUserSchema, loginUserSchema } from '../validators/user.schema.js';
+import { createUserSchema, getUpdateUserSchema } from '../validators/user.schema.js';
 import { CrudContext } from './base.service.js';
 
 class UserService extends BaseService {
