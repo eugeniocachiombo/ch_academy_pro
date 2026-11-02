@@ -137,7 +137,7 @@ const saveChanges = async () => {
       }
     }
 
-    // Criar novos vínculos (campos exatamente como no model: user_id e role_id)
+    // Criar novos vínculos
     for (const rId of toAdd) {
       await userRoleStore.create({
         user_id: userId,
@@ -153,7 +153,7 @@ const saveChanges = async () => {
       successMessage.value = null
     }, 4000)
   } catch (err: any) {
-    globalError.value = err.response?.data?.message || 'Erro ao sincronizar as funções do utilizador.'
+    globalError.value = userRoleStore.error || err.message || 'Erro ao sincronizar as funções do utilizador.'
   } finally {
     internalLoading.value = false
   }

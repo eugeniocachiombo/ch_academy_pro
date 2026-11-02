@@ -126,7 +126,7 @@ const saveChanges = async () => {
       }
     }
 
-    // Criar novas associações (nomes de campos exatamente como o backend valida)
+    // Criar novas associações (payload limpo sem encriptar o corpo)
     for (const pId of toAdd) {
       await rolePermitionStore.create({
         role_id: roleId,
@@ -142,7 +142,7 @@ const saveChanges = async () => {
       successMessage.value = null
     }, 4000)
   } catch (err: any) {
-    globalError.value = err.response?.data?.message || 'Erro ao sincronizar as permissões da função.'
+    globalError.value = rolePermitionStore.error || err.message || 'Erro ao sincronizar as permissões da função.'
   } finally {
     internalLoading.value = false
   }

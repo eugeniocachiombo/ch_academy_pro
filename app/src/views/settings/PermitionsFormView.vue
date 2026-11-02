@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { usePermitionStore } from '@/stores/permition.store'
+import { usePermitionStore, type PermitionPayload } from '@/stores/permition.store'
 
 interface ApiErrorResponse {
   message?: string
@@ -12,7 +12,7 @@ const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
   isLoading: boolean
-  initialData?: (any & { id?: number }) | null
+  initialData?: (PermitionPayload & { id?: number }) | null
 }>()
 
 const emit = defineEmits<{
@@ -22,7 +22,7 @@ const emit = defineEmits<{
 
 const permitionStore = usePermitionStore()
 
-const form = ref<any & { id?: number }>({
+const form = ref<PermitionPayload & { id?: number }>({
   name: '',
   description: '',
 })
@@ -32,10 +32,8 @@ const internalLoading = ref(false)
 
 const getFieldError = (field: string) => {
   if (!formErrors.value) return ''
-  
   const errorObj = formErrors.value.errors || formErrors.value
   const fieldError = errorObj[field]
-
   if (!fieldError) return ''
   return Array.isArray(fieldError) ? fieldError[0] : fieldError
 }
@@ -68,23 +66,22 @@ const handleSubmit = async () => {
   internalLoading.value = true
 
   try {
-    const payload = { ...form.value }
-
     if (props.isEditing && form.value.id) {
-      await permitionStore.update(form.value.id, payload)
+      await permitionStore.update(form.value.id, {
+        name: form.value.name,
+        description: form.value.description,
+      })
     } else {
-      await permitionStore.create(payload)
+      await permitionStore.create({
+        name: form.value.name,
+        description: form.value.description,
+      })
     }
     emit('saved')
     emit('close')
   } catch (err: any) {
-    if (err.response?.data) {
-      formErrors.value = err.response.data
-    } else {
-      formErrors.value = { 
-        message: err.message || 'Ocorreu um erro ao salvar o registo.' 
-      }
-    }
+    const errorMessage = permitionStore.error || err.message || 'Ocorreu um erro ao guardar a permissão.'
+    formErrors.value = { message: errorMessage }
   } finally {
     internalLoading.value = false
   }

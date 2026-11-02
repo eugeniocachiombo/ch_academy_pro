@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
+import cryptoService from '@/services/crypto.service';
 
 export interface UserRole {
   id: number;
   user_id: number | string;
   role_id: number | string;
-  school_id: number | string;
+  school_id?: number | string;
 }
 
 export interface UserRolePayload {
@@ -63,7 +64,8 @@ export const useUserRoleStore = defineStore('userRole', () => {
     error.value = null;
 
     try {
-      await api.delete(`/user-roles/${id}`);
+      const encryptedId = cryptoService.encryptId(String(id));
+      await api.delete(`/user-roles/${encryptedId}`);
       userRoles.value = userRoles.value.filter(ur => ur.id !== Number(id));
     } catch (err: any) {
       const message = err.response?.data?.message || 'Erro ao remover vínculo.';

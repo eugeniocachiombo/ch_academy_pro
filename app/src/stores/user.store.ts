@@ -1,19 +1,23 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
+import cryptoService from '@/services/crypto.service';
 
 export interface User {
   id: number;
   name?: string | null;
   username: string;
+  email?: string;
   status?: string;
   school_id?: number | string | null;
+  photo?: string | null;
 }
 
 export interface RegisterPayload {
   name?: string;
   username: string;
-  password: string;
+  email?: string;
+  password?: string;
   status?: string;
   school_id?: number | string;
 }
@@ -66,7 +70,8 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      const response = await api.put<User>(`/users/${id}`, payload);
+      const encryptedId = cryptoService.encryptId(String(id));
+      const response = await api.put<User>(`/users/${encryptedId}`, payload);
       const index = users.value.findIndex(u => u.id === id);
       if (index !== -1) {
         users.value[index] = response;
@@ -86,7 +91,8 @@ export const useUserStore = defineStore('user', () => {
     error.value = null;
 
     try {
-      await api.delete(`/users/${id}`);
+      const encryptedId = cryptoService.encryptId(String(id));
+      await api.delete(`/users/${encryptedId}`);
       users.value = users.value.filter(u => u.id !== id);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Erro ao remover o utilizador.';

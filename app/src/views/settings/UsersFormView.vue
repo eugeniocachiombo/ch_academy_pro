@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { type RegisterPayload } from '@/stores/user.store'
+import { useUserStore, type RegisterPayload } from '@/stores/user.store'
 import { showNotification } from '@/services/general_service'
-import { api } from '@/services/api'
 
 interface ApiErrorResponse {
   message?: string
@@ -21,6 +20,8 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'saved'): void
 }>()
+
+const userStore = useUserStore()
 
 const form = ref<RegisterPayload & { id?: number; email?: string }>({
   name: '',
@@ -103,21 +104,16 @@ const handleSubmit = async () => {
     }
 
     if (props.isEditing && form.value.id) {
-      await api.put(`/users/${form.value.id}`, payload)
+      await userStore.update(form.value.id, payload)
     } else {
-      await api.post('/users', payload)
+      await userStore.register(payload)
     }
     emit('saved')
     emit('close')
     showNotification('Utilizador guardado com sucesso.', 'success')
   } catch (err: any) {
-    if (err.response?.data) {
-      formErrors.value = err.response.data
-    } else {
-      formErrors.value = { 
-        message: err.message || 'Ocorreu um erro ao salvar o registo.' 
-      }
-    }
+    const errorMessage = userStore.error || err.message || 'Ocorreu um erro ao salvar o registo.'
+    formErrors.value = { message: errorMessage }
     showNotification('Erro ao guardar utilizador.', 'error')
   } finally {
     internalLoading.value = false

@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { type CreateRolePayload } from '@/stores/role.store'
+import { useRoleStore, type RolePayload } from '@/stores/role.store'
 import { showNotification } from '@/services/general_service'
-import { api } from '@/services/api'
-import cryptoService from '@/services/crypto.service'
 
 interface ApiErrorResponse {
   message?: string
@@ -15,7 +13,7 @@ const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
   isLoading: boolean
-  initialData?: (CreateRolePayload & { id?: number }) | null
+  initialData?: (RolePayload & { id?: number }) | null
 }>()
 
 const emit = defineEmits<{
@@ -23,7 +21,8 @@ const emit = defineEmits<{
   (e: 'saved'): void
 }>()
 
-const form = ref<CreateRolePayload & { id?: number }>({
+const roleStore = useRoleStore()
+const form = ref<RolePayload & { id?: number }>({
   name: '',
 })
 
@@ -68,25 +67,17 @@ const handleSubmit = async () => {
   internalLoading.value = true
 
   try {
-    const payload = { ...form.value }
-
     if (props.isEditing && form.value.id) {
-      const encryptedId = cryptoService.encryptId(String(form.value.id))
-      await api.put(`/roles/${encryptedId}`, payload)
+      await roleStore.update(form.value.id, { name: form.value.name, description: form.value.description })
     } else {
-      await api.post('/roles', payload)
+      await roleStore.create({ name: form.value.name, description: form.value.description })
     }
     emit('saved')
     emit('close')
     showNotification('Função guardada com sucesso.', 'success')
   } catch (err: any) {
-    if (err.response?.data) {
-      formErrors.value = err.response.data
-    } else {
-      formErrors.value = { 
-        message: err.message || 'Ocorreu um erro ao salvar o registo.' 
-      }
-    }
+    const errorMessage = roleStore.error || err.message || 'Ocorreu um erro ao salvar o registo.'
+    formErrors.value = { message: errorMessage }
     showNotification('Erro ao guardar função.', 'error')
   } finally {
     internalLoading.value = false

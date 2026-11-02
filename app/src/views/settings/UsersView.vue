@@ -4,6 +4,7 @@ import { useUserStore, type User, type RegisterPayload } from '@/stores/user.sto
 import { useAuthStore } from '@/stores/auth.store'
 import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
+import cryptoService from '@/services/crypto.service'
 import UsersFormView from './UsersFormView.vue'
 
 import DataTable from 'primevue/datatable'
@@ -140,7 +141,8 @@ const handleUpdatePassword = async () => {
   passwordFormErrors.value = null
 
   try {
-    await api.patch(`/users/${selectedUser.value.id}/password`, passwordForm.value)
+    const encryptedId = cryptoService.encryptId(String(selectedUser.value.id))
+    await api.patch(`/users/${encryptedId}/password`, passwordForm.value)
     isPasswordModalOpen.value = false
     selectedUser.value = null
     showNotification('Palavra-passe actualizada com sucesso.', 'success')
@@ -165,11 +167,10 @@ const toggleBlockUser = async (user: any) => {
   if (!confirm(`Tem certeza de que deseja ${actionName} o utilizador @${user.username}?`)) return
   
   try {
-    await api.put(`/users/${user.id}`, { status: newStatus })
-    await userStore.list()
+    await userStore.update(user.id, { status: newStatus })
     showNotification(`Utilizador ${actionName === 'bloquear' ? 'bloqueado' : 'desbloqueado'} com sucesso.`, 'success')
   } catch (err: any) {
-    const errorMsg = err.response?.data?.message || 'Erro ao alterar status do utilizador.'
+    const errorMsg = userStore.error || 'Erro ao alterar status do utilizador.'
     showNotification(errorMsg, 'error')
   }
 }
@@ -180,11 +181,10 @@ const deleteUser = async (id: number) => {
   if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
   
   try {
-    await api.delete(`/users/${id}`)
-    await userStore.list()
+    await userStore.remove(id)
     showNotification('Utilizador eliminado com sucesso.', 'success')
   } catch (err: any) {
-    const errorMsg = err.response?.data?.message || 'Erro ao eliminar utilizador.'
+    const errorMsg = userStore.error || 'Erro ao eliminar utilizador.'
     showNotification(errorMsg, 'error')
   }
 }

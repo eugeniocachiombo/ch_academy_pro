@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
+import cryptoService from '@/services/crypto.service';
 
 export interface RolePermition {
   id: number;
@@ -61,7 +62,8 @@ export const useRolePermitionStore = defineStore('rolePermition', () => {
     error.value = null;
 
     try {
-      await api.delete(`/role-permitions/${id}`);
+      const encryptedId = cryptoService.encryptId(String(id));
+      await api.delete(`/role-permitions/${encryptedId}`);
       rolePermitions.value = rolePermitions.value.filter(rp => rp.id !== Number(id));
     } catch (err: any) {
       const message = err.response?.data?.message || 'Erro ao remover permissão da função.';

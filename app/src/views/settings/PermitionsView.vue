@@ -1,16 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { usePermitionStore, type Permition } from '@/stores/permition.store'
-import { useUserStore } from '@/stores/user.store'
+import { usePermitionStore, type Permition, type PermitionPayload } from '@/stores/permition.store'
 import { showNotification } from '@/services/general_service'
-import PermitionFormView from './PermitionsFormView.vue'
+import PermitionsFormView from './PermitionsFormView.vue'
 import { useAuthStore } from '@/stores/auth.store'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 const permitionStore = usePermitionStore()
-const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
@@ -19,9 +17,7 @@ const searchQuery = ref('')
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedPermition = ref<Permition | null>(null)
-const formData = ref<(any & { id?: number }) | null>(null)
-
-const activeDropdownId = ref<number | null>(null)
+const formData = ref<(PermitionPayload & { id?: number }) | null>(null)
 
 onMounted(async () => {
   try {
@@ -55,10 +51,9 @@ const openEditModal = (permition: Permition) => {
   formData.value = {
     id: permition.id,
     name: permition.name || '',
-    description: (permition as any).description || '',
+    description: permition.description || '',
   }
   isModalOpen.value = true
-  activeDropdownId.value = null
 }
 
 const closeModal = () => {
@@ -76,7 +71,6 @@ const handleSaved = async () => {
 
 const deletePermition = async (id: number) => {
   if (!p('permition.delete')) return
-  activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente esta permissão?')) return
 
   try {
@@ -213,7 +207,7 @@ const deletePermition = async (id: number) => {
       </DataTable>
     </div>
 
-    <PermitionFormView
+    <PermitionsFormView
       :is-open="isModalOpen"
       :is-editing="isEditing"
       :is-loading="permitionStore.isLoading"

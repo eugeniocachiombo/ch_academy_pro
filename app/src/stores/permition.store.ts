@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
+import cryptoService from '@/services/crypto.service';
 
 export interface Permition {
   id: number;
   name: string;
   description?: string | null;
-  school_id: number | string;
+  school_id?: number | string;
 }
 
 export interface PermitionPayload {
   name: string;
   description?: string;
-  school_id: number | string;
+  school_id?: number | string;
 }
 
 export const usePermitionStore = defineStore('permition', () => {
@@ -63,7 +64,8 @@ export const usePermitionStore = defineStore('permition', () => {
     error.value = null;
 
     try {
-      const response = await api.put<Permition>(`/permitions/${id}`, payload);
+      const encryptedId = cryptoService.encryptId(String(id));
+      const response = await api.put<Permition>(`/permitions/${encryptedId}`, payload);
       const index = permitions.value.findIndex(p => p.id === id);
       if (index !== -1) {
         permitions.value[index] = response;
@@ -83,7 +85,8 @@ export const usePermitionStore = defineStore('permition', () => {
     error.value = null;
 
     try {
-      await api.delete(`/permitions/${id}`);
+      const encryptedId = cryptoService.encryptId(String(id));
+      await api.delete(`/permitions/${encryptedId}`);
       permitions.value = permitions.value.filter(p => p.id !== id);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Erro ao remover a permissão.';
