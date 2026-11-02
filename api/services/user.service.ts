@@ -14,7 +14,7 @@ class UserService extends BaseService {
                 update: getUpdateUserSchema()
             }, 
             {
-                tenant: 'mixed' 
+                tenant: 'scoped' 
             }
         );
     }

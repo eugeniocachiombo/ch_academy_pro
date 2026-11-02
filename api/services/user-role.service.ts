@@ -12,7 +12,7 @@ class UserRoleService extends BaseService {
                 update: updateUserRoleSchema
             }, 
             {
-                tenant: 'mixed' // school_id obrigatório
+                tenant: 'scoped' // school_id obrigatório
             }
         );
     }

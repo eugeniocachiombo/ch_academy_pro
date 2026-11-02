@@ -12,7 +12,7 @@ class PermitionService extends BaseService {
                 update: updatePermitionSchema
             }, 
             {
-                tenant: 'scoped' 
+                tenant: 'mixed' 
             }
         );
     }
