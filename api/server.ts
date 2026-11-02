@@ -6,7 +6,7 @@ import { roleRoutes } from "./routes/role.routes.js";
 import { permitionRoutes } from "./routes/permition.routes.js";
 import { userRoleRoutes } from "./routes/user-role.routes.js";
 import { rolePermitionRoutes } from "./routes/role-permition.routes.js";
-
+import { authMiddleware } from "./middlewares/auth.middleware.js";
 const app = express();
 
 app.use(cors({
@@ -16,12 +16,16 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use("/api", userRoutes);
-app.use("/api", authRoutes);
-app.use("/api", roleRoutes);
-app.use("/api", permitionRoutes);
-app.use("/api", userRoleRoutes);
-app.use("/api", rolePermitionRoutes);
+app.use(
+  "/api",
+  authMiddleware,
+  userRoutes,
+  authRoutes,
+  roleRoutes,
+  permitionRoutes,
+  userRoleRoutes,
+  rolePermitionRoutes
+ );
 
 app.get("/", (req, res) => {
   res.json({
