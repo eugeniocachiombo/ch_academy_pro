@@ -185,41 +185,28 @@ const deleteRole = async (id: number) => {
 
         <Column header="Acções" style="width: 20%" :exportable="false">
           <template #body="slotProps">
-            <div class="text-right relative">
-              <div v-if="p('role.edit') || p('role.delete')" class="inline-block text-left">
-                <button
-                  @click="activeDropdownId = activeDropdownId === slotProps.data.id ? null : slotProps.data.id"
-                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
-                >
-                  <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                </button>
+            <div class="flex items-center justify-start gap-1.5" v-if="p('role.edit') || p('role.delete')">
+              <!-- Editar Função -->
+              <button
+                v-if="p('role.edit')"
+                @click="openEditModal(slotProps.data)"
+                title="Editar Função"
+                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
+              >
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+              </button>
 
-                <div v-if="activeDropdownId === slotProps.data.id" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
-                  <!-- Opção de Editar (protegida por 'role.edit') -->
-                  <button
-                    v-if="p('role.edit')"
-                    @click="openEditModal(slotProps.data)"
-                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                  >
-                    <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
-                    <span>Editar Função</span>
-                  </button>
-
-                  <div v-if="p('role.edit') && p('role.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
-
-                  <!-- Opção de Eliminar (protegida por 'role.delete') -->
-                  <button
-                    v-if="p('role.delete')"
-                    @click="deleteRole(slotProps.data.id)"
-                    class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                  >
-                    <i class="fa-solid fa-trash"></i>
-                    <span>Eliminar Função</span>
-                  </button>
-                </div>
-              </div>
-              <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
+              <!-- Eliminar Função -->
+              <button
+                v-if="p('role.delete')"
+                @click="deleteRole(slotProps.data.id)"
+                title="Eliminar Função"
+                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"
+              >
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
             </div>
+            <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
           </template>
         </Column>
       </DataTable>

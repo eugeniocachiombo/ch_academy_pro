@@ -335,59 +335,55 @@ const deleteUser = async (id: number) => {
           </template>
         </Column>
 
-        <Column header="Acções" style="width: 10%" :exportable="false">
+        <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
-            <div class="text-right relative">
-              <div v-if="p('user.edit') || p('user.delete')" class="inline-block text-left">
-                <button
-                  @click="activeDropdownId = activeDropdownId === slotProps.data.id ? null : slotProps.data.id"
-                  class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/60 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors"
-                >
-                  <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
-                </button>
+            <div class="flex items-center justify-end gap-1.5" v-if="p('user.edit') || p('user.delete')">
+              <!-- Editar Dados -->
+              <button
+                v-if="p('user.edit')"
+                @click="openEditModal(slotProps.data)"
+                title="Editar Dados"
+                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
+              >
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+              </button>
 
-                <div v-if="activeDropdownId === slotProps.data.id" class="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl py-2 z-20 text-left">
-                  <button
-                    v-if="p('user.edit')"
-                    @click="openEditModal(slotProps.data)"
-                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                  >
-                    <i class="fa-solid fa-pen-to-square text-indigo-500 dark:text-indigo-400"></i>
-                    <span>Editar Dados</span>
-                  </button>
+              <!-- Alterar Password -->
+              <button
+                v-if="p('user.edit')"
+                @click="openPasswordModal(slotProps.data)"
+                title="Alterar Password"
+                class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors"
+              >
+                <i class="fa-solid fa-key text-xs"></i>
+              </button>
 
-                  <button
-                    v-if="p('user.edit')"
-                    @click="openPasswordModal(slotProps.data)"
-                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                  >
-                    <i class="fa-solid fa-key text-amber-500 dark:text-amber-400"></i>
-                    <span>Alterar Password</span>
-                  </button>
+              <!-- Bloquear / Desbloquear -->
+              <button
+                v-if="p('user.edit')"
+                @click="toggleBlockUser(slotProps.data)"
+                :title="slotProps.data.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso'"
+                :class="[
+                  'w-8 h-8 rounded-xl flex items-center justify-center transition-colors',
+                  slotProps.data.status === 'BLOCKED' 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400' 
+                    : 'bg-orange-50 dark:bg-orange-950/50 hover:bg-orange-100 text-orange-600 dark:text-orange-400'
+                ]"
+              >
+                <i :class="slotProps.data.status === 'BLOCKED' ? 'fa-solid fa-user-check text-xs' : 'fa-solid fa-user-lock text-xs'"></i>
+              </button>
 
-                  <button
-                    v-if="p('user.edit')"
-                    @click="toggleBlockUser(slotProps.data)"
-                    class="w-full px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2.5 transition-colors"
-                  >
-                    <i :class="slotProps.data.status === 'BLOCKED' ? 'fa-solid fa-user-check text-emerald-500 dark:text-emerald-400' : 'fa-solid fa-user-lock text-orange-500 dark:text-orange-400'"></i>
-                    <span>{{ slotProps.data.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso' }}</span>
-                  </button>
-
-                  <div v-if="p('user.edit') && p('user.delete')" class="h-px bg-slate-200 dark:bg-slate-800 my-1"></div>
-
-                  <button
-                    v-if="p('user.delete')"
-                    @click="deleteUser(slotProps.data.id)"
-                    class="w-full px-4 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                  >
-                    <i class="fa-solid fa-trash"></i>
-                    <span>Eliminar Conta</span>
-                  </button>
-                </div>
-              </div>
-              <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
+              <!-- Eliminar Conta -->
+              <button
+                v-if="p('user.delete')"
+                @click="deleteUser(slotProps.data.id)"
+                title="Eliminar Conta"
+                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"
+              >
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
             </div>
+            <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
           </template>
         </Column>
       </DataTable>
