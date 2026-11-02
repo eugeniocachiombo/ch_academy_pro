@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore, type User, type RegisterPayload } from '@/stores/user.store'
-import { useAuthStore,} from '@/stores/auth.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { showNotification } from '@/services/general_service'
 import { api } from '@/services/api'
 import UsersFormView from './UsersFormView.vue'
