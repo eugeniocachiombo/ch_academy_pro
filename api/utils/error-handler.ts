@@ -4,7 +4,7 @@ import { CrudError } from "../repository/base/crud.errors.js";
 
 export function errorReport(res: Response, error: unknown) {
     if (error instanceof ZodError) {
-        return res.status(400).json({
+        return res.status(422).json({
             message: "Verifique os campos do formulário",
             errors: error.flatten().fieldErrors
         });
