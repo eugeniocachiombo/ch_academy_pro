@@ -13,6 +13,11 @@ import { courseRoutes } from "./routes/course.routes.js";
 import { subjectRoutes } from "./routes/subject.routes.js";
 import { classRoutes } from "./routes/class.routes.js";
 import { roomRoutes } from "./routes/room.routes.js";
+import { groupRoutes } from './routes/group.routes.js';
+import { groupconfigRoutes } from './routes/groupconfig.routes.js';
+import { periodRoutes } from './routes/preiod.routes.js';
+import { registerRoutes } from './routes/register.routes.js';
+import { teacherocupationRoutes } from './routes/teacherocupation.routes.js';
 
 const app = express();
 
@@ -37,7 +42,12 @@ app.use(
   courseRoutes,
   subjectRoutes,
   classRoutes,
-  roomRoutes
+  roomRoutes,
+  groupRoutes,
+  groupconfigRoutes,
+  periodRoutes,
+  registerRoutes,
+  teacherocupationRoutes,
  );
 
 app.get("/", (req, res) => {
