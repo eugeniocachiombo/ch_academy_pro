@@ -4,15 +4,21 @@ import UnderConstructionView from '@/views/UnderConstructionView.vue'
 export const academicRoutes: RouteRecordRaw[] = [
   { 
     path: '/academico/classes', 
-    name: 'academic-grades', 
+    name: 'classes', 
     component: () => import('@/views/academic/ClassesView.vue'), 
-    meta: { permission: 'grades.manage' } 
+    meta: { permission: 'class.manage' } 
   },
   { 
     path: '/academico/turmas', 
-    name: 'academic-classes', 
-    component: () => UnderConstructionView, 
-    meta: { permission: 'classes.manage' } 
+    name: 'groups', 
+    component: () => import('@/views/academic/GroupsView.vue'),
+    meta: { permission: 'group.manage' } 
+  },
+  { 
+    path: '/academico/turmas/configuracao', 
+    name: 'groupconfigs', 
+    component: () => import('@/views/academic/GroupconfigsView.vue'),
+    meta: { permission: 'groupconfig.manage' } 
   },
   { 
     path: '/academico/salas', 
@@ -22,7 +28,7 @@ export const academicRoutes: RouteRecordRaw[] = [
   },
   { 
     path: '/academico/cursos', 
-    name: 'academic-courses', 
+    name: 'courses', 
     component: () => import('@/views/academic/CoursesView.vue'), 
     meta: { permission: 'courses.manage' } 
   },

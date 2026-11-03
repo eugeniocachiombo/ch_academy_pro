@@ -40,7 +40,7 @@ onMounted(async () => {
   try {
     const promises: Promise<any>[] = []
     if (gradesList.value.length === 0) {
-      promises.push(api.get<unknown, any[]>('/academic-grades').then(res => { gradesList.value = res }))
+      promises.push(api.get<unknown, any[]>('/courses').then(res => { gradesList.value = res }))
     }
     if (courseStore.courses.length === 0) {
       promises.push(courseStore.list())
@@ -88,7 +88,7 @@ watch(
       if (courseStore.courses.length === 0) await courseStore.list()
       if (gradesList.value.length === 0) {
         try {
-          gradesList.value = await api.get<unknown, any[]>('/academic-grades')
+          gradesList.value = await api.get<unknown, any[]>('/courses')
         } catch {}
       }
     }
