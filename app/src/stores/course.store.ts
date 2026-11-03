@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
 import cryptoService from '@/services/crypto.service';
+import { handleError, type ParsedError } from '@/helpers/handle-error';
 
 export interface Course {
   id: number;
@@ -37,9 +38,9 @@ export const useCourseStore = defineStore('course', () => {
       courses.value = response;
       return response;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao carregar cursos.';
-      error.value = message;
-      throw new Error(message);
+      const parsed: ParsedError = handleError(err, 'Erro ao carregar cursos.');
+      error.value = parsed.message;
+      throw parsed;
     } finally {
       isLoading.value = false;
     }
@@ -53,9 +54,9 @@ export const useCourseStore = defineStore('course', () => {
       courses.value.push(response);
       return response;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao criar o curso.';
-      error.value = message;
-      throw new Error(message);
+      const parsed: ParsedError = handleError(err, 'Erro ao criar o curso.');
+      error.value = parsed.message;
+      throw parsed;
     } finally {
       isLoading.value = false;
     }
@@ -73,9 +74,9 @@ export const useCourseStore = defineStore('course', () => {
       }
       return response;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao atualizar o curso.';
-      error.value = message;
-      throw new Error(message);
+      const parsed: ParsedError = handleError(err, 'Erro ao atualizar o curso.');
+      error.value = parsed.message;
+      throw parsed;
     } finally {
       isLoading.value = false;
     }
@@ -89,9 +90,9 @@ export const useCourseStore = defineStore('course', () => {
       await api.delete(`/courses/${encryptedId}`);
       courses.value = courses.value.filter(c => c.id !== id);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Erro ao remover o curso.';
-      error.value = message;
-      throw new Error(message);
+      const parsed: ParsedError = handleError(err, 'Erro ao remover o curso.');
+      error.value = parsed.message;
+      throw parsed;
     } finally {
       isLoading.value = false;
     }

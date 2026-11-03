@@ -3,12 +3,6 @@ import { ref, watch } from 'vue'
 import { useCourseStore, type CoursePayload } from '@/stores/course.store'
 import { showNotification } from '@/services/general_service'
 
-interface ApiErrorResponse {
-  message?: string
-  errors?: Record<string, string | string[]>
-  [key: string]: any
-}
-
 const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
@@ -29,41 +23,37 @@ const form = ref<CoursePayload & { id?: number }>({
   school_id: null,
 })
 
-const formErrors = ref<ApiErrorResponse | null>(null)
+const fieldErrors = ref<Record<string, string[]>>({})
+const generalMessage = ref('')
 const internalLoading = ref(false)
 
-const getFieldError = (field: string) => {
-  if (!formErrors.value) return ''
-  const errorObj = formErrors.value.errors || formErrors.value
-  const fieldError = errorObj[field]
-  if (!fieldError) return ''
-  return Array.isArray(fieldError) ? fieldError[0] : fieldError
-}
-
+const getFieldError = (field: string) => fieldErrors.value[field]?.[0] ?? ''
 const hasError = (field: string) => !!getFieldError(field)
 
-const getGeneralMessage = () => {
-  if (!formErrors.value) return ''
-  if (formErrors.value.errors) return ''
-  return formErrors.value.message || ''
+const clearFieldError = (field: string) => {
+  if (fieldErrors.value[field]) {
+    const { [field]: _removed, ...rest } = fieldErrors.value
+    fieldErrors.value = rest
+  }
 }
 
 watch(
   () => props.initialData,
   (newData) => {
-    if (newData) {
-      form.value = { ...newData }
-    } else {
-      form.value = { name: '', code: '', description: '', school_id: null }
-    }
-    formErrors.value = null
+    form.value = newData
+      ? { ...newData }
+      : { name: '', code: '', description: '', school_id: null }
+    fieldErrors.value = {}
+    generalMessage.value = ''
   },
   { immediate: true, deep: true }
 )
 
 const handleSubmit = async () => {
-  formErrors.value = null
+  fieldErrors.value = {}
+  generalMessage.value = ''
   internalLoading.value = true
+  
   try {
     const payload: CoursePayload = {
       name: form.value.name,
@@ -78,12 +68,11 @@ const handleSubmit = async () => {
       await courseStore.create(payload)
     }
     emit('saved')
-    emit('close')
-    showNotification('Curso guardado com sucesso.', 'success')
   } catch (err: any) {
-    const errorMessage = courseStore.error || err.message || 'Ocorreu um erro ao guardar o curso.'
-    formErrors.value = { message: errorMessage }
-    showNotification('Erro ao guardar curso.', 'error')
+    fieldErrors.value = err.fieldErrors || {}
+    generalMessage.value = err.message || 'Ocorreu um erro ao guardar o curso.'
+
+    showNotification(generalMessage.value, 'error')
   } finally {
     internalLoading.value = false
   }
@@ -109,15 +98,16 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 space-y-4">
-        <div v-if="getGeneralMessage()" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3">
+        <div v-if="generalMessage && !Object.keys(fieldErrors).length" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3">
           <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 flex-shrink-0"></i>
-          <span>{{ getGeneralMessage() }}</span>
+          <span>{{ generalMessage }}</span>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Código do Curso</label>
           <input
             v-model="form.code"
+            @input="clearFieldError('code')"
             type="text"
             placeholder="Ex: INFO"
             :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('code') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
@@ -129,6 +119,7 @@ const handleSubmit = async () => {
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nome do Curso</label>
           <input
             v-model="form.name"
+            @input="clearFieldError('name')"
             type="text"
             placeholder="Ex: Informática de Gestão"
             :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('name') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
@@ -140,10 +131,12 @@ const handleSubmit = async () => {
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Descrição</label>
           <textarea
             v-model="form.description"
+            @input="clearFieldError('description')"
             rows="3"
             placeholder="Descrição opcional do curso"
-            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+            :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('description') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
           ></textarea>
+          <span v-if="hasError('description')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('description') }}</span>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">
