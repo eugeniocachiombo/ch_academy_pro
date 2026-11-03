@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCourseStore, type Course, type CoursePayload } from '@/stores/course.store'
 import { showNotification } from '@/services/general_service'
 import CoursesFormView from './CoursesFormView.vue'
+import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
 
 import DataTable from 'primevue/datatable'
@@ -18,6 +19,11 @@ const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedCourse = ref<Course | null>(null)
 const formData = ref<(CoursePayload & { id?: number }) | null>(null)
+
+const isDeleteModalOpen = ref(false)
+const courseToDeleteId = ref<number | null>(null)
+const courseToDeleteName = ref('')
+const isDeleting = ref(false)
 
 onMounted(async () => {
   try {
@@ -73,15 +79,38 @@ const handleSaved = async () => {
   showNotification('Curso guardado com sucesso.', 'success')
 }
 
-const deleteCourse = async (id: number) => {
+const confirmDeleteCourse = (course: Course) => {
   if (!p('course.delete')) return
-  if (!confirm('Tem certeza de que deseja eliminar permanentemente este curso?')) return
+  courseToDeleteId.value = course.id
+  courseToDeleteName.value = course.name
+  isDeleteModalOpen.value = true
+}
+
+const closeDeleteModal = () => {
+  if (isDeleting.value) return
+  isDeleteModalOpen.value = false
+  courseToDeleteId.value = null
+  courseToDeleteName.value = ''
+}
+
+const handleDelete = async () => {
+  if (!courseToDeleteId.value) return
+  isDeleting.value = true
+  
   try {
-    await courseStore.remove(id)
+    await courseStore.remove(courseToDeleteId.value)
+    await courseStore.list()
+    
+    isDeleteModalOpen.value = false
+    courseToDeleteId.value = null
+    courseToDeleteName.value = ''
+
     showNotification('Curso eliminado com sucesso.', 'success')
   } catch (err: any) {
-    const errorMsg = courseStore.error || 'Erro ao eliminar curso.'
+    const errorMsg = courseStore.error || err.message || 'Erro ao eliminar curso.'
     showNotification(errorMsg, 'error')
+  } finally {
+    isDeleting.value = false
   }
 }
 </script>
@@ -179,14 +208,14 @@ const deleteCourse = async (id: number) => {
               <button
                 v-if="p('course.edit')"
                 @click="openEditModal(slotProps.data)"
-                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center"
+                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
                 v-if="p('course.delete')"
-                @click="deleteCourse(slotProps.data.id)"
-                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center"
+                @click="confirmDeleteCourse(slotProps.data)"
+                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >
                 <i class="fa-solid fa-trash text-xs"></i>
               </button>
@@ -203,6 +232,15 @@ const deleteCourse = async (id: number) => {
       :initial-data="formData"
       @close="closeModal"
       @saved="handleSaved"
+    />
+
+    <ConfirmDeleteModal
+      :is-open="isDeleteModalOpen"
+      title="Eliminar Curso"
+      :message="`Tem certeza de que deseja eliminar permanentemente o curso <span class='font-semibold text-slate-800 dark:text-slate-200'>&quot;${courseToDeleteName}&quot;</span>? Esta acção não pode ser desfeita.`"
+      :is-deleting="isDeleting"
+      @close="closeDeleteModal"
+      @confirm="handleDelete"
     />
   </div>
 </template>

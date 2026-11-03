@@ -72,8 +72,6 @@ const handleSubmit = async () => {
       school_id: form.value.school_id,
     }
 
-    console.log('Payload being sent:', form.value)
-
     if (props.isEditing && form.value.id) {
       await courseStore.update(form.value.id, payload)
     } else {
