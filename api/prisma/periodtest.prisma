@@ -1,14 +1,14 @@
 model Periodtest {
   id             Int       @id @default(autoincrement())
-  name           String    @unique
-  school_id      Int
+  name           String
+  school_id      Int?
   year_id        Int
   periodstudy_id Int
   startdate      DateTime
   enddate        DateTime?
   testtype_id    Int?
 
-  school      School      @relation(fields: [school_id], references: [id])
+  school      School?     @relation(fields: [school_id], references: [id])
   year        Year        @relation(fields: [year_id], references: [id])
   testtype    Testtype?   @relation(fields: [testtype_id], references: [id])
   periodstudy Periodstudy @relation(fields: [periodstudy_id], references: [id])
@@ -16,4 +16,6 @@ model Periodtest {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
   tests     Test[]
+
+  @@unique([name, school_id, year_id])
 }

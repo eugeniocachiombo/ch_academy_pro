@@ -3,12 +3,14 @@ model Classcourse {
   course_id Int
   class_id  Int
 
-  school_id Int
+  school_id Int?
 
-  school School @relation(fields: [school_id], references: [id])
-  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
-  class  Class  @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  school School? @relation(fields: [school_id], references: [id])
+  course Course  @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  class  Class   @relation(fields: [class_id], references: [id], onDelete: Cascade)
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
+
+  @@unique([course_id, class_id, school_id])
 }

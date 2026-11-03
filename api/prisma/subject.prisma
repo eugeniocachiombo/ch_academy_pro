@@ -1,11 +1,19 @@
 model Subject {
-  id                Int                @id @default(autoincrement())
-  name              String
-  description       String?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  id          Int     @id @default(autoincrement())
+  code        String
+  name        String
+  description String?
+
+  school_id Int?
+  school    School? @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   teacherocupations Teacherocupation[]
-  subjectclasses    Subjectclass[]
+  class_subjects    ClassSubject[]
   presences         Presence[]
   tests             Test[]
+
+  @@unique([name, school_id])
 }

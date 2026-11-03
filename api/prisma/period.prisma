@@ -3,8 +3,8 @@ model Period {
   name        String  @unique
   description String?
 
-  school_id Int
-  school    School @relation(fields: [school_id], references: [id])
+  school_id Int?
+  school    School? @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

@@ -14,12 +14,12 @@ model Register {
   year_id        Int
   date           DateTime?
   status         RegisterStatus @default(ACTIVE)
-  school_id      Int
+  school_id      Int?
 
   year        Year        @relation(fields: [year_id], references: [id], onDelete: Cascade)
   student     Student     @relation(fields: [student_id], references: [id], onDelete: Cascade)
   groupconfig Groupconfig @relation(fields: [groupconfig_id], references: [id], onDelete: Cascade)
-  school      School      @relation(fields: [school_id], references: [id])
+  school      School?     @relation(fields: [school_id], references: [id])
 
   createdAt DateTime?  @default(now())
   updatedAt DateTime?  @updatedAt

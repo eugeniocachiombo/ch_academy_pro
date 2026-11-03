@@ -1,6 +1,6 @@
 model School {
   id                Int       @id @default(autoincrement())
-  name              String
+  name              String    @unique
   registed_by       Int?
   nif               String?
   alternative_phone String?
@@ -26,7 +26,7 @@ model School {
   rooms             Room[]
   students          Student[]
   studentparents    Studentparent[]
-  subjectclasses    Subjectclass[]
+  class_subjects    ClassSubject[]
   teachers          Teacher[]
   teacherocupations Teacherocupation[]
   users             User[]
@@ -42,4 +42,7 @@ model School {
   services          Service[]
   serviceprices     Serviceprice[]
   rolePermitions    RolePermition[]
+  classes           Class[]
+  degrees           Degree[]
+  subjects          Subject[]
 }

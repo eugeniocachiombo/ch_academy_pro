@@ -19,14 +19,16 @@ model Payment {
   tax      Int
   total    Decimal
 
-  school_id Int
+  school_id Int?
   status    ServicePriceStatus @default(PENDING)
 
   register     Register     @relation(fields: [register_id], references: [id])
   serviceprice Serviceprice @relation(fields: [serviceprice_id], references: [id])
   paymethod    Paymethod    @relation(fields: [paymethod_id], references: [id])
-  school       School       @relation(fields: [school_id], references: [id])
+  school       School?      @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
+
+  @@unique([register_id, serviceprice_id, month, school_id])
 }

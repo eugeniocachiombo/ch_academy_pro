@@ -6,8 +6,8 @@ model Parent {
   ocupation String?
   user_id   Int     @unique
 
-  school_id Int
-  school    School @relation(fields: [school_id], references: [id])
+  school_id Int?
+  school    School? @relation(fields: [school_id], references: [id])
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
