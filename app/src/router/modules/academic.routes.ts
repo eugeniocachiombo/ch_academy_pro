@@ -5,19 +5,19 @@ export const academicRoutes: RouteRecordRaw[] = [
   { 
     path: '/academico/classes', 
     name: 'academic-grades', 
-    component: () => import('@/views/academic/AcademicGradesView.vue'), 
+    component: () => import('@/views/academic/ClassesView.vue'), 
     meta: { permission: 'grades.manage' } 
   },
   { 
     path: '/academico/turmas', 
     name: 'academic-classes', 
-    component: () => import('@/views/academic/AcademicClassesView.vue'), 
+    component: () => UnderConstructionView, 
     meta: { permission: 'classes.manage' } 
   },
   { 
     path: '/academico/salas', 
     name: 'academic-rooms', 
-    component: () => import('@/views/academic/AcademicRoomsView.vue'), 
+    component: () => import('@/views/academic/RoomsView.vue'), 
     meta: { permission: 'rooms.manage' } 
   },
   { 
@@ -35,13 +35,13 @@ export const academicRoutes: RouteRecordRaw[] = [
   { 
     path: '/academico/curso-classes', 
     name: 'academic-course-grades', 
-    component: () => import('@/views/academic/CourseGradesView.vue'), 
+    component: () => UnderConstructionView, 
     meta: { permission: 'course-grades.manage' } 
   },
   { 
     path: '/academico/classes-disciplinas', 
     name: 'academic-grade-subjects', 
-    component: () => import('@/views/academic/GradeSubjectsView.vue'), 
+    component: () => UnderConstructionView, 
     meta: { permission: 'grade_subjects.manage' } 
   },
   { 

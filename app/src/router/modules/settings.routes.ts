@@ -4,7 +4,7 @@ export const settingsRoutes: RouteRecordRaw[] = [
   { 
     path: '/configuracoes/anos-lectivos', 
     name: 'settings-academic-year', 
-    component: () => import('@/views/academic/AcademicYearsView.vue'), 
+    component: () => import('@/views/academic/YearsView.vue'), 
     meta: { permission: 'academic_years.manage' } 
   },
   { 
