@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useCourseStore } from '@/stores/course.store'
+import { useCourseStore, type CoursePayload } from '@/stores/course.store'
+import { showNotification } from '@/services/general_service'
 
 interface ApiErrorResponse {
   message?: string
@@ -12,7 +13,7 @@ const props = defineProps<{
   isOpen: boolean
   isEditing: boolean
   isLoading: boolean
-  initialData?: (any & { id?: number }) | null
+  initialData?: (CoursePayload & { id?: number }) | null
 }>()
 
 const emit = defineEmits<{
@@ -21,11 +22,11 @@ const emit = defineEmits<{
 }>()
 
 const courseStore = useCourseStore()
-
-const form = ref<any & { id?: number }>({
+const form = ref<CoursePayload & { id?: number }>({
   name: '',
   code: '',
   description: '',
+  school_id: null,
 })
 
 const formErrors = ref<ApiErrorResponse | null>(null)
@@ -39,9 +40,7 @@ const getFieldError = (field: string) => {
   return Array.isArray(fieldError) ? fieldError[0] : fieldError
 }
 
-const hasError = (field: string) => {
-  return !!getFieldError(field)
-}
+const hasError = (field: string) => !!getFieldError(field)
 
 const getGeneralMessage = () => {
   if (!formErrors.value) return ''
@@ -55,7 +54,7 @@ watch(
     if (newData) {
       form.value = { ...newData }
     } else {
-      form.value = { name: '', code: '', description: '' }
+      form.value = { name: '', code: '', description: '', school_id: null }
     }
     formErrors.value = null
   },
@@ -65,9 +64,16 @@ watch(
 const handleSubmit = async () => {
   formErrors.value = null
   internalLoading.value = true
-
   try {
-    const payload = { ...form.value }
+    const payload: CoursePayload = {
+      name: form.value.name,
+      code: form.value.code,
+      description: form.value.description,
+      school_id: form.value.school_id,
+    }
+
+    console.log('Payload being sent:', form.value)
+
     if (props.isEditing && form.value.id) {
       await courseStore.update(form.value.id, payload)
     } else {
@@ -75,14 +81,11 @@ const handleSubmit = async () => {
     }
     emit('saved')
     emit('close')
+    showNotification('Curso guardado com sucesso.', 'success')
   } catch (err: any) {
-    if (err.response?.data) {
-      formErrors.value = err.response.data
-    } else {
-      formErrors.value = { 
-        message: err.message || 'Ocorreu um erro ao salvar o registo.' 
-      }
-    }
+    const errorMessage = courseStore.error || err.message || 'Ocorreu um erro ao guardar o curso.'
+    formErrors.value = { message: errorMessage }
+    showNotification('Erro ao guardar curso.', 'error')
   } finally {
     internalLoading.value = false
   }
@@ -102,7 +105,7 @@ const handleSubmit = async () => {
             <p class="text-xs text-slate-500 dark:text-slate-400">Preencha os dados do curso.</p>
           </div>
         </div>
-        <button @click="$emit('close')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center transition-colors">
+        <button @click="$emit('close')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 text-slate-500 flex items-center justify-center transition-colors">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
@@ -118,11 +121,8 @@ const handleSubmit = async () => {
           <input
             v-model="form.code"
             type="text"
-            placeholder="Ex: INF"
-            class="w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all uppercase"
-            :class="[
-              hasError('code') ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20'
-            ]"
+            placeholder="Ex: INFO"
+            :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('code') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
           />
           <span v-if="hasError('code')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('code') }}</span>
         </div>
@@ -132,38 +132,27 @@ const handleSubmit = async () => {
           <input
             v-model="form.name"
             type="text"
-            placeholder="Ex: Engenharia Informática"
-            class="w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all"
-            :class="[
-              hasError('name') ? 'border-red-500 focus:border-red-500 ring-1 ring-red-500/20' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20'
-            ]"
+            placeholder="Ex: Informática de Gestão"
+            :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('name') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
           />
           <span v-if="hasError('name')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('name') }}</span>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Descrição (Opcional)</label>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Descrição</label>
           <textarea
             v-model="form.description"
             rows="3"
-            placeholder="Breve descrição sobre o curso..."
-            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all resize-none"
+            placeholder="Descrição opcional do curso"
+            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
           ></textarea>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">
-          <button
-            type="button"
-            @click="$emit('close')"
-            class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-          >
+          <button type="button" @click="$emit('close')" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 transition-colors">
             Cancelar
           </button>
-          <button
-            type="submit"
-            :disabled="internalLoading"
-            class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50 flex items-center gap-2"
-          >
+          <button type="submit" :disabled="internalLoading" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 flex items-center gap-2">
             <i v-if="internalLoading" class="fa-solid fa-spinner animate-spin"></i>
             <span>{{ internalLoading ? 'A guardar...' : 'Guardar' }}</span>
           </button>
