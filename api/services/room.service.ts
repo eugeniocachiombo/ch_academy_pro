@@ -12,7 +12,7 @@ class RoomService extends BaseService {
                 update: updateRoomSchema
             }, 
             {
-                tenant: 'scoped' 
+                tenant: 'mixed' 
             }
         );
     }
