@@ -12,7 +12,7 @@ class YearService extends BaseService {
                 update: updateYearSchema
             }, 
             {
-                tenant: 'scoped' 
+                tenant: 'mixed' 
             }
         );
     }
