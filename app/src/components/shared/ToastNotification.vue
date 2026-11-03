@@ -43,7 +43,7 @@ function close() {
     role="status"
     aria-live="polite"
     :class="toast.visible ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-0 scale-95 pointer-events-none'"
-    class="fixed top-6 right-6 z-[60] transform transition-all duration-300 ease-out max-w-sm w-full px-4"
+    class="fixed top-6 right-6 z-[9999] transform transition-all duration-300 ease-out max-w-sm w-full px-4"
   >
     <div 
       class="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 px-4 py-3.5 rounded-2xl shadow-xl shadow-slate-900/10 dark:shadow-black/40 flex items-start gap-3.5 border border-slate-100 dark:border-slate-800/80 border-l-4"
