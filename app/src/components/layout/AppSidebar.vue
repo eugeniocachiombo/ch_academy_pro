@@ -51,6 +51,7 @@ const menuItems = computed(() => [
       { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'classes', label: 'Classes', icon: 'fa-layer-group', permition: p('classes.manage') },
       { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },
+      { id: 'groupconfigs', label: 'Configurar Turmas', icon: 'fa-config', permition: p('groupconfigs.manage') },
       { id: 'academic-subjects', label: 'Disciplinas', icon: 'fa-book', permition: p('subjects.manage') }, 
       { id: 'academic-rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
       { id: 'academic-grade-subjects', label: 'Disciplinas por Classe', icon: 'fa-book-open-reader', permition: p('grade_subjects.manage') },
