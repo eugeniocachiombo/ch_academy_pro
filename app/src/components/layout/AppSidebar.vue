@@ -49,26 +49,26 @@ const menuItems = computed(() => [
     icon: 'fa-book-open',
     children: [
       { id: 'years', label: 'Ano Letivo', icon: 'fa-calendar-days', permition: p('years.manage') },
-      { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
-      { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'classes', label: 'Classes', icon: 'fa-layer-group', permition: p('classes.manage') },
-      { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },
-      { id: 'groupconfigs', label: 'Configurar Turmas', icon: 'fa-sliders', permition: p('groupconfigs.manage') },
-      { id: 'subjects', label: 'Disciplinas', icon: 'fa-book', permition: p('subjects.manage') }, 
-      { id: 'rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
-      { id: 'class-subjects', label: 'Disciplinas das Classes', icon: 'fa-book-open-reader', permition: p('grade_subjects.manage') },
       { id: 'classcourses', label: 'Classes dos Cursos', icon: 'fa-network-wired', permition: p('course-grades.manage') },
-      { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
-      { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
+      { id: 'groupconfigs', label: 'Configurar Turmas', icon: 'fa-sliders', permition: p('groupconfigs.manage') },
+      { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
+      { id: 'subjects', label: 'Disciplinas', icon: 'fa-book', permition: p('subjects.manage') },
+      { id: 'class-subjects', label: 'Disciplinas das Classes', icon: 'fa-book-open-reader', permition: p('grade_subjects.manage') },
+      { id: 'rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
+      { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },
+      { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
+
       
       // a desenvolver
       { id: 'academic-enrollments', label: 'Matrículas', icon: 'fa-user-plus', permition: p('enrollments.manage') },
       { id: 'academic-teachers', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacher-allocations.manage') },
 
 
-      
-      { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
-      { id: 'academic-transcripts', label: 'Históricos e Declarações', icon: 'fa-scroll', permition: p('transcripts.manage') },
+      // { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
+      // { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
+      // { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
+      // { id: 'academic-transcripts', label: 'Históricos e Declarações', icon: 'fa-scroll', permition: p('transcripts.manage') },
     ],
   },
   {
