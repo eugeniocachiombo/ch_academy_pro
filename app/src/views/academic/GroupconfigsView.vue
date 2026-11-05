@@ -49,6 +49,7 @@ const openCreateModal = () => {
   selectedGroupconfig.value = null
   formData.value = {
     name: '',
+    group_id: null,
     year_id: null,
     course_id: null,
     class_id: null,
@@ -66,6 +67,7 @@ const openEditModal = (groupconfig: Groupconfig) => {
   formData.value = {
     id: groupconfig.id,
     name: groupconfig.name,
+    group_id: groupconfig.group_id,
     year_id: groupconfig.year_id,
     course_id: groupconfig.course_id,
     class_id: groupconfig.class_id,
@@ -135,7 +137,7 @@ const handleDelete = async () => {
           Configurações de Turmas
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Configure e gira as parametrizações de turmas.
+          Configure e gerencie as parametrizações de turmas.
         </p>
       </div>
       <button

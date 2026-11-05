@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
 import { useGroupconfigStore, type GroupconfigPayload } from '@/stores/groupconfig.store'
+import { useGroupStore } from '@/stores/group.store'
 import { useYearStore } from '@/stores/year.store'
 import { useCourseStore } from '@/stores/course.store'
 import { useClassStore } from '@/stores/class.store'
 import { usePeriodStore } from '@/stores/period.store'
 import { useRoomStore } from '@/stores/room.store'
 import { showNotification } from '@/services/general_service'
+import Select from 'primevue/select'
 
 const props = defineProps<{
   isOpen: boolean
@@ -21,6 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const groupconfigStore = useGroupconfigStore()
+const groupStore = useGroupStore()
 const yearStore = useYearStore()
 const courseStore = useCourseStore()
 const classStore = useClassStore()
@@ -29,6 +32,7 @@ const roomStore = useRoomStore()
 
 const form = ref<GroupconfigPayload & { id?: number }>({
   name: '',
+  group_id: null,
   year_id: null,
   course_id: null,
   class_id: null,
@@ -41,10 +45,10 @@ const fieldErrors = ref<Record<string, string[]>>()
 const generalMessage = ref('')
 const internalLoading = ref(false)
 
-// Carregar dados auxiliares ao abrir ou montar
 onMounted(async () => {
   try {
     await Promise.all([
+      groupStore.list?.(),
       yearStore.list?.(),
       courseStore.list?.(),
       classStore.list?.(),
@@ -66,30 +70,31 @@ const clearFieldError = (field: string) => {
   }
 }
 
-// Computados para buscar os selects nas stores
+const groups = computed(() => groupStore.groups || [])
 const years = computed(() => yearStore.years || [])
 const courses = computed(() => courseStore.courses || [])
 const classes = computed(() => classStore.classes || [])
 const periods = computed(() => periodStore.periods || [])
 const rooms = computed(() => roomStore.rooms || [])
 
-// Gerar nome automaticamente com base nas seleções
 const generateConfigName = () => {
-  if (props.isEditing) return // Não sobrescrever o nome automaticamente se estiver a editar
+  if (props.isEditing) return
 
+  const selectedGroup = groups.value.find((g: any) => g.id === form.value.group_id)?.name || ''
   const selectedYear = years.value.find((y: any) => y.id === form.value.year_id)?.name || ''
   const selectedCourse = courses.value.find((c: any) => c.id === form.value.course_id)?.name || ''
   const selectedClass = classes.value.find((cl: any) => cl.id === form.value.class_id)?.name || ''
   const selectedPeriod = periods.value.find((p: any) => p.id === form.value.period_id)?.name || ''
+  const selectedRoom = rooms.value.find((r: any) => r.id === form.value.room_id)?.name || ''
 
-  const parts = [selectedCourse, selectedClass, selectedPeriod, selectedYear].filter(Boolean)
+  const parts = [selectedCourse, selectedClass, selectedPeriod, selectedGroup, selectedRoom, selectedYear].filter(Boolean)
   if (parts.length > 0) {
     form.value.name = parts.join(' - ')
   }
 }
 
 watch(
-  () => [form.value.year_id, form.value.course_id, form.value.class_id, form.value.period_id],
+  () => [form.value.group_id, form.value.year_id, form.value.course_id, form.value.class_id, form.value.period_id, form.value.room_id],
   () => {
     generateConfigName()
   }
@@ -99,7 +104,6 @@ watch(
   () => props.isOpen,
   async (isOpen) => {
     if (isOpen && !props.isEditing) {
-      // Definir o ano activo por defeito ao abrir para criação
       const activeYear = years.value.find((y: any) => y.isCurrent) || years.value[0]
       if (activeYear) {
         form.value.year_id = activeYear.id
@@ -115,6 +119,7 @@ watch(
       ? { ...newData }
       : {
           name: '',
+          group_id: null,
           year_id: years.value.find((y: any) => y.isCurrent)?.id || null,
           course_id: null,
           class_id: null,
@@ -136,6 +141,7 @@ const handleSubmit = async () => {
   try {
     const payload: GroupconfigPayload = {
       name: form.value.name,
+      group_id: form.value.group_id ? Number(form.value.group_id) : null,
       year_id: form.value.year_id ? Number(form.value.year_id) : null,
       course_id: form.value.course_id ? Number(form.value.course_id) : null,
       class_id: form.value.class_id ? Number(form.value.class_id) : null,
@@ -189,43 +195,63 @@ const handleSubmit = async () => {
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nome da Configuração</label>
           <input
             v-model="form.name"
-            filter
-            @input="clearFieldError('name')"
+            disabled
             type="text"
             placeholder="Ex: Engenharia Informática - 1º Ano - Manhã"
-            :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('name') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
+            class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed focus:outline-none"
           />
-          <span v-if="hasError('name')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('name') }}</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Turma</label>
+          <Select
+            v-model="form.group_id"
+            :options="groups"
+            optionLabel="name"
+            optionValue="id"
+            filter
+            placeholder="Selecione a turma..."
+            @change="clearFieldError('group_id')"
+            class="w-full"
+            :class="{ 'p-invalid': hasError('group_id') }"
+          />
+          <span v-if="hasError('group_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('group_id') }}</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Ano Lectivo</label>
-            <select
+            <Select
+              v-model="form.year_id"
+              :options="years"
+              optionLabel="name"
+              optionValue="id"
               filter
-              v-model.number="form.year_id"
+              placeholder="Selecione o ano..."
               @change="clearFieldError('year_id')"
-              :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('year_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
+              class="w-full"
+              :class="{ 'p-invalid': hasError('year_id') }"
             >
-              <option :value="null">Selecione o ano...</option>
-              <option v-for="y in years" :key="y.id" :value="y.id">
-                {{ y.name }} {{ y.isCurrent ? '(Ativo)' : '' }}
-              </option>
-            </select>
+              <template #option="slotProps">
+                {{ slotProps.option.name }} {{ slotProps.option.isCurrent ? '(Ativo)' : '' }}
+              </template>
+            </Select>
             <span v-if="hasError('year_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('year_id') }}</span>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Curso</label>
-            <select
+            <Select
+              v-model="form.course_id"
+              :options="courses"
+              optionLabel="name"
+              optionValue="id"
               filter
-              v-model.number="form.course_id"
+              placeholder="Selecione o curso..."
               @change="clearFieldError('course_id')"
-              :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('course_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-            >
-              <option :value="null">Selecione o curso...</option>
-              <option v-for="c in courses" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+              class="w-full"
+              :class="{ 'p-invalid': hasError('course_id') }"
+            />
             <span v-if="hasError('course_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('course_id') }}</span>
           </div>
         </div>
@@ -233,44 +259,50 @@ const handleSubmit = async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Classe</label>
-            <select
-            filter
-              v-model.number="form.class_id"
+            <Select
+              v-model="form.class_id"
+              :options="classes"
+              optionLabel="name"
+              optionValue="id"
+              filter
+              placeholder="Selecione a classe..."
               @change="clearFieldError('class_id')"
-              :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('class_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-            >
-              <option :value="null">Selecione a classe...</option>
-              <option v-for="cl in classes" :key="cl.id" :value="cl.id">{{ cl.name }}</option>
-            </select>
+              class="w-full"
+              :class="{ 'p-invalid': hasError('class_id') }"
+            />
             <span v-if="hasError('class_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('class_id') }}</span>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Turno (Período)</label>
-            <select
-            filter
-              v-model.number="form.period_id"
+            <Select
+              v-model="form.period_id"
+              :options="periods"
+              optionLabel="name"
+              optionValue="id"
+              filter
+              placeholder="Selecione o turno..."
               @change="clearFieldError('period_id')"
-              :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('period_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-            >
-              <option :value="null">Selecione o turno...</option>
-              <option v-for="p in periods" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
+              class="w-full"
+              :class="{ 'p-invalid': hasError('period_id') }"
+            />
             <span v-if="hasError('period_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('period_id') }}</span>
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Sala</label>
-          <select
-          filter
-            v-model.number="form.room_id"
+          <Select
+            v-model="form.room_id"
+            :options="rooms"
+            optionLabel="name"
+            optionValue="id"
+            filter
+            placeholder="Selecione a sala..."
             @change="clearFieldError('room_id')"
-            :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('room_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-          >
-            <option :value="null">Selecione a sala...</option>
-            <option v-for="r in rooms" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
+            class="w-full"
+            :class="{ 'p-invalid': hasError('room_id') }"
+          />
           <span v-if="hasError('room_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('room_id') }}</span>
         </div>
 

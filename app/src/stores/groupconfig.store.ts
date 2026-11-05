@@ -7,6 +7,7 @@ import { handleError, type ParsedError } from '@/helpers/handle-error';
 export interface Groupconfig {
   id: number;
   name: string;
+  group_id: number;
   year_id: number;
   course_id: number;
   class_id: number;
@@ -19,6 +20,7 @@ export interface Groupconfig {
 
 export interface GroupconfigPayload {
   name: string;
+  group_id: number | null;
   year_id: number | null;
   course_id: number | null;
   class_id: number | null;
