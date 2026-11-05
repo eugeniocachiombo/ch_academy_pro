@@ -16,4 +16,5 @@ model Subject {
   tests             Test[]
 
   @@unique([name, school_id])
+  @@unique([code, school_id])
 }
