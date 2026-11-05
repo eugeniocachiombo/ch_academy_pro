@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createGroupconfigSchema = z.object({
     name: z.string({ required_error: "O nome é obrigatório" }).min(1, "O nome é obrigatório"),
+    group_id: z.number({ required_error: "A turma é obrigatória" }),
     year_id: z.number({ required_error: "O ano é obrigatório" }),
     course_id: z.number({ required_error: "O curso é obrigatório" }),
     class_id: z.number({ required_error: "A classe é obrigatória" }),

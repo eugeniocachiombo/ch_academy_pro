@@ -5,8 +5,9 @@ model Group {
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])
 
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  createdAt    DateTime?     @default(now())
+  updatedAt    DateTime?     @updatedAt
+  groupconfigs Groupconfig[]
 
   @@unique([name, school_id])
 }
