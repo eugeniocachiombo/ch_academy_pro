@@ -13,7 +13,11 @@ export class BaseRepository {
     }
 
     async findMany(args: any, model?: string) {
-        return await this.delegate(model).findMany(args);
+        const queryArgs = args || {};
+        if (!queryArgs.orderBy) {
+            queryArgs.orderBy = { id: 'desc' };
+        }
+        return await this.delegate(model).findMany(queryArgs);
     }
 
     async findFirst(args: any, model?: string) {
