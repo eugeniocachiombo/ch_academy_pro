@@ -28,7 +28,7 @@ export const academicRoutes: RouteRecordRaw[] = [
   },
   { 
     path: '/academico/salas', 
-    name: 'academic-rooms', 
+    name: 'rooms', 
     component: () => import('@/views/academic/RoomsView.vue'), 
     meta: { permission: 'rooms.manage' } 
   },
@@ -40,21 +40,21 @@ export const academicRoutes: RouteRecordRaw[] = [
   },
   { 
     path: '/academico/disciplinas', 
-    name: 'academic-subjects', 
+    name: 'subjects', 
     component: () => import('@/views/academic/SubjectsView.vue'), 
     meta: { permission: 'subjects.manage' } 
   },
   { 
     path: '/academico/curso-classes', 
-    name: 'academic-course-grades', 
-    component: () => UnderConstructionView, 
-    meta: { permission: 'course-grades.manage' } 
+    name: 'classcourses', 
+    component: () => import('@/views/academic/ClasscoursesView.vue'), 
+    meta: { permission: 'classcourses.manage' } 
   },
   { 
     path: '/academico/classes-disciplinas', 
-    name: 'academic-grade-subjects', 
-    component: () => UnderConstructionView, 
-    meta: { permission: 'grade_subjects.manage' } 
+    name: 'class-subjects', 
+    component: () => import('@/views/academic/ClassSubjectsView.vue'), 
+    meta: { permission: 'class-subjects.manage' } 
   },
   { 
     path: '/academico/notas', 
