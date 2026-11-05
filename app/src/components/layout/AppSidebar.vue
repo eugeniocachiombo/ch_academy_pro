@@ -48,6 +48,7 @@ const menuItems = computed(() => [
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
+      { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
       { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'classes', label: 'Classes', icon: 'fa-layer-group', permition: p('classes.manage') },
       { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },

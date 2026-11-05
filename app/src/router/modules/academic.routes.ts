@@ -3,6 +3,12 @@ import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 export const academicRoutes: RouteRecordRaw[] = [
   { 
+    path: '/academico/turnos', 
+    name: 'periods', 
+    component: () => import('@/views/academic/PeriodsView.vue'), 
+    meta: { permission: 'periods.manage' } 
+  },
+  { 
     path: '/academico/classes', 
     name: 'classes', 
     component: () => import('@/views/academic/ClassesView.vue'), 
