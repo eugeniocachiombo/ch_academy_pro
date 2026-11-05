@@ -40,6 +40,17 @@ const filteredYears = computed(() => {
   })
 })
 
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return '-'
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return dateStr.split('T')[0]
+    return d.toLocaleDateString('pt-PT')
+  } catch {
+    return dateStr
+  }
+}
+
 const openCreateModal = () => {
   if (!p('year.create')) return
   isEditing.value = false
@@ -116,9 +127,7 @@ const handleDelete = async () => {
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1
-          class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
-        >
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           Anos Letivos
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
@@ -138,13 +147,8 @@ const handleDelete = async () => {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg">
         <div class="flex items-center justify-between">
-          <span
-            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-            >Total de Anos Letivos</span
-          >
-          <div
-            class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center"
-          >
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total de Anos Letivos</span>
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
             <i class="fa-solid fa-calendar text-sm"></i>
           </div>
         </div>
@@ -152,13 +156,9 @@ const handleDelete = async () => {
       </div>
     </div>
 
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-center gap-4"
-    >
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-center gap-4">
       <div class="relative flex-1 w-full">
-        <i
-          class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
-        ></i>
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
         <input
           v-model="searchQuery"
           type="text"
@@ -168,9 +168,7 @@ const handleDelete = async () => {
       </div>
     </div>
 
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden"
-    >
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
       <DataTable
         class="custom-datatable"
         :value="filteredYears"
@@ -190,28 +188,45 @@ const handleDelete = async () => {
             <span class="font-mono text-xs text-slate-500">#{{ slotProps.data.id }}</span>
           </template>
         </Column>
-        <Column field="name" header="Ano Letivo" sortable style="width: 30%">
+        <Column field="name" header="Ano Letivo" sortable style="width: 25%">
           <template #body="slotProps">
-            <span class="font-semibold text-slate-900 dark:text-white text-sm">{{
-              slotProps.data.name
-            }}</span>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-calendar-days text-xs"></i>
+              </div>
+              <span class="font-semibold text-slate-900 dark:text-white text-sm">{{ slotProps.data.name }}</span>
+            </div>
           </template>
         </Column>
-        <Column field="isCurrent" header="Estado" sortable style="width: 20%">
+        <Column field="startdate" header="Data de Início" sortable style="width: 20%">
+          <template #body="slotProps">
+            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatDate(slotProps.data.startdate) }}</span>
+          </template>
+        </Column>
+        <Column field="enddate" header="Data de Fim" sortable style="width: 20%">
+          <template #body="slotProps">
+            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatDate(slotProps.data.enddate) }}</span>
+          </template>
+        </Column>
+        <Column field="isCurrent" header="Estado" sortable style="width: 15%">
           <template #body="slotProps">
             <span
               v-if="slotProps.data.isCurrent"
-              class="px-2.5 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-500 font-semibold border border-emerald-500/20"
-              >Actual</span
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20"
             >
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Actual
+            </span>
             <span
               v-else
-              class="px-2.5 py-1 text-xs rounded-full bg-slate-500/10 text-slate-400 font-semibold border border-slate-500/20"
-              >Inativo</span
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 font-semibold border border-slate-500/20"
             >
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              Inactivo
+            </span>
           </template>
         </Column>
-        <Column header="Acções" style="width: 20%">
+        <Column header="Ações" style="width: 10%">
           <template #body="slotProps">
             <div class="flex items-center gap-1.5" v-if="p('year.edit') || p('year.delete')">
               <button
