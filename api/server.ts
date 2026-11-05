@@ -18,6 +18,8 @@ import { groupconfigRoutes } from './routes/groupconfig.routes.js';
 import { periodRoutes } from './routes/preiod.routes.js';
 import { registerRoutes } from './routes/register.routes.js';
 import { teacherocupationRoutes } from './routes/teacherocupation.routes.js';
+import { classcourseRoutes } from './routes/classcourse.routes.js';
+import { classSubjectRoutes } from './routes/class-subject.routes.js';
 
 const app = express();
 
@@ -48,7 +50,9 @@ app.use(
   periodRoutes,
   registerRoutes,
   teacherocupationRoutes,
- );
+  classcourseRoutes,
+  classSubjectRoutes
+);
 
 app.get("/", (req, res) => {
   res.json({
