@@ -1,20 +1,41 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useGroupconfigStore, type Groupconfig, type GroupconfigPayload } from '@/stores/groupconfig.store'
+import { useYearStore } from '@/stores/year.store'
+import { useGroupStore } from '@/stores/group.store'
+import { useClassStore } from '@/stores/class.store'
+import { useCourseStore } from '@/stores/course.store'
+import { usePeriodStore } from '@/stores/period.store'
+import { useRoomStore } from '@/stores/room.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { showNotification } from '@/services/general_service'
+
 import GroupconfigsFormView from './GroupconfigsFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
-import { useAuthStore } from '@/stores/auth.store'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import Select from 'primevue/select'
 
 const groupconfigStore = useGroupconfigStore()
+const yearStore = useYearStore()
+const groupStore = useGroupStore()
+const classStore = useClassStore()
+const courseStore = useCourseStore()
+const periodStore = usePeriodStore()
+const roomStore = useRoomStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
 
 const searchQuery = ref('')
+const selectedYearFilter = ref<number | null>(null)
+const selectedGroupFilter = ref<number | null>(null)
+const selectedClassFilter = ref<number | null>(null)
+const selectedCourseFilter = ref<number | null>(null)
+const selectedPeriodFilter = ref<number | null>(null)
+const selectedRoomFilter = ref<number | null>(null)
+
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedGroupconfig = ref<Groupconfig | null>(null)
@@ -27,21 +48,64 @@ const isDeleting = ref(false)
 
 onMounted(async () => {
   try {
-    await groupconfigStore.list()
+    await Promise.all([
+      groupconfigStore.list(),
+      yearStore.list(),
+      groupStore.list(),
+      classStore.list(),
+      courseStore.list(),
+      periodStore.list(),
+      roomStore.list()
+    ])
+
+    const activeYear = yearStore.years.find((y: any) => y?.isCurrent)
+    if (activeYear) {
+      selectedYearFilter.value = activeYear.id
+    }
   } catch {}
 })
 
-const totalCount = computed(() => groupconfigStore.groupconfigs.filter((g: any) => g != null).length)
+const totalCount = computed(() => filteredGroupconfigs.value.length)
 
 const filteredGroupconfigs = computed(() => {
   return groupconfigStore.groupconfigs.filter((g: any) => {
     if (!g) return false
-    return (
-      !searchQuery.value ||
-      g.name?.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
+
+    if (selectedYearFilter.value && g.year_id !== selectedYearFilter.value) return false
+    if (selectedGroupFilter.value && g.group_id !== selectedGroupFilter.value) return false
+    if (selectedClassFilter.value && g.class_id !== selectedClassFilter.value) return false
+    if (selectedCourseFilter.value && g.course_id !== selectedCourseFilter.value) return false
+    if (selectedPeriodFilter.value && g.period_id !== selectedPeriodFilter.value) return false
+    if (selectedRoomFilter.value && g.room_id !== selectedRoomFilter.value) return false
+
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase()
+      const matchName = g.name?.toLowerCase().includes(q)
+      const matchGroup = g.group?.name?.toLowerCase().includes(q)
+      const matchClass = g.class?.name?.toLowerCase().includes(q)
+      const matchCourse = g.course?.name?.toLowerCase().includes(q)
+      const matchPeriod = g.period?.name?.toLowerCase().includes(q)
+      const matchRoom = g.room?.name?.toLowerCase().includes(q)
+      const matchYear = g.year?.name?.toLowerCase().includes(q)
+
+      return matchName || matchGroup || matchClass || matchCourse || matchPeriod || matchRoom || matchYear
+    }
+
+    return true
   })
 })
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedGroupFilter.value = null
+  selectedClassFilter.value = null
+  selectedCourseFilter.value = null
+  selectedPeriodFilter.value = null
+  selectedRoomFilter.value = null
+  
+  const activeYear = yearStore.years.find((y: any) => y?.isCurrent)
+  selectedYearFilter.value = activeYear ? activeYear.id : null
+}
 
 const openCreateModal = () => {
   if (!p('groupconfig.create')) return
@@ -50,7 +114,7 @@ const openCreateModal = () => {
   formData.value = {
     name: '',
     group_id: null,
-    year_id: null,
+    year_id: selectedYearFilter.value || null,
     course_id: null,
     class_id: null,
     period_id: null,
@@ -131,13 +195,11 @@ const handleDelete = async () => {
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1
-          class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
-        >
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           Configurações de Turmas
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Configure e gerencie as parametrizações de turmas.
+          Configure e gerencie as parametrizações de turmas e salas por período.
         </p>
       </div>
       <button
@@ -153,13 +215,10 @@ const handleDelete = async () => {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg">
         <div class="flex items-center justify-between">
-          <span
-            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-            >Total de Configurações</span
-          >
-          <div
-            class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center"
-          >
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Total Encontrado
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
             <i class="fa-solid fa-sliders text-sm"></i>
           </div>
         </div>
@@ -167,60 +226,138 @@ const handleDelete = async () => {
       </div>
     </div>
 
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-center gap-4"
-    >
-      <div class="relative flex-1 w-full">
-        <i
-          class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
-        ></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Pesquisar por nome..."
-          class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-filter text-indigo-500"></i>
+          <span>Filtros de Pesquisa</span>
+        </h2>
+        <button
+          @click="clearFilters"
+          class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold hover:underline flex items-center gap-1"
+        >
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Repor Filtros</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="relative w-full sm:col-span-2 lg:col-span-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Pesquisa rápida..."
+            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
+
+        <Select
+          v-model="selectedYearFilter"
+          :options="yearStore.years"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Ano Letivo"
+          showClear
+          filter
+          class="w-full text-xs"
+        />
+
+        <Select
+          v-model="selectedGroupFilter"
+          :options="groupStore.groups"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Todas as Turmas"
+          showClear
+          filter
+          class="w-full text-xs"
+        />
+
+        <Select
+          v-model="selectedClassFilter"
+          :options="classStore.classes"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Todas as Classes"
+          showClear
+          filter
+          class="w-full text-xs"
+        />
+
+        <Select
+          v-model="selectedCourseFilter"
+          :options="courseStore.courses"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Todos os Cursos"
+          showClear
+          filter
+          class="w-full text-xs"
+        />
+
+        <Select
+          v-model="selectedPeriodFilter"
+          :options="periodStore.periods"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Todos os Turnos"
+          showClear
+          filter
+          class="w-full text-xs"
+        />
+
+        <Select
+          v-model="selectedRoomFilter"
+          :options="roomStore.rooms"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Todas as Salas"
+          showClear
+          filter
+          class="w-full text-xs"
         />
       </div>
     </div>
 
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden"
-    >
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden">
       <DataTable
-        class="custom-datatable"
+        class="custom-datatable text-xs"
         :value="filteredGroupconfigs"
         :loading="groupconfigStore.isLoading"
         paginator
         :rows="10"
-        tableStyle="min-width: 50rem"
+        tableStyle="min-width: 60rem"
       >
         <template #empty>
           <div class="py-12 text-center text-slate-400 dark:text-slate-500">
             <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-            <p class="text-xs">Nenhum registo encontrado.</p>
+            <p class="text-xs">Nenhuma configuração encontrada com os filtros aplicados.</p>
           </div>
         </template>
-        <Column field="name" header="Nome" sortable style="width: 70%">
+
+        <Column field="name" header="Nome da Configuração" sortable style="width: 20%">
           <template #body="slotProps">
-            <span class="font-semibold text-slate-900 dark:text-white text-sm">{{
-              slotProps.data.name
-            }}</span>
+            <span class="font-bold text-slate-900 dark:text-white text-xs">
+              {{ slotProps.data.name }}
+            </span>
           </template>
         </Column>
-        <Column header="Acções" style="width: 30%">
+
+        <Column header="Acções" style="width: 8%">
           <template #body="slotProps">
             <div class="flex items-center gap-1.5" v-if="p('groupconfig.edit') || p('groupconfig.delete')">
               <button
                 v-if="p('groupconfig.edit')"
                 @click="openEditModal(slotProps.data)"
-                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+                class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
                 v-if="p('groupconfig.delete')"
                 @click="confirmDeleteGroupconfig(slotProps.data)"
-                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
+                class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >
                 <i class="fa-solid fa-trash text-xs"></i>
               </button>
