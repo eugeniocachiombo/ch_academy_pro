@@ -44,6 +44,14 @@ const menuItems = computed(() => [
     permition: true,
   },
   {
+    key: 'institutions',
+    label: 'Instituições',
+    icon: 'fa-school',
+    children: [
+       { id: 'schools', label: 'Dados das Instituições', icon: 'fa-building-columns', permition: p('schools.manage') },
+    ],
+  },
+  {
     key: 'academic',
     label: 'Acadêmico',
     icon: 'fa-book-open',

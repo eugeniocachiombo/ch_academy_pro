@@ -11,6 +11,7 @@ import { teachersRoutes } from './modules/teachers.routes'
 import { communicationsRoutes } from './modules/communications.routes'
 import { reportsRoutes } from './modules/reports.routes'
 import { settingsRoutes } from './modules/settings.routes'
+import { institutionsRoutes } from './modules/institutions.routes'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -35,7 +36,7 @@ const routes: RouteRecordRaw[] = [
   ...communicationsRoutes,
   ...reportsRoutes,
   ...settingsRoutes,
-
+  ...institutionsRoutes,
   { path: '/:pathMatch(.*)*', redirect: { name: 'dashboard' } },
 ]
 
