@@ -142,7 +142,7 @@ const saveChanges = async () => {
     await classSubjectStore.list()
     buildMapping()
 
-    successMessage.value = 'Disciplinas da classe atualizadas com sucesso!'
+    successMessage.value = 'Disciplinas da classe actualizadas com sucesso!'
     setTimeout(() => {
       successMessage.value = null
     }, 4000)
