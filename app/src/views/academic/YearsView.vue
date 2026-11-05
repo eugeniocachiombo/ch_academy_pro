@@ -202,7 +202,7 @@ const handleDelete = async () => {
             <span
               v-if="slotProps.data.isCurrent"
               class="px-2.5 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-500 font-semibold border border-emerald-500/20"
-              >Atual</span
+              >Actual</span
             >
             <span
               v-else

@@ -143,7 +143,7 @@ const handleSubmit = async () => {
 
         <div class="flex items-center gap-2 pt-2">
           <input id="isCurrent" v-model="form.isCurrent" type="checkbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-700" />
-          <label for="isCurrent" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">Marcar como Ano Atual</label>
+          <label for="isCurrent" class="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">Marcar como Ano Actual</label>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">

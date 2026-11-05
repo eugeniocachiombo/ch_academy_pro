@@ -48,6 +48,7 @@ const menuItems = computed(() => [
     label: 'Acadêmico',
     icon: 'fa-book-open',
     children: [
+      { id: 'years', label: 'Ano Letivo', icon: 'fa-calendar-days', permition: p('years.manage') },
       { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
       { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'classes', label: 'Classes', icon: 'fa-layer-group', permition: p('classes.manage') },
@@ -62,9 +63,11 @@ const menuItems = computed(() => [
       
       // a desenvolver
       { id: 'academic-enrollments', label: 'Matrículas', icon: 'fa-user-plus', permition: p('enrollments.manage') },
-      { id: 'academic-schedules', label: 'Grade Horária', icon: 'fa-calendar-days', permition: p('schedules.manage') },
-      { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
       { id: 'academic-teachers', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacher-allocations.manage') },
+
+
+      
+      { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
       { id: 'academic-transcripts', label: 'Históricos e Declarações', icon: 'fa-scroll', permition: p('transcripts.manage') },
     ],
   },
@@ -121,7 +124,6 @@ const menuItems = computed(() => [
     label: 'Configurações',
     icon: 'fa-gears',
     children: [
-      { id: 'settings-academic-year', label: 'Ano Letivo', icon: 'fa-calendar-days', permition: p('academic_year.manage') },
       { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permition: p('user.manage') },
       { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permition: p('role.manage') },
       { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permition: p('permition.manage') },

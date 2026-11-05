@@ -3,6 +3,12 @@ import UnderConstructionView from '@/views/UnderConstructionView.vue'
 
 export const academicRoutes: RouteRecordRaw[] = [
   { 
+    path: '/configuracoes/anos-lectivos', 
+    name: 'years', 
+    component: () => import('@/views/academic/YearsView.vue'), 
+    meta: { permission: 'years.manage' } 
+  },
+  { 
     path: '/academico/turnos', 
     name: 'periods', 
     component: () => import('@/views/academic/PeriodsView.vue'), 

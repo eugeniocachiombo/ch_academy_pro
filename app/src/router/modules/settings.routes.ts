@@ -2,12 +2,6 @@ import type { RouteRecordRaw } from 'vue-router'
 
 export const settingsRoutes: RouteRecordRaw[] = [
   { 
-    path: '/configuracoes/anos-lectivos', 
-    name: 'settings-academic-year', 
-    component: () => import('@/views/academic/YearsView.vue'), 
-    meta: { permission: 'academic_years.manage' } 
-  },
-  { 
     path: '/configuracoes/utilizadores', 
     name: 'settings-users', 
     component: () => import('@/views/settings/UsersView.vue'), 
