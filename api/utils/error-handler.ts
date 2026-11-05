@@ -21,7 +21,15 @@ export function errorReport(res: Response, error: unknown) {
         return res.status(statusMap[error.code] || 400).json({ message: error.message });
     }
 
-    // Tratamento de erros do Prisma via código de erro (sem importar instâncias pesadas)
+    if (typeof error === 'object' && error !== null && 'statusCode' in error && 'message' in error) {
+        const customError = error as { statusCode: number; message: string; fieldErrors?: any };
+        return res.status(customError.statusCode || 400).json({
+            message: customError.message,
+            errors: customError.fieldErrors || undefined
+        });
+    }
+
+    
     if (typeof error === 'object' && error !== null && 'code' in error) {
         const prismaError = error as { code: string; meta?: any };
         switch (prismaError.code) {
