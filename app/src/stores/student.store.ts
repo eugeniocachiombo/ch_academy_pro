@@ -8,7 +8,7 @@ import { type PersonPayload } from './person.store';
 
 export interface Student {
   id: number;
-  processnum: number;
+  processnum: string;
   user_id: number;
   province_id?: string | null;
   municipality_id?: string | null;
@@ -26,7 +26,7 @@ export interface Student {
 }
 
 export interface StudentPayload {
-  processnum?: number;
+  processnum?: string;
   user_id?: number | null;
   province_id?: string | null;
   municipality_id?: string | null;
@@ -69,12 +69,17 @@ export const useStudentStore = defineStore('student', () => {
       students.value = response;
       return response;
     } catch (err: any) {
-      const parsed = buildError(err, 'Erro ao carregar estudantes.');
+      const parsed = buildError(err, 'Erro ao carregar os alunos.');
       error.value = parsed.message;
       throw parsed;
     } finally {
       isLoading.value = false;
     }
+  }
+
+  async function checkBi(bi: string): Promise<boolean> {
+    const response = await api.get<{ exists: boolean }>(`/students/check-bi/${encodeURIComponent(bi.trim())}`);
+    return !!response.exists;
   }
 
   async function create(payload: StudentPayload): Promise<Student> {
@@ -85,7 +90,7 @@ export const useStudentStore = defineStore('student', () => {
       students.value.push(response);
       return response;
     } catch (err: any) {
-      const parsed = buildError(err, 'Erro ao criar o estudante.');
+      const parsed = buildError(err, 'Erro ao registar o aluno.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -105,7 +110,7 @@ export const useStudentStore = defineStore('student', () => {
       }
       return response;
     } catch (err: any) {
-      const parsed = buildError(err, 'Erro ao atualizar o estudante.');
+      const parsed = buildError(err, 'Erro ao actualizar o aluno.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -121,7 +126,7 @@ export const useStudentStore = defineStore('student', () => {
       await api.delete(`/students/${encryptedId}`);
       students.value = students.value.filter(s => s.id !== Number(id));
     } catch (err: any) {
-      const parsed = buildError(err, 'Erro ao remover o estudante.');
+      const parsed = buildError(err, 'Erro ao eliminar o aluno.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -129,5 +134,5 @@ export const useStudentStore = defineStore('student', () => {
     }
   }
 
-  return { students, isLoading, error, clearError, list, create, update, remove };
+  return { students, isLoading, error, clearError, list, create, update, remove, checkBi };
 });

@@ -21,9 +21,9 @@ class StudentService extends BaseService {
             },
             {
                 tenant: 'mixed',
-                modes: { person: 'global' }, // Tornar global
+                modes: { person: 'global' },
                 include: {
-                    user: true,
+                    user: { include: { person: true } },
                     school: true,
                     province: true,
                     municipality: true
@@ -69,7 +69,6 @@ class StudentService extends BaseService {
             const username = processnum;
             const password = await formatPassword('123456');
             const email = person.email || `${username}@student.com`;
-            
 
             const userPayload = this.prepareData('user', ctx, {
                 name,
@@ -108,6 +107,7 @@ class StudentService extends BaseService {
     async update(ctx: CrudContext, id: number, data: unknown) {
         const schema = this.schemas?.update;
         let body = schema ? await schema.parseAsync(data) : data;
+        body = await this.beforeUpdate(body, ctx);
 
         const { user: _ignoredUser, person: personDto, ...studentDto } = body as any;
         const studentData = this.prepareData('student', ctx, studentDto, false);
@@ -140,6 +140,16 @@ class StudentService extends BaseService {
 
             return updatedStudent;
         });
+    }
+
+    async biExists(bi: string): Promise<boolean> {
+        const normalized = bi.trim().toUpperCase().replace(/\s/g, '');
+        if (!normalized) return false;
+        const person = await personRepository.findFirst({
+            where: { bi_number: normalized },
+            select: { id: true }
+        }, 'person');
+        return !!person;
     }
 }
 
