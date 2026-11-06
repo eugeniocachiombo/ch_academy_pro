@@ -50,16 +50,21 @@ async function main() {
 
   // Lista base dos módulos/recursos do sistema
   const modules = [
-    { key: "course", label: "Cursos" },
-    { key: "subject", label: "Disciplinas" },
-    { key: "class", label: "Classes" },
-    { key: "room", label: "Salas" },
-    { key: "year", label: "Ano Letivo" },
-    { key: "user", label: "Utilizadores" },
-    { key: "role", label: "Funções/Perfis" },
-    { key: "permition", label: "Permissões do Sistema" },
-    { key: "role_permition", label: "Permissões de Funções" },
-    { key: "user_role", label: "Vínculos de Funções" },
+    { key: "courses", label: "Cursos" },
+    { key: "subjects", label: "Disciplinas" },
+    { key: "classes", label: "Classes" },
+    { key: "rooms", label: "Salas" },
+    { key: "years", label: "Ano Letivo" },
+    { key: "users", label: "Utilizadores" },
+    { key: "roles", label: "Funções/Perfis" },
+    { key: "permissions", label: "Permissões do Sistema" },
+    { key: "role-permissions", label: "Permissões de Funções" },
+    { key: "user-roles", label: "Vínculos de Funções" },
+    { key: "periods", label: "Turnos" },
+    { key: "groups", label: "Turmas" },
+    { key: "groupconfigs", label: "Configurar Turmas" },
+    { key: "classcourses", label: "Classes dos Cursos" },
+    { key: "class-subjects", label: "Disciplinas das Classes" },
   ];
 
   // Ações disponíveis e suas descrições amigáveis

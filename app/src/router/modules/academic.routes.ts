@@ -18,19 +18,19 @@ export const academicRoutes: RouteRecordRaw[] = [
     path: '/academico/classes', 
     name: 'classes', 
     component: () => import('@/views/academic/ClassesView.vue'), 
-    meta: { permission: 'class.manage' } 
+    meta: { permission: 'classes.manage' } 
   },
   { 
     path: '/academico/turmas', 
     name: 'groups', 
     component: () => import('@/views/academic/GroupsView.vue'),
-    meta: { permission: 'group.manage' } 
+    meta: { permission: 'groups.manage' } 
   },
   { 
     path: '/academico/turmas/configuracao', 
     name: 'groupconfigs', 
     component: () => import('@/views/academic/GroupconfigsView.vue'),
-    meta: { permission: 'groupconfig.manage' } 
+    meta: { permission: 'groupconfigs.manage' } 
   },
   { 
     path: '/academico/salas', 
