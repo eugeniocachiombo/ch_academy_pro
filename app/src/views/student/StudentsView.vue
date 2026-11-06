@@ -9,7 +9,64 @@ import { useAuthStore } from '@/stores/auth.store'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
-type StatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE'
+type UserStatus = 'ACTIVE' | 'INDEBT' | 'GIVEUP' | 'BLOCKED'
+type StatusFilter = 'ALL' | UserStatus
+
+interface StatusMeta {
+  label: string
+  plural: string
+  icon: string
+  badge: string
+  dot: string
+  card: string
+  cardActive: string
+  iconBox: string
+}
+
+const statusMeta: Record<UserStatus, StatusMeta> = {
+  ACTIVE: {
+    label: 'Activo',
+    plural: 'Activos',
+    icon: 'fa-circle-check',
+    badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    dot: 'bg-emerald-500',
+    card: 'bg-emerald-500/10 border-emerald-500/30',
+    cardActive: 'ring-2 ring-emerald-500',
+    iconBox: 'bg-emerald-500/10 text-emerald-500'
+  },
+  INDEBT: {
+    label: 'Em dívida',
+    plural: 'Em dívida',
+    icon: 'fa-hand-holding-dollar',
+    badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    dot: 'bg-amber-500',
+    card: 'bg-amber-500/10 border-amber-500/30',
+    cardActive: 'ring-2 ring-amber-500',
+    iconBox: 'bg-amber-500/10 text-amber-500'
+  },
+  GIVEUP: {
+    label: 'Desistente',
+    plural: 'Desistentes',
+    icon: 'fa-person-walking-arrow-right',
+    badge: 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20',
+    dot: 'bg-slate-400',
+    card: 'bg-slate-500/10 border-slate-500/30',
+    cardActive: 'ring-2 ring-slate-500',
+    iconBox: 'bg-slate-500/10 text-slate-500'
+  },
+  BLOCKED: {
+    label: 'Bloqueado',
+    plural: 'Bloqueados',
+    icon: 'fa-ban',
+    badge: 'bg-red-500/10 text-red-500 dark:text-red-400 border-red-500/20',
+    dot: 'bg-red-400',
+    card: 'bg-red-500/10 border-red-500/30',
+    cardActive: 'ring-2 ring-red-500',
+    iconBox: 'bg-red-500/10 text-red-500'
+  }
+}
+
+const statusKeys: UserStatus[] = ['ACTIVE', 'INDEBT', 'GIVEUP', 'BLOCKED']
 
 const studentStore = useStudentStore()
 const authStore = useAuthStore()
@@ -28,12 +85,6 @@ const studentToDeleteId = ref<number | null>(null)
 const studentToDeleteName = ref('')
 const isDeleting = ref(false)
 
-const statusOptions: { value: StatusFilter; label: string }[] = [
-  { value: 'ALL', label: 'Todos' },
-  { value: 'ACTIVE', label: 'Activos' },
-  { value: 'INACTIVE', label: 'Inactivos' }
-]
-
 onMounted(async () => {
   try {
     await studentStore.list()
@@ -43,8 +94,33 @@ onMounted(async () => {
 const validStudents = computed(() => studentStore.students.filter((s: any) => s != null))
 
 const totalCount = computed(() => validStudents.value.length)
-const activeCount = computed(() => validStudents.value.filter((s: any) => s.user?.status === 'ACTIVE').length)
-const inactiveCount = computed(() => totalCount.value - activeCount.value)
+
+const countByStatus = computed(() => {
+  const counts: Record<UserStatus, number> = { ACTIVE: 0, INDEBT: 0, GIVEUP: 0, BLOCKED: 0 }
+  for (const s of validStudents.value as any[]) {
+    const status = s.user?.status as UserStatus | undefined
+    if (status && status in counts) counts[status]++
+  }
+  return counts
+})
+
+const filterOptions = computed(() => [
+  { value: 'ALL' as StatusFilter, label: 'Todos', count: totalCount.value },
+  ...statusKeys.map((key) => ({
+    value: key as StatusFilter,
+    label: statusMeta[key].plural,
+    count: countByStatus.value[key]
+  }))
+])
+
+const metaOf = (s: any): StatusMeta | null => {
+  const status = s?.user?.status as UserStatus | undefined
+  return status && statusMeta[status] ? statusMeta[status] : null
+}
+
+const toggleStatusFilter = (value: UserStatus) => {
+  statusFilter.value = statusFilter.value === value ? 'ALL' : value
+}
 
 const fullName = (s: any): string => {
   const person = s?.user?.person
@@ -67,8 +143,7 @@ const hasActiveFilters = computed(() => !!searchQuery.value || statusFilter.valu
 const filteredStudents = computed(() => {
   const term = searchQuery.value.trim().toLowerCase()
   return validStudents.value.filter((s: any) => {
-    if (statusFilter.value === 'ACTIVE' && s.user?.status !== 'ACTIVE') return false
-    if (statusFilter.value === 'INACTIVE' && s.user?.status === 'ACTIVE') return false
+    if (statusFilter.value !== 'ALL' && s.user?.status !== statusFilter.value) return false
     if (!term) return true
     return (
       fullName(s).toLowerCase().includes(term) ||
@@ -230,8 +305,15 @@ const handleDelete = async () => {
       </button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/40 shadow-lg">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <button
+        type="button"
+        @click="statusFilter = 'ALL'"
+        :class="[
+          'p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/30 shadow-lg text-left transition-all hover:-translate-y-0.5',
+          statusFilter === 'ALL' ? 'ring-2 ring-indigo-500' : ''
+        ]"
+      >
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</span>
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
@@ -239,28 +321,31 @@ const handleDelete = async () => {
           </div>
         </div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>
-      </div>
-      <div class="p-5 rounded-2xl border bg-emerald-500/10 border-emerald-500/40 shadow-lg">
+      </button>
+
+      <button
+        v-for="key in statusKeys"
+        :key="key"
+        type="button"
+        @click="toggleStatusFilter(key)"
+        :title="statusFilter === key ? 'Clique para limpar o filtro' : `Filtrar: ${statusMeta[key].plural}`"
+        :class="[
+          'p-5 rounded-2xl border shadow-lg text-left transition-all hover:-translate-y-0.5',
+          statusMeta[key].card,
+          statusFilter === key ? statusMeta[key].cardActive : ''
+        ]"
+      >
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Activos</span>
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-            <i class="fa-solid fa-circle-check text-sm"></i>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ statusMeta[key].plural }}</span>
+          <div :class="['w-9 h-9 rounded-xl flex items-center justify-center', statusMeta[key].iconBox]">
+            <i :class="['fa-solid text-sm', statusMeta[key].icon]"></i>
           </div>
         </div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ activeCount }}</div>
-      </div>
-      <div class="p-5 rounded-2xl border bg-red-500/10 border-red-500/40 shadow-lg">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Inactivos</span>
-          <div class="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
-            <i class="fa-solid fa-circle-pause text-sm"></i>
-          </div>
-        </div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ inactiveCount }}</div>
-      </div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ countByStatus[key] }}</div>
+      </button>
     </div>
 
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col lg:flex-row lg:items-center gap-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col xl:flex-row xl:items-center gap-4">
       <div class="relative flex-1 w-full">
         <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
         <input
@@ -279,20 +364,30 @@ const handleDelete = async () => {
           <i class="fa-solid fa-xmark text-xs"></i>
         </button>
       </div>
-      <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 self-start lg:self-auto">
+      <div class="flex rounded-xl bg-slate-100 dark:bg-slate-950 p-1 overflow-x-auto max-w-full">
         <button
-          v-for="option in statusOptions"
+          v-for="option in filterOptions"
           :key="option.value"
           type="button"
           @click="statusFilter = option.value"
           :class="[
-            'px-4 py-2 rounded-lg text-xs font-semibold transition-all',
+            'px-4 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-2',
             statusFilter === option.value
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
           ]"
         >
-          {{ option.label }}
+          <span>{{ option.label }}</span>
+          <span
+            :class="[
+              'px-1.5 py-0.5 rounded-md text-[10px] font-bold',
+              statusFilter === option.value
+                ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+            ]"
+          >
+            {{ option.count }}
+          </span>
         </button>
       </div>
     </div>
@@ -315,7 +410,7 @@ const handleDelete = async () => {
           <div class="py-14 text-center text-slate-400 dark:text-slate-500">
             <i class="fa-solid fa-folder-open text-3xl mb-3 opacity-40"></i>
             <template v-if="hasActiveFilters">
-              <p class="text-sm font-medium text-slate-600 dark:text-slate-300">Nenhum aluno corresponde à pesquisa.</p>
+              <p class="text-sm font-medium text-slate-600 dark:text-slate-300">Nenhum aluno corresponde aos filtros aplicados.</p>
               <button
                 type="button"
                 @click="clearFilters"
@@ -344,7 +439,7 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Aluno" style="width: 32%">
+        <Column header="Aluno" style="width: 30%">
           <template #body="slotProps">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
@@ -370,21 +465,21 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column field="user.status" header="Estado" sortable style="width: 12%">
+        <Column field="user.status" header="Estado" sortable style="width: 14%">
           <template #body="slotProps">
             <span
-              v-if="slotProps.data.user?.status === 'ACTIVE'"
-              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20"
+              v-if="metaOf(slotProps.data)"
+              :class="['inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-semibold border whitespace-nowrap', metaOf(slotProps.data)!.badge]"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              Activo
+              <span :class="['w-1.5 h-1.5 rounded-full', metaOf(slotProps.data)!.dot]"></span>
+              {{ metaOf(slotProps.data)!.label }}
             </span>
             <span
               v-else
-              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-red-500/10 text-red-500 dark:text-red-400 font-semibold border border-red-500/20"
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full bg-slate-500/10 text-slate-500 font-semibold border border-slate-500/20"
             >
-              <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-              Inactivo
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+              {{ slotProps.data.user?.status || 'Sem estado' }}
             </span>
           </template>
         </Column>
