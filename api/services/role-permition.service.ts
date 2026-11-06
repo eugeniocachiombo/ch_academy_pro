@@ -12,7 +12,8 @@ class RolePermitionService extends BaseService {
                 update: updateRolePermitionSchema
             }, 
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: { role: true, permition: true }
             }
         );
     }
