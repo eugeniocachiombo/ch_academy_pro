@@ -57,7 +57,7 @@ export class BaseService {
     protected options: CrudOptions = {}
   ) {}
 
-  private getModel(model?: PrismaModel): PrismaModel {
+  protected getModel(model?: PrismaModel): PrismaModel {
     const activeModel = model || this.defaultModel;
     if (!activeModel) throw new CrudError('INVALID_MODEL', 'Nenhum modelo Prisma foi especificado.');
     return activeModel;
@@ -95,7 +95,7 @@ export class BaseService {
     return { AND: [where, { school_id: this.requireSchool(ctx) }] };
   }
 
-  private prepareData(m: PrismaModel, ctx: CrudContext, data: any, isCreate: boolean) {
+  protected prepareData(m: PrismaModel, ctx: CrudContext, data: any, isCreate: boolean) {
     const mode = this.mode(m);
     if (mode === 'global') {
       if (!ctx.isSuperAdmin) throw new CrudError('FORBIDDEN');
