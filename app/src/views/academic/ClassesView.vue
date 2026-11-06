@@ -196,14 +196,14 @@ const handleDelete = async () => {
           <template #body="slotProps">
             <div class="flex items-center gap-1.5" v-if="p('classes.edit') || p('classes.delete')">
               <button
-                v-if="p('classes.edit')"
+                v-if="p('classes.edit') && slotProps.data.editable"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('classes.delete')"
+                v-if="p('classes.delete') && slotProps.data.editable"
                 @click="confirmDeleteClass(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

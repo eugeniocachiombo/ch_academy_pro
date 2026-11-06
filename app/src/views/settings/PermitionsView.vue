@@ -183,7 +183,7 @@ const deletePermition = async (id: number) => {
             <div class="flex items-center justify-start gap-1.5" v-if="p('permitions.update') || p('permitions.delete')">
               <!-- Editar Permissão -->
               <button
-                v-if="p('permitions.update')"
+                v-if="p('permitions.update') && slotProps.data.editable"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Permissão"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -193,7 +193,7 @@ const deletePermition = async (id: number) => {
 
               <!-- Eliminar Permissão -->
               <button
-                v-if="p('permitions.delete')"
+                v-if="p('permitions.delete') && slotProps.data.editable"
                 @click="deletePermition(slotProps.data.id)"
                 title="Eliminar Permissão"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"

@@ -214,7 +214,7 @@ const deleteRole = async (id: number) => {
             >
               <!-- Editar Função -->
               <button
-                v-if="p('roles.update')"
+                v-if="p('roles.update') && slotProps.data.editable"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Função"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -224,7 +224,7 @@ const deleteRole = async (id: number) => {
 
               <!-- Eliminar Função -->
               <button
-                v-if="p('roles.delete')"
+                v-if="p('roles.delete') && slotProps.data.editable"
                 @click="deleteRole(slotProps.data.id)"
                 title="Eliminar Função"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"
