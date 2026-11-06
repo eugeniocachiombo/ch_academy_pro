@@ -19,10 +19,9 @@ model User {
   updatedAt DateTime? @updatedAt
 
   person        Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  persons       Person[]   @relation("UserPersons")
   studentschool School?    @relation(fields: [school_id], references: [id])
   userRoles     UserRole[]
-  student       Student[]
+  student       Student?
   parent        Parent?
   teacher       Teacher?
 }

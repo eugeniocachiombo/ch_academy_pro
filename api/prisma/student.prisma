@@ -14,7 +14,6 @@ model Student {
   updatedAt       DateTime?       @updatedAt
   municipality    Municipality?   @relation(fields: [municipalityId], references: [id])
   municipalityId  Int?
-  people          Person[]
   province        Province?       @relation(fields: [provinceId], references: [id])
   provinceId      Int?
   studentparents  Studentparent[]
