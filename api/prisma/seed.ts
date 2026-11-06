@@ -7,7 +7,6 @@ const modules = [
   { key: "classes", label: "Classes" },
   { key: "rooms", label: "Salas" },
   { key: "years", label: "Ano Letivo" },
-  { key: "users", label: "Utilizadores" },
   { key: "roles", label: "Funções/Perfis" },
   { key: "permitions", label: "Permissões do Sistema" },
   { key: "role-permitions", label: "Permissões de Funções" },
@@ -17,6 +16,13 @@ const modules = [
   { key: "groupconfigs", label: "Configurar Turmas" },
   { key: "classcourses", label: "Classes dos Cursos" },
   { key: "class-subjects", label: "Disciplinas das Classes" },
+
+  // Definições
+  { key: "user", label: "Utilizadores" },
+  { key: "role", label: "Funções/Perfis" },
+  { key: "permition", label: "Permissões do Sistema" },
+  { key: "role_permition", label: "Permissões de Funções" },
+  { key: "user_role", label: "Vínculos de Funções" },
 ];
 
 const actions = [
@@ -27,6 +33,8 @@ const actions = [
   { action: "pdf", label: "Baixar PDF" },
   { action: "excel", label: "Baixar Excel" },
 ];
+
+const roles = ["admin", "director", "aluno", "secretario", "coordenador"];
 
 async function main() {
   await prisma.$transaction(async (tx) => {
@@ -45,38 +53,37 @@ async function main() {
 
     console.log("Seed processado para o utilizador:", adminUser.username);
 
-    const adminRole = await tx.role.upsert({
+    for (const roleName of roles) {
+      await tx.role.upsert({
+        where: { name: roleName },
+        update: {},
+        create: {
+          name: roleName,
+        },
+      });
+      console.log("Role criada/actualizada:", roleName);
+    }
+
+    const adminRole = await tx.role.findUnique({
       where: { name: "admin" },
-      update: {},
-      create: {
-        name: "admin",
-      },
     });
 
-    await tx.role.upsert({
-      where: { name: "director" },
-      update: {},
-      create: {
-        name: "director",
-      },
-    });
-
-    console.log("Role criada/actualizada:", adminRole.name);
-
-    const existingUserRole = await tx.userRole.findFirst({
-      where: {
-        user_id: adminUser.id,
-        role_id: adminRole.id,
-      },
-    });
-
-    if (!existingUserRole) {
-      await tx.userRole.create({
-        data: {
+    if (adminRole) {
+      const existingUserRole = await tx.userRole.findFirst({
+        where: {
           user_id: adminUser.id,
           role_id: adminRole.id,
         },
       });
+
+      if (!existingUserRole) {
+        await tx.userRole.create({
+          data: {
+            user_id: adminUser.id,
+            role_id: adminRole.id,
+          },
+        });
+      }
     }
 
     for (const mod of modules) {
