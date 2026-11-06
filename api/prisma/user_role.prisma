@@ -3,6 +3,7 @@ model UserRole {
   user_id   Int
   role_id   Int
   school_id Int?
+  editable Boolean? @default(true)
 
   user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
   role   Role    @relation(fields: [role_id], references: [id], onDelete: Cascade)

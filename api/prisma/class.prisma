@@ -4,6 +4,7 @@ model Class {
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])
+  editable Boolean? @default(true)
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

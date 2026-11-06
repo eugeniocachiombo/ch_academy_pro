@@ -3,6 +3,7 @@ model Subject {
   code        String
   name        String
   description String?
+  editable Boolean? @default(true)
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])

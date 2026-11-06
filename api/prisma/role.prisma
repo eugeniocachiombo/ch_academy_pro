@@ -3,6 +3,7 @@ model Role {
   name        String  @unique
   description String?
   school_id   Int?
+  editable Boolean? @default(true)
 
   school School? @relation(fields: [school_id], references: [id])
 

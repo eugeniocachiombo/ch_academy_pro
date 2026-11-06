@@ -3,6 +3,7 @@ model Course {
   name        String  @unique
   code        String  @unique
   description String?
+  editable Boolean? @default(true)
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])
