@@ -72,7 +72,7 @@ const filteredUsers = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('user.create')) return
+  if (!p('users.create')) return
   isEditing.value = false
   selectedUser.value = null
   formData.value = { name: '', username: '', email: '', password: '' }
@@ -80,7 +80,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (user: User) => {
-  if (!p('user.edit')) return
+  if (!p('users.edit')) return
   isEditing.value = true
   selectedUser.value = user
   formData.value = {
@@ -95,7 +95,7 @@ const openEditModal = (user: User) => {
 }
 
 const openPasswordModal = (user: User) => {
-  if (!p('user.edit')) return
+  if (!p('users.edit')) return
   selectedUser.value = user
   passwordForm.value = {
     current_password: '',
@@ -159,7 +159,7 @@ const handleUpdatePassword = async () => {
 }
 
 const toggleBlockUser = async (user: any) => {
-  if (!p('user.edit')) return
+  if (!p('users.edit')) return
   activeDropdownId.value = null
   const newStatus = user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE'
   const actionName = newStatus === 'BLOCKED' ? 'bloquear' : 'desbloquear'
@@ -176,7 +176,7 @@ const toggleBlockUser = async (user: any) => {
 }
 
 const deleteUser = async (id: number) => {
-  if (!p('user.delete')) return
+  if (!p('users.delete')) return
   activeDropdownId.value = null
   if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
   
@@ -198,7 +198,7 @@ const deleteUser = async (id: number) => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Administre permissões, contas, segurança e acessos ao sistema.</p>
       </div>
       <button
-        v-if="p('user.create')"
+        v-if="p('users.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -337,10 +337,10 @@ const deleteUser = async (id: number) => {
 
         <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
-            <div class="flex items-center justify-end gap-1.5" v-if="p('user.edit') || p('user.delete')">
+            <div class="flex items-center justify-end gap-1.5" v-if="p('users.edit') || p('users.delete')">
               <!-- Editar Dados -->
               <button
-                v-if="p('user.edit')"
+                v-if="p('users.edit')"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Dados"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -350,7 +350,7 @@ const deleteUser = async (id: number) => {
 
               <!-- Alterar Password -->
               <button
-                v-if="p('user.edit')"
+                v-if="p('users.edit')"
                 @click="openPasswordModal(slotProps.data)"
                 title="Alterar Password"
                 class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors"
@@ -360,7 +360,7 @@ const deleteUser = async (id: number) => {
 
               <!-- Bloquear / Desbloquear -->
               <button
-                v-if="p('user.edit')"
+                v-if="p('users.edit')"
                 @click="toggleBlockUser(slotProps.data)"
                 :title="slotProps.data.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso'"
                 :class="[
@@ -375,7 +375,7 @@ const deleteUser = async (id: number) => {
 
               <!-- Eliminar Conta -->
               <button
-                v-if="p('user.delete')"
+                v-if="p('users.delete')"
                 @click="deleteUser(slotProps.data.id)"
                 title="Eliminar Conta"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"

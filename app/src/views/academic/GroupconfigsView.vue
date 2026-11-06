@@ -108,7 +108,7 @@ const clearFilters = () => {
 }
 
 const openCreateModal = () => {
-  if (!p('groupconfig.create')) return
+  if (!p('groupconfigs.create')) return
   isEditing.value = false
   selectedGroupconfig.value = null
   formData.value = {
@@ -125,7 +125,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (groupconfig: Groupconfig) => {
-  if (!p('groupconfig.edit')) return
+  if (!p('groupconfigs.edit')) return
   isEditing.value = true
   selectedGroupconfig.value = groupconfig
   formData.value = {
@@ -156,7 +156,7 @@ const handleSaved = async () => {
 }
 
 const confirmDeleteGroupconfig = (groupconfig: Groupconfig) => {
-  if (!p('groupconfig.delete')) return
+  if (!p('groupconfigs.delete')) return
   groupconfigToDeleteId.value = groupconfig.id
   groupconfigToDeleteName.value = groupconfig.name
   isDeleteModalOpen.value = true
@@ -203,7 +203,7 @@ const handleDelete = async () => {
         </p>
       </div>
       <button
-        v-if="p('groupconfig.create')"
+        v-if="p('groupconfigs.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -346,16 +346,16 @@ const handleDelete = async () => {
 
         <Column header="Acções" style="width: 8%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('groupconfig.edit') || p('groupconfig.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('groupconfigs.edit') || p('groupconfigs.delete')">
               <button
-                v-if="p('groupconfig.edit')"
+                v-if="p('groupconfigs.edit')"
                 @click="openEditModal(slotProps.data)"
                 class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('groupconfig.delete')"
+                v-if="p('groupconfigs.delete')"
                 @click="confirmDeleteGroupconfig(slotProps.data)"
                 class="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

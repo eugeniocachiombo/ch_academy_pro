@@ -44,7 +44,7 @@ const filteredClasses = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('class.create')) return
+  if (!p('classes.create')) return
   isEditing.value = false
   selectedClass.value = null
   formData.value = { name: '' }
@@ -52,7 +52,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (cls: Class) => {
-  if (!p('class.edit')) return
+  if (!p('classes.edit')) return
   isEditing.value = true
   selectedClass.value = cls
   formData.value = {
@@ -77,7 +77,7 @@ const handleSaved = async () => {
 }
 
 const confirmDeleteClass = (cls: Class) => {
-  if (!p('class.delete')) return
+  if (!p('classes.delete')) return
   classToDeleteId.value = cls.id
   classToDeleteName.value = cls.name
   isDeleteModalOpen.value = true
@@ -126,7 +126,7 @@ const handleDelete = async () => {
         </p>
       </div>
       <button
-        v-if="p('class.create')"
+        v-if="p('classes.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -194,16 +194,16 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 20%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('class.edit') || p('class.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('classes.edit') || p('classes.delete')">
               <button
-                v-if="p('class.edit')"
+                v-if="p('classes.edit')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('class.delete')"
+                v-if="p('classes.delete')"
                 @click="confirmDeleteClass(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

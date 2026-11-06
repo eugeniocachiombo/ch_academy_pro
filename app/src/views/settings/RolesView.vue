@@ -35,7 +35,7 @@ const filteredRoles = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('role.create')) return
+  if (!p('roles.create')) return
   isEditing.value = false
   selectedRole.value = null
   formData.value = { name: '' }
@@ -43,7 +43,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (role: Role) => {
-  if (!p('role.edit')) return
+  if (!p('roles.edit')) return
   isEditing.value = true
   selectedRole.value = role
   formData.value = {
@@ -67,7 +67,7 @@ const handleSaved = async () => {
 }
 
 const deleteRole = async (id: number) => {
-  if (!p('role.delete')) return
+  if (!p('roles.delete')) return
   if (!confirm('Tem certeza de que deseja eliminar permanentemente esta função?')) return
   try {
     await roleStore.remove(id)
@@ -95,7 +95,7 @@ const deleteRole = async (id: number) => {
       </div>
       <!-- Botão de Criar (protegido por 'role.create') -->
       <button
-        v-if="p('role.create')"
+        v-if="p('roles.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -208,11 +208,11 @@ const deleteRole = async (id: number) => {
           <template #body="slotProps">
             <div
               class="flex items-center justify-start gap-1.5"
-              v-if="p('role.edit') || p('role.delete')"
+              v-if="p('roles.edit') || p('roles.delete')"
             >
               <!-- Editar Função -->
               <button
-                v-if="p('role.edit')"
+                v-if="p('roles.edit')"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Função"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -222,7 +222,7 @@ const deleteRole = async (id: number) => {
 
               <!-- Eliminar Função -->
               <button
-                v-if="p('role.delete')"
+                v-if="p('roles.delete')"
                 @click="deleteRole(slotProps.data.id)"
                 title="Eliminar Função"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"

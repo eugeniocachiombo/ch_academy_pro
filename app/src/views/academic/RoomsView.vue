@@ -41,7 +41,7 @@ const filteredRooms = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('room.create')) return
+  if (!p('rooms.create')) return
   isEditing.value = false
   selectedRoom.value = null
   formData.value = { name: '', school_id: null }
@@ -49,7 +49,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (room: Room) => {
-  if (!p('room.edit')) return
+  if (!p('rooms.edit')) return
   isEditing.value = true
   selectedRoom.value = room
   formData.value = {
@@ -74,7 +74,7 @@ const handleSaved = async () => {
 }
 
 const confirmDeleteRoom = (room: Room) => {
-  if (!p('room.delete')) return
+  if (!p('rooms.delete')) return
   roomToDeleteId.value = room.id
   roomToDeleteName.value = room.name
   isDeleteModalOpen.value = true
@@ -117,7 +117,7 @@ const handleDelete = async () => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Gira as salas de aula e espaços físicos.</p>
       </div>
       <button
-        v-if="p('room.create')"
+        v-if="p('rooms.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -177,16 +177,16 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 20%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('room.edit') || p('room.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('rooms.edit') || p('rooms.delete')">
               <button
-                v-if="p('room.edit')"
+                v-if="p('rooms.edit')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('room.delete')"
+                v-if="p('rooms.delete')"
                 @click="confirmDeleteRoom(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

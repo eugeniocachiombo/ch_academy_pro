@@ -44,7 +44,7 @@ const filteredGroups = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('group.create')) return
+  if (!p('groups.create')) return
   isEditing.value = false
   selectedGroup.value = null
   formData.value = { name: '', school_id: null }
@@ -52,7 +52,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (group: Group) => {
-  if (!p('group.edit')) return
+  if (!p('groups.edit')) return
   isEditing.value = true
   selectedGroup.value = group
   formData.value = {
@@ -77,7 +77,7 @@ const handleSaved = async () => {
 }
 
 const confirmDeleteGroup = (group: Group) => {
-  if (!p('group.delete')) return
+  if (!p('groups.delete')) return
   groupToDeleteId.value = group.id
   groupToDeleteName.value = group.name
   isDeleteModalOpen.value = true
@@ -126,7 +126,7 @@ const handleDelete = async () => {
         </p>
       </div>
       <button
-        v-if="p('group.create')"
+        v-if="p('groups.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -194,16 +194,16 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 30%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('group.edit') || p('group.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('groups.edit') || p('groups.delete')">
               <button
-                v-if="p('group.edit')"
+                v-if="p('groups.edit')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('group.delete')"
+                v-if="p('groups.delete')"
                 @click="confirmDeleteGroup(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

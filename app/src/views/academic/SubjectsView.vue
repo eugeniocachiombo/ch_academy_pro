@@ -45,7 +45,7 @@ const filteredSubjects = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('subject.create')) return
+  if (!p('subjects.create')) return
   isEditing.value = false
   selectedSubject.value = null
   formData.value = { code: '', name: '', description: '', school_id: null }
@@ -53,7 +53,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (subject: Subject) => {
-  if (!p('subject.edit')) return
+  if (!p('subjects.edit')) return
   isEditing.value = true
   selectedSubject.value = subject
   formData.value = {
@@ -80,7 +80,7 @@ const handleSaved = async () => {
 }
 
 const confirmDeleteSubject = (subject: Subject) => {
-  if (!p('subject.delete')) return
+  if (!p('subjects.delete')) return
   subjectToDeleteId.value = subject.id
   subjectToDeleteName.value = subject.name
   isDeleteModalOpen.value = true
@@ -123,7 +123,7 @@ const handleDelete = async () => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure as disciplinas académicas.</p>
       </div>
       <button
-        v-if="p('subject.create')"
+        v-if="p('subjects.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -183,16 +183,16 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 20%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('subject.edit') || p('subject.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('subjects.edit') || p('subjects.delete')">
               <button
-                v-if="p('subject.edit')"
+                v-if="p('subjects.edit')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <button
-                v-if="p('subject.delete')"
+                v-if="p('subjects.delete')"
                 @click="confirmDeleteSubject(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >

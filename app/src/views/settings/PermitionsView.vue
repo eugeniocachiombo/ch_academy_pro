@@ -37,7 +37,7 @@ const filteredPermitions = computed(() => {
 })
 
 const openCreateModal = () => {
-  if (!p('permition.create')) return
+  if (!p('permitions.create')) return
   isEditing.value = false
   selectedPermition.value = null
   formData.value = { name: '', description: '' }
@@ -45,7 +45,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (permition: Permition) => {
-  if (!p('permition.edit')) return
+  if (!p('permitions.edit')) return
   isEditing.value = true
   selectedPermition.value = permition
   formData.value = {
@@ -70,7 +70,7 @@ const handleSaved = async () => {
 }
 
 const deletePermition = async (id: number) => {
-  if (!p('permition.delete')) return
+  if (!p('permitions.delete')) return
   if (!confirm('Tem certeza de que deseja eliminar permanentemente esta permissão?')) return
 
   try {
@@ -91,7 +91,7 @@ const deletePermition = async (id: number) => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure e gira as permissões de acesso do sistema.</p>
       </div>
       <button
-        v-if="p('permition.create')"
+        v-if="p('permitions.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
@@ -180,10 +180,10 @@ const deletePermition = async (id: number) => {
 
         <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
-            <div class="flex items-center justify-start gap-1.5" v-if="p('permition.edit') || p('permition.delete')">
+            <div class="flex items-center justify-start gap-1.5" v-if="p('permitions.edit') || p('permitions.delete')">
               <!-- Editar Permissão -->
               <button
-                v-if="p('permition.edit')"
+                v-if="p('permitions.edit')"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Permissão"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -193,7 +193,7 @@ const deletePermition = async (id: number) => {
 
               <!-- Eliminar Permissão -->
               <button
-                v-if="p('permition.delete')"
+                v-if="p('permitions.delete')"
                 @click="deletePermition(slotProps.data.id)"
                 title="Eliminar Permissão"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"
