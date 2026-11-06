@@ -24,6 +24,14 @@ async function main() {
     },
   });
 
+  const directorRole = await prisma.role.upsert({
+    where: { name: "director" },
+    update: {},
+    create: {
+      name: "director",
+    },
+  });
+
   console.log("Role criada/actualizada:", adminRole.name);
 
   await prisma.userRole.upsert({
