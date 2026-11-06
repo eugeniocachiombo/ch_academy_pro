@@ -16,7 +16,7 @@ const userStore = useUserStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
-const canEdit = () => p('role-permitions.edit') || p('role-permitions.manage')
+const canEdit = () => p('role-permitions.update') || p('role-permitions.manage')
 
 // Compara IDs independentemente de serem number ou string
 const same = (a: Id, b: Id) => String(a) === String(b)
@@ -161,7 +161,7 @@ const saveChanges = async () => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure o acesso associando permissões específicas a cada função do sistema.</p>
       </div>
       <button
-        v-if="selectedRoleId && (p('role_permitions.edit') || p('role_permitions.manage'))"
+        v-if="selectedRoleId && (p('role-permitions.update') || p('role-permitions.manage'))"
         @click="saveChanges"
         :disabled="internalLoading"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95 disabled:opacity-50"
