@@ -53,6 +53,7 @@ async function main() {
         update: {},
         create: {
           name: roleName,
+          editable: false
         },
       });
       console.log("Role criada/actualizada:", roleName);
@@ -75,6 +76,7 @@ async function main() {
           data: {
             user_id: adminUser.id,
             role_id: adminRole.id,
+            editable: false
           },
         });
       }
@@ -93,6 +95,7 @@ async function main() {
           create: {
             name: permName,
             description: permDescription,
+            editable: false
           },
         });
       }
