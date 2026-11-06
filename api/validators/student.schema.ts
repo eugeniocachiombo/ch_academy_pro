@@ -3,7 +3,7 @@ import { createUserSchema, updateSchema } from "./user.schema.js";
 import { createPersonSchema, updatePersonSchema } from "./person.schema.js";
 
 export const createStudentSchema = z.object({
-  processnum: z.number().optional(),
+  processnum: z.string().optional(),
   province_id: z.string().optional().nullable(),
   municipality_id: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
