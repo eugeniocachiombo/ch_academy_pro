@@ -2,6 +2,8 @@ import { prisma } from '../../lib/prisma';
 import bcrypt from 'bcrypt';
 
 const modules = [
+    { key: "students", label: "Alunos" },
+
     { key: "courses", label: "Cursos" },
     { key: "subjects", label: "Disciplinas" },
     { key: "classes", label: "Classes" },

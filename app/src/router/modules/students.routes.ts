@@ -6,7 +6,7 @@ export const studentsRoutes: RouteRecordRaw[] = [
     path: '/alunos', 
     name: 'students', 
     component: () => import('@/views/student/StudentsView.vue'), 
-    meta: { permission: 'student.manage' } 
+    meta: { permission: 'students.manage' } 
   },
   { 
     path: '/alunos/matricula', 

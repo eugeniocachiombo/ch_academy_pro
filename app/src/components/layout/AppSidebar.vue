@@ -94,7 +94,7 @@ const menuItems = computed(() => [
     label: 'Alunos',
     icon: 'fa-users',
     children: [
-      { id: 'students', label: 'Alunos', icon: 'fa-address-book', permition: p('student.manage') },
+      { id: 'students', label: 'Alunos', icon: 'fa-address-book', permition: p('students.manage') },
       { id: 'students-enrollment', label: 'Processo de Matrícula', icon: 'fa-user-plus', permition: p('enrollment.manage') },
       { id: 'students-transfers', label: 'Transferências / Declarações', icon: 'fa-exchange-alt', permition: p('transfer.manage') },
     ],
