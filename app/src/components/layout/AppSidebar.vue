@@ -132,11 +132,11 @@ const menuItems = computed(() => [
     label: 'Configurações',
     icon: 'fa-gears',
     children: [
-      { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permition: p('user.manage') },
-      { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permition: p('role.manage') },
-      { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permition: p('permition.manage') },
-      { id: 'settings-role-permitions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permition: p('role_permition.manage') },
-      { id: 'settings-user-roles', label: 'Vínculos de Funções', icon: 'fa-users-gear', permition: p('user_role.manage') },
+      { id: 'settings-users', label: 'Utilizadores', icon: 'fa-user-gear', permition: p('users.manage') },
+      { id: 'settings-roles', label: 'Funções', icon: 'fa-user-shield', permition: p('roles.manage') },
+      { id: 'settings-permitions', label: 'Permissões', icon: 'fa-key', permition: p('permitions.manage') },
+      { id: 'settings-role-permitions', label: 'Perm. de Funções', icon: 'fa-shield-halved', permition: p('role-permitions.manage') },
+      { id: 'settings-user-roles', label: 'Vínculos de Funções', icon: 'fa-users-gear', permition: p('user-roles.manage') },
     ],
   }
 ])

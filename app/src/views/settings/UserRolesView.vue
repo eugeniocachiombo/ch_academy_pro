@@ -13,7 +13,7 @@ const userRoleStore = useUserRoleStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
-const canEdit = () => p('user_role.edit') || p('user_role.manage')
+const canEdit = () => p('user-roles.edit') || p('user-roles.manage')
 
 // Compara IDs independentemente de serem number ou string
 const same = (a: Id, b: Id) => String(a) === String(b)

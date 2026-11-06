@@ -7,6 +7,7 @@ const modules = [
   { key: "classes", label: "Classes" },
   { key: "rooms", label: "Salas" },
   { key: "years", label: "Ano Letivo" },
+  { key: "users", label: "Utilizadores" },
   { key: "roles", label: "Funções/Perfis" },
   { key: "permitions", label: "Permissões do Sistema" },
   { key: "role-permitions", label: "Permissões de Funções" },
@@ -16,13 +17,6 @@ const modules = [
   { key: "groupconfigs", label: "Configurar Turmas" },
   { key: "classcourses", label: "Classes dos Cursos" },
   { key: "class-subjects", label: "Disciplinas das Classes" },
-
-  // Definições
-  { key: "user", label: "Utilizadores" },
-  { key: "role", label: "Funções/Perfis" },
-  { key: "permition", label: "Permissões do Sistema" },
-  { key: "role_permition", label: "Permissões de Funções" },
-  { key: "user_role", label: "Vínculos de Funções" },
 ];
 
 const actions = [
