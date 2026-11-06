@@ -2,6 +2,48 @@ import { Response } from "express";
 import { ZodError } from "zod";
 import { CrudError } from "../repository/base/crud.errors.js";
 
+function extractPrismaError(error: unknown): { code: string; meta?: any } | null {
+    const candidates = [error, (error as any)?.message, (error as any)?.cause];
+    for (const candidate of candidates) {
+        if (candidate && typeof candidate === 'object' && typeof (candidate as any).code === 'string') {
+            return candidate as { code: string; meta?: any };
+        }
+    }
+    return null;
+}
+
+function extractUniqueFields(meta: any): string[] {
+    const target = meta?.target;
+    if (Array.isArray(target)) return target.map(String);
+    if (typeof target === 'string') return [target];
+
+    const fields = meta?.driverAdapterError?.cause?.constraint?.fields;
+    if (Array.isArray(fields)) return fields.map(String);
+
+    const originalMessage: string | undefined = meta?.driverAdapterError?.cause?.originalMessage;
+    const match = originalMessage?.match(/"[^"]+_(.+)_key"/);
+    return match ? [match[1]] : [];
+}
+
+function uniqueConstraintResponse(res: Response, meta: any) {
+    const modelName: string | undefined = meta?.modelName;
+    const fields = extractUniqueFields(meta);
+
+    if (!fields.length) {
+        return res.status(409).json({ message: "Já existe um registo com estes dados." });
+    }
+
+    const where = modelName ? ` em ${modelName}` : "";
+    const message = `Já existe um registo${where} com este(s) campo(s): ${fields.join(", ")}.`;
+
+    const errors: Record<string, string[]> = {};
+    for (const field of fields) {
+        errors[field] = [`O valor informado para "${field}" já existe.`];
+    }
+
+    return res.status(409).json({ message, errors });
+}
+
 export function errorReport(res: Response, error: unknown) {
     if (error instanceof ZodError) {
         const errors: Record<string, string[]> = {};
@@ -26,27 +68,11 @@ export function errorReport(res: Response, error: unknown) {
         return res.status(statusMap[error.code] || 400).json({ message: error.message });
     }
 
-    if (typeof error === 'object' && error !== null && 'statusCode' in error && 'message' in error) {
-        const customError = error as { statusCode: number; message: string; fieldErrors?: any };
-        return res.status(customError.statusCode || 400).json({
-            message: customError.message,
-            errors: customError.fieldErrors || undefined
-        });
-    }
-
-    if (typeof error === 'object' && error !== null && 'code' in error) {
-        const prismaError = error as { code: string; meta?: any };
+    const prismaError = extractPrismaError(error);
+    if (prismaError) {
         switch (prismaError.code) {
-            case "P2002": {
-                const target = prismaError.meta?.target;
-                const field = Array.isArray(target) ? target.join(", ") : target;
-                const model = prismaError.meta?.modelName || "Registo";
-                return res.status(409).json({
-                    message: field
-                        ? `Já existe um(a) ${model} com este(a) ${field}.`
-                        : "Já existe um registo com estes dados."
-                });
-            }
+            case "P2002":
+                return uniqueConstraintResponse(res, prismaError.meta);
             case "P2025":
                 return res.status(404).json({ message: "Registo não encontrado no sistema" });
             case "P2003":
@@ -54,6 +80,14 @@ export function errorReport(res: Response, error: unknown) {
             default:
                 return res.status(400).json({ message: "Erro na operação de base de dados", code: prismaError.code });
         }
+    }
+
+    if (typeof error === 'object' && error !== null && 'statusCode' in error && 'message' in error) {
+        const customError = error as { statusCode: number; message: unknown; fieldErrors?: any };
+        return res.status(customError.statusCode || 400).json({
+            message: typeof customError.message === 'string' ? customError.message : "Ocorreu um erro na requisição.",
+            errors: customError.fieldErrors || undefined
+        });
     }
 
     if (error instanceof Error) {
