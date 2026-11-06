@@ -12,7 +12,8 @@ class UserRoleService extends BaseService {
                 update: updateUserRoleSchema
             }, 
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: { role: true, user: true }
             }
         );
     }
