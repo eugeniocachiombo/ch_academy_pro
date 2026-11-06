@@ -21,6 +21,7 @@ import { teacherocupationRoutes } from './routes/teacherocupation.routes.js';
 import { classcourseRoutes } from './routes/classcourse.routes.js';
 import { classSubjectRoutes } from './routes/class-subject.routes.js';
 import { schoolRoutes } from './routes/school.routes.js';
+import { studentRoutes } from "./routes/student.routes.js";
 
 const app = express();
 
@@ -53,7 +54,8 @@ app.use(
   teacherocupationRoutes,
   classcourseRoutes,
   classSubjectRoutes,
-  schoolRoutes
+  schoolRoutes,
+  studentRoutes
 );
 
 app.get("/", (req, res) => {
