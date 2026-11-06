@@ -80,7 +80,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (user: User) => {
-  if (!p('users.edit')) return
+  if (!p('users.update')) return
   isEditing.value = true
   selectedUser.value = user
   formData.value = {
@@ -95,7 +95,7 @@ const openEditModal = (user: User) => {
 }
 
 const openPasswordModal = (user: User) => {
-  if (!p('users.edit')) return
+  if (!p('users.update')) return
   selectedUser.value = user
   passwordForm.value = {
     current_password: '',
@@ -159,7 +159,7 @@ const handleUpdatePassword = async () => {
 }
 
 const toggleBlockUser = async (user: any) => {
-  if (!p('users.edit')) return
+  if (!p('users.update')) return
   activeDropdownId.value = null
   const newStatus = user.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE'
   const actionName = newStatus === 'BLOCKED' ? 'bloquear' : 'desbloquear'
@@ -177,16 +177,17 @@ const toggleBlockUser = async (user: any) => {
 
 const deleteUser = async (id: number) => {
   if (!p('users.delete')) return
-  activeDropdownId.value = null
-  if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
+  showNotification('Recurso não disponivel de momento', 'warning')
+  // activeDropdownId.value = null
+  // if (!confirm('Tem certeza de que deseja eliminar permanentemente este utilizador?')) return
   
-  try {
-    await userStore.remove(id)
-    showNotification('Utilizador eliminado com sucesso.', 'success')
-  } catch (err: any) {
-    const errorMsg = userStore.error || 'Erro ao eliminar utilizador.'
-    showNotification(errorMsg, 'error')
-  }
+  // try {
+  //   await userStore.remove(id)
+  //   showNotification('Utilizador eliminado com sucesso.', 'success')
+  // } catch (err: any) {
+  //   const errorMsg = userStore.error || 'Erro ao eliminar utilizador.'
+  //   showNotification(errorMsg, 'error')
+  // }
 }
 </script>
 
@@ -299,6 +300,12 @@ const deleteUser = async (id: number) => {
           </div>
         </template>
 
+        <Column field="id" header="ID" sortable style="width: 10%">
+          <template #body="slotProps">
+            <span class="font-mono text-xs text-slate-500">#{{ slotProps.data.id }}</span>
+          </template>
+        </Column>
+
         <Column field="name" header="Utilizador" sortable style="width: 30%">
           <template #body="slotProps">
             <div class="font-medium text-slate-900 dark:text-white flex items-center gap-3.5">
@@ -337,10 +344,10 @@ const deleteUser = async (id: number) => {
 
         <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
-            <div class="flex items-center justify-end gap-1.5" v-if="p('users.edit') || p('users.delete')">
+            <div class="flex items-center justify-end gap-1.5" v-if="p('users.update') || p('users.delete')">
               <!-- Editar Dados -->
               <button
-                v-if="p('users.edit')"
+                v-if="p('users.update')"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Dados"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
@@ -350,7 +357,7 @@ const deleteUser = async (id: number) => {
 
               <!-- Alterar Password -->
               <button
-                v-if="p('users.edit')"
+                v-if="p('users.update')"
                 @click="openPasswordModal(slotProps.data)"
                 title="Alterar Password"
                 class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center transition-colors"
@@ -360,7 +367,7 @@ const deleteUser = async (id: number) => {
 
               <!-- Bloquear / Desbloquear -->
               <button
-                v-if="p('users.edit')"
+                v-if="p('users.update')"
                 @click="toggleBlockUser(slotProps.data)"
                 :title="slotProps.data.status === 'BLOCKED' ? 'Desbloquear' : 'Bloquear Acesso'"
                 :class="[
@@ -374,14 +381,14 @@ const deleteUser = async (id: number) => {
               </button>
 
               <!-- Eliminar Conta -->
-              <button
+              <!-- <button
                 v-if="p('users.delete')"
                 @click="deleteUser(slotProps.data.id)"
                 title="Eliminar Conta"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center transition-colors"
               >
                 <i class="fa-solid fa-trash text-xs"></i>
-              </button>
+              </button> -->
             </div>
             <span v-else class="text-xs text-slate-400 italic">Sem acções</span>
           </template>
