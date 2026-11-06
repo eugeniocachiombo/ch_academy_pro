@@ -1,6 +1,6 @@
 model Degree {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id       Int      @id @default(autoincrement())
+  name     String   @unique
   editable Boolean? @default(true)
 
   school_id Int?

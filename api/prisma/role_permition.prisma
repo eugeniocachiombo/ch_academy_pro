@@ -2,7 +2,7 @@ model RolePermition {
   id           Int       @id @default(autoincrement())
   role_id      Int
   role         Role      @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  editable Boolean? @default(true)
+  editable     Boolean?  @default(true)
   permition_id Int
   permition    Permition @relation(fields: [permition_id], references: [id], onDelete: Cascade)
 

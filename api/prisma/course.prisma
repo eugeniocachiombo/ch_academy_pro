@@ -1,9 +1,9 @@
 model Course {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  code        String  @unique
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  code        String   @unique
   description String?
-  editable Boolean? @default(true)
+  editable    Boolean? @default(true)
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])

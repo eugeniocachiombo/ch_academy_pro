@@ -1,9 +1,9 @@
 model Subject {
-  id          Int     @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   code        String
   name        String
   description String?
-  editable Boolean? @default(true)
+  editable    Boolean? @default(true)
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])

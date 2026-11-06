@@ -11,7 +11,7 @@ model Groupconfig {
 
   group  Group   @relation(fields: [group_id], references: [id], onDelete: Cascade)
   year   Year    @relation(fields: [year_id], references: [id], onDelete: Cascade)
-  course Course?  @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  course Course? @relation(fields: [course_id], references: [id], onDelete: Cascade)
   class  Class   @relation(fields: [class_id], references: [id], onDelete: Cascade)
   period Period  @relation(fields: [period_id], references: [id], onDelete: Cascade)
   room   Room    @relation(fields: [room_id], references: [id], onDelete: Cascade)
