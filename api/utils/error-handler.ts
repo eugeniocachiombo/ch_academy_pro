@@ -4,9 +4,14 @@ import { CrudError } from "../repository/base/crud.errors.js";
 
 export function errorReport(res: Response, error: unknown) {
     if (error instanceof ZodError) {
+        const errors: Record<string, string[]> = {};
+        for (const issue of error.issues) {
+            const key = issue.path.join('.') || '_root';
+            (errors[key] ??= []).push(issue.message);
+        }
         return res.status(422).json({
             message: "Verifique os campos do formulário",
-            errors: error.flatten().fieldErrors
+            errors
         });
     }
 
@@ -29,7 +34,6 @@ export function errorReport(res: Response, error: unknown) {
         });
     }
 
-    
     if (typeof error === 'object' && error !== null && 'code' in error) {
         const prismaError = error as { code: string; meta?: any };
         switch (prismaError.code) {
@@ -38,7 +42,7 @@ export function errorReport(res: Response, error: unknown) {
                 const field = Array.isArray(target) ? target.join(", ") : target;
                 const model = prismaError.meta?.modelName || "Registo";
                 return res.status(409).json({
-                    message: field 
+                    message: field
                         ? `Já existe um(a) ${model} com este(a) ${field}.`
                         : "Já existe um registo com estes dados."
                 });
