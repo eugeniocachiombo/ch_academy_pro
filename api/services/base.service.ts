@@ -63,7 +63,7 @@ export class BaseService {
     return activeModel;
   }
 
-  private parseId(id: string | number): string | number {
+  protected parseId(id: string | number): string | number {
     const rawId = typeof id === 'string' && id.length > 20 ? cryptoService.decryptId(id) : id;
     return typeof rawId === 'number' ? rawId : (/^\d+$/.test(String(rawId)) ? Number(rawId) : rawId);
   }
@@ -95,13 +95,13 @@ export class BaseService {
     return { AND: [where, { school_id: this.requireSchool(ctx) }] };
   }
 
-  protected prepareData(m: PrismaModel, ctx: CrudContext, data: any, isCreate: boolean) {
+  protected prepareData(m: PrismaModel, ctx: CrudContext, data: any, isCreate: boolean, internal = false) {
     const mode = this.mode(m);
-    if (mode === 'global') {
-      if (!ctx.isSuperAdmin) throw new CrudError('FORBIDDEN');
-      return data;
-    }
     const { school_id: fromClient, ...rest } = data ?? {};
+    if (mode === 'global') {
+      if (!ctx.isSuperAdmin && !internal) throw new CrudError('FORBIDDEN');
+      return rest;
+    }
     if (!isCreate) return rest;
     if (ctx.isSuperAdmin) {
       const target = fromClient !== undefined ? fromClient : (ctx.schoolId ?? null);

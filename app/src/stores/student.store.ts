@@ -3,8 +3,8 @@ import { ref } from 'vue';
 import { api } from '@/services/api';
 import cryptoService from '@/services/crypto.service';
 import { handleError, type ParsedError } from '@/helpers/handle-error';
-import { type User, type CreateUserInput as UserPayload } from './user.store';
-import { type Person, type PersonPayload } from './person.store';
+import { type User } from './user.store';
+import { type PersonPayload } from './person.store';
 
 export interface Student {
   id: number;
@@ -39,7 +39,17 @@ export interface StudentPayload {
   provinceId?: number | null;
   school_id?: number | null;
   person?: PersonPayload;
-  user?: UserPayload;
+}
+
+function buildError(err: any, fallback: string): ParsedError {
+  const parsed = handleError(err, fallback) as any;
+  const errors =
+    parsed?.errors ??
+    err?.response?.data?.errors ??
+    err?.data?.errors ??
+    err?.errors ??
+    undefined;
+  return Object.assign(parsed, { errors });
 }
 
 export const useStudentStore = defineStore('student', () => {
@@ -59,7 +69,7 @@ export const useStudentStore = defineStore('student', () => {
       students.value = response;
       return response;
     } catch (err: any) {
-      const parsed: ParsedError = handleError(err, 'Erro ao carregar estudantes.');
+      const parsed = buildError(err, 'Erro ao carregar estudantes.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -75,7 +85,7 @@ export const useStudentStore = defineStore('student', () => {
       students.value.push(response);
       return response;
     } catch (err: any) {
-      const parsed: ParsedError = handleError(err, 'Erro ao criar o estudante.');
+      const parsed = buildError(err, 'Erro ao criar o estudante.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -95,7 +105,7 @@ export const useStudentStore = defineStore('student', () => {
       }
       return response;
     } catch (err: any) {
-      const parsed: ParsedError = handleError(err, 'Erro ao atualizar o estudante.');
+      const parsed = buildError(err, 'Erro ao atualizar o estudante.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -111,7 +121,7 @@ export const useStudentStore = defineStore('student', () => {
       await api.delete(`/students/${encryptedId}`);
       students.value = students.value.filter(s => s.id !== Number(id));
     } catch (err: any) {
-      const parsed: ParsedError = handleError(err, 'Erro ao remover o estudante.');
+      const parsed = buildError(err, 'Erro ao remover o estudante.');
       error.value = parsed.message;
       throw parsed;
     } finally {

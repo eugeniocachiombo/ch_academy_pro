@@ -22,7 +22,7 @@ const studentStore = useStudentStore()
 const schoolStore = useSchoolStore()
 const authStore = useAuthStore()
 
-const form = ref<StudentPayload & { id?: number }>({
+const emptyForm = (): StudentPayload & { id?: number } => ({
   processnum: undefined,
   phone: '',
   address: '',
@@ -46,13 +46,10 @@ const form = ref<StudentPayload & { id?: number }>({
     neighborhood: '',
     street: '',
     house_number: ''
-  },
-  user: {
-    username: '',
-    password: '',
-    status: 'ACTIVE'
   }
 })
+
+const form = ref<StudentPayload & { id?: number }>(emptyForm())
 
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
@@ -60,9 +57,7 @@ const internalLoading = ref(false)
 
 onMounted(async () => {
   try {
-    await Promise.all([
-      schoolStore.list?.()
-    ])
+    await schoolStore.list?.()
   } catch (e) {
     console.error('Erro ao carregar dados auxiliares', e)
   }
@@ -70,8 +65,18 @@ onMounted(async () => {
 
 const schools = computed(() => schoolStore.schools || [])
 
-const getFieldError = (field: string) => fieldErrors.value[field]?.[0] ?? ''
-const hasError = (field: string) => !!getFieldError(field)
+const normalizeErrors = (err: any): Record<string, string[]> => {
+  const raw = err?.errors ?? err?.fieldErrors ?? err?.response?.data?.errors ?? err?.data?.errors ?? {}
+  const result: Record<string, string[]> = {}
+  for (const [key, value] of Object.entries(raw)) {
+    result[key] = Array.isArray(value) ? (value as string[]) : [String(value)]
+  }
+  return result
+}
+
+const getFieldError = (field: string): string => fieldErrors.value[field]?.[0] ?? ''
+
+const hasError = (field: string): boolean => !!getFieldError(field)
 
 const clearFieldError = (field: string) => {
   if (fieldErrors.value[field]) {
@@ -84,46 +89,20 @@ watch(
   () => props.initialData,
   (newData) => {
     if (newData) {
+      const base = emptyForm()
       form.value = {
+        ...base,
         ...newData,
+        phone: newData.phone ?? '',
         school_id: newData.school_id || authStore.currentUser.school_id || null,
         person: {
+          ...base.person!,
           ...newData.person,
           birthday: newData.person?.birthday ? newData.person.birthday.split('T')[0] : ''
         }
       }
     } else {
-      form.value = {
-        processnum: undefined,
-        phone: '',
-        address: '',
-        fathername: '',
-        mothername: '',
-        origin_school: '',
-        school_id: authStore.currentUser.school_id || null,
-        person: {
-          firstname: '',
-          lastname: '',
-          middlename: '',
-          birthday: '',
-          gender: '',
-          bi_number: '',
-          nif: '',
-          phone: '',
-          alternative_phone: '',
-          email: '',
-          province: '',
-          municipality: '',
-          neighborhood: '',
-          street: '',
-          house_number: ''
-        },
-        user: {
-          username: '',
-          password: '',
-          status: 'ACTIVE'
-        }
-      }
+      form.value = emptyForm()
     }
     fieldErrors.value = {}
     generalMessage.value = ''
@@ -137,20 +116,21 @@ const handleSubmit = async () => {
   internalLoading.value = true
 
   try {
+    const person = form.value.person!
     const payload: StudentPayload = {
       processnum: form.value.processnum ? Number(form.value.processnum) : undefined,
-      phone: form.value.phone,
-      address: form.value.address,
-      fathername: form.value.fathername,
-      mothername: form.value.mothername,
-      origin_school: form.value.origin_school,
-      school_id: form.value.school_id ? Number(form.value.school_id) : (authStore.currentUser.school_id ? Number(authStore.currentUser.school_id) : null),
+      phone: form.value.phone || '',
+      address: form.value.address || null,
+      fathername: form.value.fathername || null,
+      mothername: form.value.mothername || null,
+      origin_school: form.value.origin_school || null,
+      school_id: form.value.school_id
+        ? Number(form.value.school_id)
+        : (authStore.currentUser.school_id ? Number(authStore.currentUser.school_id) : null),
       person: {
-        ...form.value.person,
-        birthday: form.value.person?.birthday ? new Date(form.value.person.birthday).toISOString() : ''
-      },
-      user: {
-        ...form.value.user
+        ...person,
+        email: person.email || null,
+        birthday: person.birthday ? new Date(person.birthday).toISOString() : ''
       }
     }
 
@@ -161,8 +141,8 @@ const handleSubmit = async () => {
     }
     emit('saved')
   } catch (err: any) {
-    fieldErrors.value = err.response?.data?.errors || err.errors || err.fieldErrors || {}
-    generalMessage.value = err.response?.data?.message || err.message || 'Ocorreu um erro ao guardar o estudante.'
+    fieldErrors.value = normalizeErrors(err)
+    generalMessage.value = err?.message || 'Ocorreu um erro ao guardar o estudante.'
 
     showNotification(generalMessage.value, 'error')
   } finally {
@@ -181,7 +161,7 @@ const handleSubmit = async () => {
           </div>
           <div>
             <h3 class="font-bold text-slate-900 dark:text-white text-base">{{ isEditing ? 'Editar Estudante' : 'Novo Estudante' }}</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Preencha as informações pessoais e de conta do estudante.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Preencha as informações pessoais do estudante.</p>
           </div>
         </div>
         <button @click="$emit('close')" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/50 text-slate-500 flex items-center justify-center transition-colors">
@@ -190,11 +170,6 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 space-y-5 overflow-y-auto flex-1">
-        <div v-if="generalMessage && !Object.keys(fieldErrors || {}).length" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3">
-          <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 flex-shrink-0"></i>
-          <span>{{ generalMessage }}</span>
-        </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Escola</label>
           <Select
@@ -211,7 +186,6 @@ const handleSubmit = async () => {
           <span v-if="hasError('school_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('school_id') }}</span>
         </div>
 
-        <!-- Dados Pessoais -->
         <div>
           <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">Dados Pessoais</h4>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -225,7 +199,6 @@ const handleSubmit = async () => {
                 :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('person.firstname') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
               <span v-if="hasError('person.firstname')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.firstname') }}</span>
-              <span v-if="hasError('person_firstname')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person_firstname') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome do Meio</label>
@@ -246,7 +219,6 @@ const handleSubmit = async () => {
                 :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('person.lastname') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
               <span v-if="hasError('person.lastname')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.lastname') }}</span>
-              <span v-if="hasError('person_lastname')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person_lastname') }}</span>
             </div>
           </div>
 
@@ -261,7 +233,6 @@ const handleSubmit = async () => {
                 :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('person.bi_number') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
               <span v-if="hasError('person.bi_number')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.bi_number') }}</span>
-              <span v-if="hasError('person_bi_number')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person_bi_number') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Data de Nascimento *</label>
@@ -272,7 +243,6 @@ const handleSubmit = async () => {
                 :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('person.birthday') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
               <span v-if="hasError('person.birthday')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.birthday') }}</span>
-              <span v-if="hasError('person_birthday')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person_birthday') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Gênero *</label>
@@ -286,78 +256,70 @@ const handleSubmit = async () => {
                 <option value="F">Feminino</option>
               </select>
               <span v-if="hasError('person.gender')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.gender') }}</span>
-              <span v-if="hasError('person_gender')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person_gender') }}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
+              <input
+                v-model="form.person!.email"
+                @input="clearFieldError('person.email')"
+                type="text"
+                placeholder="Ex: joao@email.com"
+                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('person.email') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
+              />
+              <span v-if="hasError('person.email')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.email') }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Dados Escolares e Contacto -->
         <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
           <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">Informações de Estudante & Contacto</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefone</label>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefone *</label>
               <input
                 v-model="form.phone"
+                @input="clearFieldError('phone')"
                 type="text"
                 placeholder="Ex: 923000000"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('phone') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
+              <span v-if="hasError('phone')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('phone') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Escola de Origem</label>
               <input
                 v-model="form.origin_school"
+                @input="clearFieldError('origin_school')"
                 type="text"
                 placeholder="Ex: Colégio ABC"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('origin_school') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
+              <span v-if="hasError('origin_school')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('origin_school') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome do Pai</label>
               <input
                 v-model="form.fathername"
+                @input="clearFieldError('fathername')"
                 type="text"
                 placeholder="Nome do pai"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('fathername') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
+              <span v-if="hasError('fathername')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('fathername') }}</span>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome da Mãe</label>
               <input
                 v-model="form.mothername"
+                @input="clearFieldError('mothername')"
                 type="text"
                 placeholder="Nome da mãe"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('mothername') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
               />
-            </div>
-          </div>
-        </div>
-
-        <!-- Conta de Utilizador -->
-        <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">Dados da Conta</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username (Opcional)</label>
-              <input
-                v-model="form.user!.username"
-                @input="clearFieldError('user.username')"
-                type="text"
-                placeholder="Gerado automaticamente se vazio"
-                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('user.username') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-              />
-              <span v-if="hasError('user.username')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('user.username') }}</span>
-              <span v-if="hasError('user_username')" class="text-[10px] text-red-500 mt-1 block font-medium">{{ getFieldError('user_username') }}</span>
-            </div>
-            <div v-if="!isEditing">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Palavra-passe (Opcional)</label>
-              <input
-                v-model="form.user!.password"
-                type="password"
-                placeholder="Padrão: 123456"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-              />
+              <span v-if="hasError('mothername')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('mothername') }}</span>
             </div>
           </div>
         </div>
