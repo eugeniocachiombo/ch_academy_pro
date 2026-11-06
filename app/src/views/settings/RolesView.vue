@@ -4,6 +4,7 @@ import { useRoleStore, type Role, type CreateRolePayload } from '@/stores/role.s
 import { showNotification } from '@/services/general_service'
 import RoleFormView from './RolesFormView.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { hideAdminRoles } from '@/helpers/general.helper'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -22,6 +23,7 @@ const formData = ref<(CreateRolePayload & { id?: number }) | null>(null)
 onMounted(async () => {
   try {
     await roleStore.list()
+    roleStore.roles = hideAdminRoles(roleStore.roles)
   } catch {}
 })
 

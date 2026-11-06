@@ -5,6 +5,7 @@ import { usePermitionStore } from '@/stores/permition.store'
 import { useRolePermitionStore } from '@/stores/rolePermition.store'
 import { useUserStore } from '@/stores/user.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { hideAdminRoles } from '@/helpers/general.helper'
 
 type Id = number | string
 
@@ -48,6 +49,8 @@ onMounted(async () => {
       permitionStore.list(),
       rolePermitionStore.list()
     ])
+
+    roleStore.roles = hideAdminRoles(roleStore.roles);
 
     if (roleStore.roles.length > 0) {
       selectedRoleId.value = roleStore.roles[0].id
