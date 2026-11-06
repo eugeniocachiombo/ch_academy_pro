@@ -11,5 +11,5 @@ model RolePermition {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@unique([role_id, permition_id])
+  @@unique([role_id, permition_id, school_id])
 }

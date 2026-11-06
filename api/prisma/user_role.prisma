@@ -11,5 +11,5 @@ model UserRole {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@unique([user_id, role_id])
+  @@unique([user_id, role_id, school_id])
 }
