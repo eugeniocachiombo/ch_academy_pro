@@ -5,7 +5,7 @@ export const institutionsRoutes: RouteRecordRaw[] = [
   { 
     path: '/escolas/dados', 
     name: 'schools', 
-    component: UnderConstructionView, 
+    component: () => import('@/views/academic/SchoolsView.vue'), 
     meta: { permission: 'schools.manage' } 
   },
 ]
