@@ -45,7 +45,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (permition: Permition) => {
-  if (!p('permitions.edit')) return
+  if (!p('permitions.update')) return
   isEditing.value = true
   selectedPermition.value = permition
   formData.value = {
@@ -180,10 +180,10 @@ const deletePermition = async (id: number) => {
 
         <Column header="Acções" style="width: 15%" :exportable="false">
           <template #body="slotProps">
-            <div class="flex items-center justify-start gap-1.5" v-if="p('permitions.edit') || p('permitions.delete')">
+            <div class="flex items-center justify-start gap-1.5" v-if="p('permitions.update') || p('permitions.delete')">
               <!-- Editar Permissão -->
               <button
-                v-if="p('permitions.edit')"
+                v-if="p('permitions.update')"
                 @click="openEditModal(slotProps.data)"
                 title="Editar Permissão"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center transition-colors"
