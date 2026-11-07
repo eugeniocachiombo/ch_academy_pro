@@ -48,11 +48,11 @@ const openCreateModal = () => {
   if (!p('periods.create')) return
   isEditing.value = false
   selectedPeriod.value = null
-  formData.value = { name: '', description: '', school_id: null }
+  formData.value = { name: '', description: '', starthour: '', endhour: '', school_id: null }
   isModalOpen.value = true
 }
 
-const openEditModal = (period: Period) => {
+const openEditModal = (period: Period & { starthour?: string | null; endhour?: string | null }) => {
   if (!p('periods.edit')) return
   isEditing.value = true
   selectedPeriod.value = period
@@ -60,6 +60,8 @@ const openEditModal = (period: Period) => {
     id: period.id,
     name: period.name,
     description: period.description || '',
+    starthour: period.starthour || '',
+    endhour: period.endhour || '',
     school_id: period.school_id,
   }
   isModalOpen.value = true
