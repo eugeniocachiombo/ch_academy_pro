@@ -8,6 +8,8 @@ export interface Period {
   id: number;
   name: string;
   description?: string | null;
+  starthour?: string | null;
+  endhour?: string | null;
   school_id?: number | null;
   createdAt?: string;
   updatedAt?: string;
@@ -16,6 +18,8 @@ export interface Period {
 export interface PeriodPayload {
   name: string;
   description?: string | null;
+  starthour?: string | null;
+  endhour?: string | null;
   school_id?: number | null;
 }
 

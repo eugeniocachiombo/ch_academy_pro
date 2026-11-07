@@ -2,6 +2,8 @@ model Period {
   id          Int     @id @default(autoincrement())
   name        String  @unique
   description String?
+  starthour   String?
+  endhour     String?
 
   school_id Int?
   school    School? @relation(fields: [school_id], references: [id])

@@ -408,3 +408,79 @@ body {
   background-color: #6366f1 !important;
   color: #ffffff !important;
 }
+
+/* === DATEPIKER **/
+.custom-timepicker-input.p-datepicker {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.custom-timepicker-input .p-inputtext {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 0.75rem !important;
+  color: #0f172a !important;
+  font-size: 0.85rem !important;
+  width: 100% !important;
+  box-shadow: none !important;
+}
+
+.dark .custom-timepicker-input .p-inputtext {
+  background-color: #020617 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.custom-timepicker-input .p-inputtext:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+}
+
+.dark .custom-timepicker-input .p-inputtext:focus {
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Painel flutuante de seleção de horas do DatePicker */
+.p-datepicker-panel,
+.p-datepicker-overlay {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1) !important;
+  padding: 0.75rem !important;
+}
+
+.dark .p-datepicker-panel,
+.dark .p-datepicker-overlay {
+  background-color: #090d16 !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5) !important;
+}
+
+.p-timepicker button,
+.p-timepicker span {
+  color: #334155 !important;
+  background: transparent !important;
+}
+
+.dark .p-timepicker button,
+.dark .p-timepicker span {
+  color: #cbd5e1 !important;
+  background: transparent !important;
+}
+
+.p-timepicker button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-radius: 0.5rem !important;
+}
+
+.dark .p-timepicker button:hover {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: #ffffff !important;
+  border-radius: 0.5rem !important;
+}
