@@ -69,7 +69,7 @@ const menuItems = computed(() => [
 
       
       // a desenvolver
-      { id: 'academic-enrollments', label: 'Matrículas', icon: 'fa-user-plus', permition: p('enrollments.manage') },
+      { id: 'registers', label: 'Matrículas', icon: 'fa-user-plus', permition: p('registers.manage') },
       { id: 'academic-teachers', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacher-allocations.manage') },
 
 

@@ -63,6 +63,12 @@ export const academicRoutes: RouteRecordRaw[] = [
     meta: { permission: 'class-subjects.manage' } 
   },
   { 
+    path: '/academico/matriculas', 
+    name: 'registers', 
+    component: () => import('@/views/academic/RegistersView.vue'),
+    meta: { permission: 'registers.manage' } 
+  },
+  { 
     path: '/academico/notas', 
     name: 'academic-marks',
     component: UnderConstructionView, 
@@ -75,12 +81,6 @@ export const academicRoutes: RouteRecordRaw[] = [
     meta: { permission: 'attendance.manage' } 
   },
   // Novas rotas adicionadas
-  { 
-    path: '/academico/matriculas', 
-    name: 'academic-enrollments', 
-    component: UnderConstructionView, 
-    meta: { permission: 'enrollments.manage' } 
-  },
   { 
     path: '/academico/horarios', 
     name: 'academic-schedules', 
