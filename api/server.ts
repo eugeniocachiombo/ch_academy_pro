@@ -23,6 +23,7 @@ import { classSubjectRoutes } from './routes/class-subject.routes.js';
 import { schoolRoutes } from './routes/school.routes.js';
 import { studentRoutes } from "./routes/student.routes.js";
 import { teacherRoutes } from "./routes/teacher.routes.js";
+import { degreeRoutes } from './routes/degree.routes.js';
 
 const app = express();
 
@@ -57,7 +58,8 @@ app.use(
   classSubjectRoutes,
   schoolRoutes,
   studentRoutes,
-  teacherRoutes
+  teacherRoutes,
+  degreeRoutes
 );
 
 app.get("/", (req, res) => {
