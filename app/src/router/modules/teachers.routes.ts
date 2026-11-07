@@ -11,7 +11,7 @@ export const teachersRoutes: RouteRecordRaw[] = [
   { 
     path: '/professores/alocacao', 
     name: 'teacherpositions', 
-    component: UnderConstructionView, 
+    component: () => import('@/views/teacher/TeacherocupationsView.vue'), 
     meta: { permission: 'teacherpositions.manage' } 
   },
   { 
