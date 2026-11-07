@@ -5,7 +5,8 @@ const modules = [
     { key: "students", label: "Alunos" },
     { key: "teachers", label: "Professores" },
     { key: "registers", label: "Matrículas" },
-
+    { key: "teacherpositions", label: "Alocação de Professores" },
+    
     { key: "courses", label: "Cursos" },
     { key: "subjects", label: "Disciplinas" },
     { key: "classes", label: "Classes" },

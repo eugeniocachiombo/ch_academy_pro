@@ -63,12 +63,6 @@ export const academicRoutes: RouteRecordRaw[] = [
     meta: { permission: 'class-subjects.manage' } 
   },
   { 
-    path: '/academico/matriculas', 
-    name: 'registers', 
-    component: () => import('@/views/academic/RegistersView.vue'),
-    meta: { permission: 'registers.manage' } 
-  },
-  { 
     path: '/academico/notas', 
     name: 'academic-marks',
     component: UnderConstructionView, 
@@ -92,12 +86,6 @@ export const academicRoutes: RouteRecordRaw[] = [
     name: 'academic-evaluations', 
     component: UnderConstructionView, 
     meta: { permission: 'evaluations.manage' } 
-  },
-  { 
-    path: '/academico/professores', 
-    name: 'academic-teachers', 
-    component: UnderConstructionView, 
-    meta: { permission: 'teacher-allocations.manage' } 
   },
   { 
     path: '/academico/historicos', 

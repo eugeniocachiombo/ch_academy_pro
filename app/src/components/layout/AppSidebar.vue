@@ -69,10 +69,6 @@ const menuItems = computed(() => [
 
       
       // a desenvolver
-      { id: 'registers', label: 'Matrículas', icon: 'fa-user-plus', permition: p('registers.manage') },
-      { id: 'academic-teachers', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacher-allocations.manage') },
-
-
       // { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
       // { id: 'academic-marks', label: 'Notas', icon: 'fa-star', permition: p('grades.manage') },
       // { id: 'academic-evaluations', label: 'Avaliações / Provas', icon: 'fa-file-lines', permition: p('evaluations.manage') },
@@ -95,7 +91,7 @@ const menuItems = computed(() => [
     icon: 'fa-users',
     children: [
       { id: 'students', label: 'Alunos', icon: 'fa-address-book', permition: p('students.manage') },
-      { id: 'students-enrollment', label: 'Processo de Matrícula', icon: 'fa-user-plus', permition: p('enrollment.manage') },
+      { id: 'registers', label: 'Matrículas', icon: 'fa-user-plus', permition: p('registers.manage') },
       { id: 'students-transfers', label: 'Transferências / Declarações', icon: 'fa-exchange-alt', permition: p('transfer.manage') },
     ],
   },
@@ -105,6 +101,7 @@ const menuItems = computed(() => [
     icon: 'fa-chalkboard-user',
     children: [
       { id: 'teachers', label: 'Docentes', icon: 'fa-id-badge', permition: p('teachers.manage') },
+      { id: 'teacherpositions', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacherpositions.manage') },
       { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },

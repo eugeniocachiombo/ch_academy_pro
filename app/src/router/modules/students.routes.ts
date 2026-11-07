@@ -9,10 +9,10 @@ export const studentsRoutes: RouteRecordRaw[] = [
     meta: { permission: 'students.manage' } 
   },
   { 
-    path: '/alunos/matricula', 
-    name: 'students-enrollment', 
-    component: UnderConstructionView, 
-    meta: { permission: 'enrollment.manage' } 
+    path: '/alunos/matriculas', 
+    name: 'registers', 
+    component: () => import('@/views/student/RegistersView.vue'),
+    meta: { permission: 'registers.manage' } 
   },
   { 
     path: '/alunos/transferencias', 

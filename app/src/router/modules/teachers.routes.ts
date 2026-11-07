@@ -9,6 +9,12 @@ export const teachersRoutes: RouteRecordRaw[] = [
     meta: { permission: 'teachers.manage' } 
   },
   { 
+    path: '/professores/alocacao', 
+    name: 'teacherpositions', 
+    component: UnderConstructionView, 
+    meta: { permission: 'teacherpositions.manage' } 
+  },
+  { 
     path: '/professores/horarios', 
     name: 'teachers-schedule', 
     component: UnderConstructionView, 
