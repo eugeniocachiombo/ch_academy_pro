@@ -14,6 +14,8 @@ export const formatPassword = async (password: string) => {
     return await bcrypt.hash(password, 10);
 };
 
-export const formatProcessNum = (value: number | string) => {
-    return String(Number(value)).padStart(PROCESS_MIN_DIGITS, '0');
+export const formatProcessNum = (value: number | string, year?: number | string) => {
+    const cleanNum = String(Number(value)).padStart(PROCESS_MIN_DIGITS, '0');
+    const currentYear = year || new Date().getFullYear();
+    return `${currentYear}${cleanNum}`;
 };
