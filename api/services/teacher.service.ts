@@ -5,6 +5,7 @@ import { personRepository } from '../repository/person.repository.js';
 import { createTeacherSchema, updateTeacherSchema } from '../validators/teacher.schema.js';
 import { CrudContext } from './base.service.js';
 import { formatCapitalized, formatPassword } from '../utils/formaters.js';
+import { nextTeacherCodeNum } from '../utils/process-number.js';
 import { roleRepository } from '../repository/role.repository.js';
 import { userRoleRepository } from '../repository/user-role.repository.js';
 import { prisma } from '../lib/prisma.js';
@@ -31,9 +32,17 @@ class TeacherService extends BaseService {
     }
 
     protected async beforeCreate(data: unknown, _ctx: CrudContext): Promise<unknown> {
-        const body = data as any;
-        if (body?.person) {
-            body.person = { ...body.person, nif: body.person.bi_number };
+        let body = data as any;
+        if (body) {
+            if (body.codenumber === null || body.codenumber === undefined || body.codenumber === '') {
+                body.codenumber = await nextTeacherCodeNum();
+            } else {
+                body.codenumber = String(body.codenumber);
+            }
+
+            if (body?.person) {
+                body.person = { ...body.person, nif: body.person.bi_number };
+            }
         }
         return body;
     }
@@ -86,9 +95,11 @@ class TeacherService extends BaseService {
                 }, "userRole", tx);
             }
 
+            const codenumber = teacherData.codenumber || await nextTeacherCodeNum(tx);
             const teacher = await teacherRepository.create({
                 data: {
                     ...teacherData,
+                    codenumber,
                     user_id: user.id
                 }
             }, 'teacher', tx);
