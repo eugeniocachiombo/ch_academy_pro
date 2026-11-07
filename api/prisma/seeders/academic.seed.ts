@@ -418,6 +418,19 @@ export async function seedAcademic(tx: any = prisma) {
         }
     }
 
+    const degrees = ["Ensino Médio", "Frequência Universitária", "Licenciado", "Msc. Mestrado", "Dr. Doutor"];
+    for (const degree of degrees) {
+        await tx.degree.upsert({
+            where: { name: degree },
+            update: {},
+            create: {
+                name: degree,
+                editable: false,
+            },
+        });
+        console.log("Grau Acadêmico criada/actualizada:", degree);
+    }
+
     console.log("\n========== RESUMO DO SEED ACADÉMICO ==========");
     console.log(`Cursos:                cadastrados=${stats.courses.created} atualizados=${stats.courses.updated} falhas=${stats.courses.failed}`);
     console.log(`Classes:               cadastradas=${stats.classes.created} já existiam=${stats.classes.existing} falhas=${stats.classes.failed}`);
