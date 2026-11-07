@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 
 const modules = [
     { key: "students", label: "Alunos" },
+    { key: "teachers", label: "Professores" },
     { key: "registers", label: "Matrículas" },
 
     { key: "courses", label: "Cursos" },
