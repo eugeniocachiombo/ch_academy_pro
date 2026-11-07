@@ -92,6 +92,24 @@ onMounted(async () => {
 
 const totalCount = computed(() => filteredRegisters.value.length)
 
+const statusCounts = computed(() => {
+  const counts = {
+    ACTIVE: 0,
+    TRANSFER: 0,
+    GIVEUP: 0,
+    CONCLUD: 0,
+    CANCELED: 0,
+  }
+
+  registerStore.registers.forEach((r: any) => {
+    if (r && r.status && Object.prototype.hasOwnProperty.call(counts, r.status)) {
+      counts[r.status as keyof typeof counts]++
+    }
+  })
+
+  return counts
+})
+
 const filteredRegisters = computed(() => {
   return registerStore.registers.filter((r: any) => {
     if (!r) return false
@@ -251,17 +269,65 @@ const handleDelete = async () => {
       </button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-            Total de Matrículas
-          </span>
-          <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-            <i class="fa-solid fa-user-graduate text-sm"></i>
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</span>
+          <div class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+            <i class="fa-solid fa-user-graduate text-xs"></i>
           </div>
         </div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ registerStore.registers.length }}</div>
+      </div>
+
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-emerald-500/30 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Activos</span>
+          <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-user-check text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ statusCounts.ACTIVE }}</div>
+      </div>
+
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-amber-500/30 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Transferidos</span>
+          <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <i class="fa-solid fa-right-left text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ statusCounts.TRANSFER }}</div>
+      </div>
+
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-amber-500/30 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Desistentes</span>
+          <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <i class="fa-solid fa-user-xmark text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ statusCounts.GIVEUP }}</div>
+      </div>
+
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-blue-500/30 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">Concluídos</span>
+          <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <i class="fa-solid fa-award text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ statusCounts.CONCLUD }}</div>
+      </div>
+
+      <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-red-500/30 shadow-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">Cancelados</span>
+          <div class="w-7 h-7 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center">
+            <i class="fa-solid fa-ban text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ statusCounts.CANCELED }}</div>
       </div>
     </div>
 
