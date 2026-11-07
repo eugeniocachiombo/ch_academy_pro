@@ -90,34 +90,14 @@ onMounted(async () => {
   } catch {}
 })
 
-const totalCount = computed(() => filteredRegisters.value.length)
-
-const statusCounts = computed(() => {
-  const counts = {
-    ACTIVE: 0,
-    TRANSFER: 0,
-    GIVEUP: 0,
-    CONCLUD: 0,
-    CANCELED: 0,
-  }
-
-  registerStore.registers.forEach((r: any) => {
-    if (r && r.status && Object.prototype.hasOwnProperty.call(counts, r.status)) {
-      counts[r.status as keyof typeof counts]++
-    }
-  })
-
-  return counts
-})
-
-const filteredRegisters = computed(() => {
+// Dados filtrados base (aplica ano, estudante, turma, pesquisa de texto, mas EXCLUI o filtro de status individual para permitir ver contagens parciais ou completo)
+const baseFilteredRegisters = computed(() => {
   return registerStore.registers.filter((r: any) => {
     if (!r) return false
 
     if (selectedYearFilter.value && r.year_id !== selectedYearFilter.value) return false
     if (selectedStudentFilter.value && r.student_id !== selectedStudentFilter.value) return false
     if (selectedGroupconfigFilter.value && r.groupconfig_id !== selectedGroupconfigFilter.value) return false
-    if (selectedStatusFilter.value && r.status !== selectedStatusFilter.value) return false
 
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase()
@@ -136,6 +116,35 @@ const filteredRegisters = computed(() => {
       )
     }
 
+    return true
+  })
+})
+
+// Contagens dinâmicas baseadas nos filtros ativos (Ano, Turma, Estudante, Pesquisa)
+const statusCounts = computed(() => {
+  const counts = {
+    ACTIVE: 0,
+    TRANSFER: 0,
+    GIVEUP: 0,
+    CONCLUD: 0,
+    CANCELED: 0,
+  }
+
+  baseFilteredRegisters.value.forEach((r: any) => {
+    if (r && r.status && Object.prototype.hasOwnProperty.call(counts, r.status)) {
+      counts[r.status as keyof typeof counts]++
+    }
+  })
+
+  return counts
+})
+
+const totalCount = computed(() => baseFilteredRegisters.value.length)
+
+// Lista final exibida na tabela (inclui o filtro de status)
+const filteredRegisters = computed(() => {
+  return baseFilteredRegisters.value.filter((r: any) => {
+    if (selectedStatusFilter.value && r.status !== selectedStatusFilter.value) return false
     return true
   })
 })
@@ -277,7 +286,7 @@ const handleDelete = async () => {
             <i class="fa-solid fa-user-graduate text-xs"></i>
           </div>
         </div>
-        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ registerStore.registers.length }}</div>
+        <div class="text-xl font-bold text-slate-900 dark:text-white mt-2">{{ totalCount }}</div>
       </div>
 
       <div class="p-4 rounded-2xl border bg-white dark:bg-slate-900 border-emerald-500/30 shadow-sm">
