@@ -104,7 +104,7 @@ const menuItems = computed(() => [
     label: 'Professores',
     icon: 'fa-chalkboard-user',
     children: [
-      { id: 'teachers-directory', label: 'Corpo Docente', icon: 'fa-id-badge', permition: p('teacher.manage') },
+      { id: 'teachers', label: 'Docentes', icon: 'fa-id-badge', permition: p('teachers.manage') },
       { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },

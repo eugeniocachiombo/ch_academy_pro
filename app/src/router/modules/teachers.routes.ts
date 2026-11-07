@@ -4,9 +4,9 @@ import UnderConstructionView from '@/views/UnderConstructionView.vue'
 export const teachersRoutes: RouteRecordRaw[] = [
   { 
     path: '/professores/corpo-docente', 
-    name: 'teachers-directory', 
-    component: UnderConstructionView, 
-    meta: { permission: 'teacher.manage' } 
+    name: 'teachers', 
+    component: () => import('@/views/teacher/TeachersView.vue'), 
+    meta: { permission: 'teachers.manage' } 
   },
   { 
     path: '/professores/horarios', 
