@@ -176,7 +176,7 @@ const handleDelete = async () => {
             <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{{ slotProps.data.code }}</span>
           </template>
         </Column>
-        <Column field="name" header="Nome da Disciplina" sortable style="width: 45%">
+        <Column field="name" header="Nome" sortable style="width: 45%">
           <template #body="slotProps">
             <span class="font-semibold text-slate-900 dark:text-white text-sm">{{ slotProps.data.name }}</span>
           </template>
@@ -223,3 +223,6 @@ const handleDelete = async () => {
     />
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>

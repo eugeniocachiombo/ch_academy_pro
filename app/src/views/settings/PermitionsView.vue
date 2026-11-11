@@ -217,3 +217,6 @@ const deletePermition = async (id: number) => {
     />
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>

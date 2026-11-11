@@ -478,3 +478,6 @@ const deleteUser = async (id: number) => {
     </div>
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>

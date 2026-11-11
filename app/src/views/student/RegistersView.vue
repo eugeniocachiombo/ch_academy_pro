@@ -452,7 +452,7 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Configuração de Turma" style="width: 27%">
+        <Column header="Turma" style="width: 27%">
           <template #body="slotProps">
             <span class="text-slate-700 dark:text-slate-300 text-xs">
               {{ slotProps.data.groupconfig?.name || 'N/A' }}
@@ -530,3 +530,6 @@ const handleDelete = async () => {
     />
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>

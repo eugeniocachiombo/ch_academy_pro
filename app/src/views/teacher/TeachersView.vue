@@ -509,3 +509,6 @@ const handleDelete = async () => {
     />
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>

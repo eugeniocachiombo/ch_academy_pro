@@ -7,6 +7,7 @@ import 'primeicons/primeicons.css'
 import './style.css'
 import App from './App.vue'
 import router from './router'
+import { initTableLabels } from './tableLabels'
 
 const app = createApp(App)
 
@@ -23,3 +24,4 @@ app.use(PrimeVue, {
 })
 
 app.mount('#app')
+initTableLabels()

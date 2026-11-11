@@ -336,7 +336,7 @@ const handleDelete = async () => {
           </div>
         </template>
 
-        <Column field="name" header="Nome da Configuração" sortable style="width: 20%">
+        <Column field="name" header="Configuração" sortable style="width: 20%">
           <template #body="slotProps">
             <span class="font-bold text-slate-900 dark:text-white text-xs">
               {{ slotProps.data.name }}
@@ -386,3 +386,6 @@ const handleDelete = async () => {
     />
   </div>
 </template>
+<style scoped>
+  @import '../../mobile.css';
+</style>
