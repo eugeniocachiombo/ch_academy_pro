@@ -1,0 +1,154 @@
+
+/* ==========================================================================
+   ADAPTAÇÃO DE TABELAS PARA MOBILE (Cards Verticais)
+   ========================================================================== */
+@media (max-width: 900px) {
+
+  .custom-datatable :deep(.p-datatable-wrapper),
+  .custom-datatable :deep(.p-datatable-table-container),
+  .custom-datatable :deep(.p-datatable-table) {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .custom-datatable :deep(.p-datatable-header) {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 0 0.8rem 0 !important;
+  }
+
+
+  .custom-datatable :deep(.p-datatable-thead) {
+    display: none !important;
+  }
+
+  .custom-datatable :deep(.p-datatable-tbody) {
+    display: block !important;
+    width: 100% !important;
+  }
+
+
+  .custom-datatable :deep(.p-datatable-tbody > tr),
+  .custom-datatable :deep(.p-datatable-tbody > tr:hover) {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0.85rem !important;
+    box-shadow: 0 2px 8px rgba(10, 26, 64, 0.06) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  
+  .dark .custom-datatable :deep(.p-datatable-tbody > tr),
+  .dark .custom-datatable :deep(.p-datatable-tbody > tr:hover) {
+    background: #090d16 !important;
+    border: 1px solid #1e293b !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  
+  .custom-datatable :deep(.p-datatable-tbody > tr > td) {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    border: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 0.5rem 0 !important;
+    width: 100% !important;
+    text-align: right !important;
+    font-size: 0.88rem !important;
+    color: #334155 !important;
+    background: transparent !important;
+    /* CORREÇÃO: texto longo quebra linha em vez de empurrar o cartão para o lado */
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-wrap: anywhere;
+  }
+
+  .dark .custom-datatable :deep(.p-datatable-tbody > tr > td) {
+    border-bottom-color: rgba(30, 41, 59, 0.6) !important;
+    color: #cbd5e1 !important;
+  }
+
+ 
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(1):not([data-label])::before) { content: "ID"; }
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(2):not([data-label])::before) { content: "Ano Letivo"; }
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(3):not([data-label])::before) { content: "Data de Início"; }
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(4):not([data-label])::before) { content: "Data de Fim"; }
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(5):not([data-label])::before) { content: "Estado"; }
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:nth-child(6):not([data-label])::before) { content: "Ações"; }
+
+ 
+  .custom-datatable :deep(.p-datatable-tbody > tr > td[data-label]::before) {
+    content: attr(data-label);
+  }
+
+  .custom-datatable :deep(.p-datatable-tbody > tr > td::before) {
+    flex-shrink: 0;
+    margin-right: auto; 
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+  }
+
+  .dark .custom-datatable :deep(.p-datatable-tbody > tr > td[data-label]::before),
+  .dark .custom-datatable :deep(.p-datatable-tbody > tr > td::before) {
+    color: #94a3b8;
+  }
+
+  
+  .custom-datatable :deep(.p-datatable-tbody > tr > td > *) {
+    min-width: 0;
+    max-width: 65%;
+    overflow-wrap: anywhere;
+  }
+
+  
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:last-child) {
+    border-bottom: none !important;
+    margin-top: 0.25rem !important;
+    padding-top: 0.6rem !important;
+    justify-content: flex-end !important;
+    flex-wrap: wrap !important; 
+  }
+
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:last-child > *) {
+    max-width: 100% !important;
+  }
+
+  
+  .custom-datatable :deep(.p-datatable-tbody > tr > td:not([data-label])) {
+    justify-content: flex-end !important;
+  }
+
+  .custom-datatable :deep(.p-datatable-tbody > tr.p-datatable-empty-message > td) {
+    justify-content: center !important;
+    text-align: center !important;
+  }
+  .custom-datatable :deep(.p-datatable-tbody > tr.p-datatable-empty-message > td::before) {
+    content: none !important;
+  }
+
+  
+  .custom-datatable :deep(.p-paginator) {
+    background: transparent !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.2rem !important;
+    padding: 0.5rem 0 !important;
+    border: none !important;
+    margin-bottom: 25px;
+  }
+}
