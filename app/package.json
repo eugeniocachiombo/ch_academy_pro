@@ -5,9 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "build": "vite build",
+    "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@primeuix/themes": "^3.0.1",
