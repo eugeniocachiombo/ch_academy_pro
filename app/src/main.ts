@@ -9,6 +9,9 @@ import App from './App.vue'
 import router from './router'
 import { initTableLabels } from './tableLabels'
 
+// @ts-ignore
+import 'virtual:pwa-register'
+
 const app = createApp(App)
 
 app.use(createPinia())
