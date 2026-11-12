@@ -93,6 +93,8 @@ const menuItems = computed(() => [
       { id: 'students', label: 'Alunos', icon: 'fa-address-book', permition: p('students.manage') },
       { id: 'registers', label: 'Matrículas', icon: 'fa-user-plus', permition: p('registers.manage') },
       { id: 'students-transfers', label: 'Transferências / Declarações', icon: 'fa-exchange-alt', permition: p('transfer.manage') },
+      { id: 'parents', label: 'Encarregados', icon: 'fa-user-tie', permition: p('parents.manage') },
+      { id: 'student-parents-assignment', label: 'Atribuição de Encarregados', icon: 'fa-link', permition: p('studentparents.manage') },
     ],
   },
   {
