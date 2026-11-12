@@ -7,7 +7,7 @@
       "resolveJsonModule": true,
       "isolatedModules": true,
       "moduleDetection": "force",
-      "strict": false,
+      "strict": true,
       "jsx": "preserve",
       "jsxImportSource": "vue",
       "skipLibCheck": true,
