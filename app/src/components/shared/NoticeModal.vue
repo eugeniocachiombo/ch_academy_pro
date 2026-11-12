@@ -2,7 +2,7 @@
 import { nextTick, ref, watch } from 'vue'
 import { addCommunication, closeModal, openModals, showNotification } from '@/services/general_service'
 
-const audiences = ['Todos', 'Pais e responsáveis', 'Professores', 'Alunos']
+const audiences = ['Todos', 'Pais e encarregados', 'Professores', 'Alunos']
 
 const title = ref('')
 const audience = ref(audiences[0])

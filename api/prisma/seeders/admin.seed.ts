@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 
 const modules = [
     { key: "students", label: "Alunos" },
+    { key: "parents", label: "Encarregados" },
+    { key: "studentparents", label: "Atribuição de Encarregados" },
     { key: "teachers", label: "Professores" },
     { key: "registers", label: "Matrículas" },
     { key: "teacherocupations", label: "Alocação de Professores" },
@@ -33,7 +35,7 @@ const actions = [
     { action: "excel", label: "Baixar Excel" },
 ];
 
-const roles = ["admin", "director", "aluno", "secretario", "coordenador"];
+const roles = ["admin", "director", "aluno", "secretario", "coordenador", "professor", "encarregado"];
 
 export async function seedAdmin(tx: any = prisma) {
     const hashedPassword = await bcrypt.hash("secret", 10);
