@@ -24,6 +24,8 @@ import { schoolRoutes } from './routes/school.routes.js';
 import { studentRoutes } from "./routes/student.routes.js";
 import { teacherRoutes } from "./routes/teacher.routes.js";
 import { degreeRoutes } from './routes/degree.routes.js';
+import { parentRoutes } from './routes/parent.routes.js';
+import { studentparentRoutes } from './routes/studentparent.routes.js';
 import { seedRoutes } from './routes/seed.route.js';
 
 const app = express();
@@ -61,7 +63,9 @@ app.use(
   schoolRoutes,
   studentRoutes,
   teacherRoutes,
-  degreeRoutes
+  degreeRoutes,
+  parentRoutes,
+  studentparentRoutes
 );
 
 app.get("/", (req, res) => {
