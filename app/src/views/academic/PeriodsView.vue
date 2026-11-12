@@ -53,7 +53,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (period: Period & { starthour?: string | null; endhour?: string | null }) => {
-  if (!p('periods.edit')) return
+  if (!p('periods.update')) return
   isEditing.value = true
   selectedPeriod.value = period
   formData.value = {
@@ -199,9 +199,9 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 20%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('periods.edit') || p('periods.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('periods.update') || p('periods.delete')">
               <button
-                v-if="p('periods.edit')"
+                v-if="p('periods.update')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >

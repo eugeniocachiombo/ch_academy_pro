@@ -125,7 +125,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (groupconfig: Groupconfig) => {
-  if (!p('groupconfigs.edit')) return
+  if (!p('groupconfigs.update')) return
   isEditing.value = true
   selectedGroupconfig.value = groupconfig
   formData.value = {
@@ -346,9 +346,9 @@ const handleDelete = async () => {
 
         <Column header="Acções" style="width: 8%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('groupconfigs.edit') || p('groupconfigs.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('groupconfigs.update') || p('groupconfigs.delete')">
               <button
-                v-if="p('groupconfigs.edit')"
+                v-if="p('groupconfigs.update')"
                 @click="openEditModal(slotProps.data)"
                 class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >

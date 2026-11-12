@@ -52,7 +52,7 @@ const openCreateModal = () => {
 }
 
 const openEditModal = (cls: Class) => {
-  if (!p('classes.edit')) return
+  if (!p('classes.update')) return
   isEditing.value = true
   selectedClass.value = cls
   formData.value = {
@@ -194,9 +194,9 @@ const handleDelete = async () => {
         </Column>
         <Column header="Acções" style="width: 20%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('classes.edit') || p('classes.delete')">
+            <div class="flex items-center gap-1.5" v-if="p('classes.update') || p('classes.delete')">
               <button
-                v-if="p('classes.edit') && slotProps.data.editable"
+                v-if="p('classes.update') && slotProps.data.editable"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >

@@ -13,7 +13,7 @@ const classcourseStore = useClasscourseStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
-const canEdit = () => p('classcourses.edit') || p('classcourses.manage')
+const canEdit = () => p('classcourses.update') || p('classcourses.manage')
 
 const same = (a: Id, b: Id) => String(a) === String(b)
 
@@ -162,7 +162,7 @@ const saveChanges = async () => {
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure o currículo associando classes específicas a cada curso.</p>
       </div>
       <button
-        v-if="selectedCourseId && (p('classcourses.edit') || p('classcourses.manage'))"
+        v-if="selectedCourseId && (p('classcourses.update') || p('classcourses.manage'))"
         @click="saveChanges"
         :disabled="internalLoading"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95 disabled:opacity-50"
