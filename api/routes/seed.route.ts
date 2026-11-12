@@ -7,30 +7,21 @@ import { seedAcademic } from '../prisma/seeders/academic.seed';
 
 const seedRoutes = Router();
 
-async function main() {
-    await prisma.$transaction(
-        async (tx) => {
-            await seedAdmin(tx);
-            await seedAcademic(tx);
-        },
-        { maxWait: 10000, timeout: 120000 }
-    );
-}
-
 seedRoutes.get("/seed/execute", async (req: Request, res: Response) => {
     try {
-        main()
-            .catch((e) => {
-                console.error("Erro durante o seed:", e);
-                process.exit(1);
-            })
-            .finally(async () => {
-                await prisma.$disconnect();
-            });
+        console.log('Iniciando execução dos seeders...');
+        await prisma.$transaction(
+            async (tx) => {
+                await seedAdmin(tx);
+                await seedAcademic(tx);
+            },
+            { maxWait: 10000, timeout: 120000 }
+        );
+        console.log('Seeders executados com sucesso!');
         return res.status(200).json('sucesso seed');
     } catch (error) {
+        console.error('Erro na execução dos seeders:', error);
         return errorReport(res, error);
     }
 });
-
 export { seedRoutes };
