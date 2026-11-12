@@ -24,6 +24,7 @@ import { schoolRoutes } from './routes/school.routes.js';
 import { studentRoutes } from "./routes/student.routes.js";
 import { teacherRoutes } from "./routes/teacher.routes.js";
 import { degreeRoutes } from './routes/degree.routes.js';
+import { seedRoutes } from './routes/seed.route.js';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(seedRoutes);
 app.use(
   "/api",
   authMiddleware,
