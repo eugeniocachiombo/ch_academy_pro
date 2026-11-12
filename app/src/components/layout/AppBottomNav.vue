@@ -17,35 +17,37 @@ const { notifications, unread, markAllRead } = useNotifications()
 type Sheet = 'profile' | 'notifications' | null
 const sheet = ref<Sheet>(null)
 
-function openSheet(name: Exclude<Sheet, null>) {
+function openSheet(name: Exclude<Sheet, null>): void {
   sidebarExpanded.value = false
   sheet.value = sheet.value === name ? null : name
 }
 
-function openMenu() {
+function openMenu(): void {
   sheet.value = null
   toggleSidebar()
 }
 
-function closeAll() {
+function closeAll(): void {
   sheet.value = null
   sidebarExpanded.value = false
 }
 
-function onLogout() {
+function onLogout(): void {
   sheet.value = null
   logout()
 }
 
-function onKeydown(e: KeyboardEvent) {
+function onKeydown(e: KeyboardEvent): void {
   if (e.key === 'Escape') closeAll()
 }
+
 onMounted(() => document.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 
 const tabBase =
   'relative flex-1 h-full flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400'
-const tabClass = (active: boolean) => [
+
+const tabClass = (active: boolean): string[] => [
   tabBase,
   active
     ? 'text-indigo-600 dark:text-indigo-400'
@@ -161,8 +163,8 @@ const tabClass = (active: boolean) => [
           <div class="flex items-center gap-4">
             <img
               v-if="userStore.currentUser?.photo"
-              :src="userStore.currentUser.photo"
-              :alt="userStore.currentUser?.name"
+              :src="userStore.currentUser?.photo"
+              :alt="userStore.currentUser?.name || 'Foto de perfil'"
               class="w-16 h-16 rounded-2xl object-cover ring-2 ring-indigo-500/50"
             />
             <div
@@ -179,7 +181,7 @@ const tabClass = (active: boolean) => [
                 class="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                {{ userStore.getUserRole()?.role?.name || 'Sem função' }}
+                {{ userStore?.getUserRole()?.name || 'Sem função' }}
               </span>
             </div>
           </div>

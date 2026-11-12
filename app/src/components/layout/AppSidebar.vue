@@ -17,7 +17,7 @@ const openMenus = ref<Record<string, boolean>>({
 })
 
 interface SubMenu {
-  id: TabId
+  id: string
   label: string
   icon: string
   permition?: boolean
@@ -236,8 +236,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
       <!-- Perfil -->
       <div class="p-3 border-t border-slate-800 bg-slate-950/30">
         <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-800/50 border border-slate-700/50">
-          <template v-if="authStore.currentUser?.photo">
-            <img :src="authStore.currentUser.photo" :alt="authStore.currentUser?.name"
+        <template v-if="authStore?.currentUser?.photo">
+            <img :src="authStore?.currentUser?.photo" :alt="authStore?.currentUser?.name || 'Foto de perfil'"
               class="w-10 h-10 rounded-lg object-cover ring-2 ring-indigo-500/50 flex-shrink-0" />
           </template>
           <template v-else>

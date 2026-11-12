@@ -8,21 +8,13 @@ import {
   loadPermitions,
   resetPermitions,
 } from '@/services/permition.service';
+import { User } from './user.store';
 
 export interface UserRole {
   id: number;
   user_id?: number | string;
   role_id: number;
   role?: { id?: number; name?: string };
-}
-
-export interface User {
-  id: number;
-  name?: string | null;
-  username: string;
-  email?: string;
-  status?: string;
-  school_id?: number | string | null;
 }
 
 export interface AuthResponse {

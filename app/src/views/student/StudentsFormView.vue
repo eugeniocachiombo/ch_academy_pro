@@ -47,7 +47,7 @@ const emptyForm = (): StudentPayload & { id?: number } => ({
   fathername: '',
   mothername: '',
   origin_school: '',
-  school_id: authStore.currentUser.school_id || null,
+  school_id: authStore?.currentUser?.school_id ? Number(authStore.currentUser.school_id) : null,
   person: {
     firstname: '',
     lastname: '',
@@ -202,7 +202,7 @@ watch(
         ...base,
         ...newData,
         phone: newData.phone ?? '',
-        school_id: newData.school_id || authStore.currentUser.school_id || null,
+        school_id: newData.school_id || Number(authStore.currentUser?.school_id) || null,
         person: {
           ...base.person!,
           ...newData.person,
@@ -261,7 +261,7 @@ const handleSubmit = async () => {
       origin_school: form.value.origin_school || null,
       school_id: form.value.school_id
         ? Number(form.value.school_id)
-        : (authStore.currentUser.school_id ? Number(authStore.currentUser.school_id) : null),
+        : (authStore.currentUser?.school_id ? Number(authStore.currentUser?.school_id) : null),
       person: {
         ...currentPerson,
         email: currentPerson.email || null,

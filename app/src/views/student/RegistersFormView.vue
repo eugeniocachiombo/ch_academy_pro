@@ -114,7 +114,12 @@ const handleSubmit = async () => {
   
   try {
     const payload: RegisterPayload = {
-      registnum: form.value.registnum !== null && form.value.registnum !== undefined && form.value.registnum !== '' ? Number(form.value.registnum) : null,
+      registnum:
+        form.value.registnum !== null &&
+        form.value.registnum !== undefined &&
+        String(form.value.registnum) !== ''
+          ? Number(form.value.registnum)
+          : null,
       student_id: form.value.student_id ? Number(form.value.student_id) : null,
       groupconfig_id: form.value.groupconfig_id ? Number(form.value.groupconfig_id) : null,
       year_id: form.value.year_id ? Number(form.value.year_id) : null,
@@ -177,7 +182,8 @@ const handleSubmit = async () => {
             </template>
             <template #value="slotProps">
               <span v-if="slotProps.value">
-                {{ students.find(s => s.id === slotProps.value)?.user?.person?.name }} 
+                {{ students.find(s => s.id === slotProps.value)?.user?.person?.firstname }}
+                {{ students.find(s => s.id === slotProps.value)?.user?.person?.lastname }} 
                 ({{ students.find(s => s.id === slotProps.value)?.processnum }})
               </span>
               <span v-else class="text-slate-400">Selecione o estudante...</span>

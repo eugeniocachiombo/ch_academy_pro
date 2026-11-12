@@ -33,7 +33,7 @@ export function useConfirmToast(group = 'confirm') {
       detail: options.detail,
       sticky: true,
       closable: false,
-    })
+    } as any)
   }
 
   const accept = async () => {

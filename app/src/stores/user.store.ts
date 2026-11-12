@@ -2,6 +2,12 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { api } from '@/services/api';
 import cryptoService from '@/services/crypto.service';
+import { Person } from './person.store';
+
+export interface Role {
+  id: number | string;
+  name: string;
+}
 
 export interface User {
   id: number;
@@ -11,6 +17,8 @@ export interface User {
   status?: string;
   school_id?: number | string | null;
   photo?: string | null;
+  role?: Role;
+  person?: Person;
 }
 
 export interface RegisterPayload {
@@ -24,11 +32,16 @@ export interface RegisterPayload {
 
 export const useUserStore = defineStore('user', () => {
   const users = ref<User[]>([]);
+  const currentUser = ref<User | null>(null);
   const isLoading = ref<boolean>(false);
   const error = ref<string | null>(null);
 
   function clearError(): void {
     error.value = null;
+  }
+
+  function getUserRole(): Role | null {
+    return currentUser.value?.role ?? null;
   }
 
   async function list(): Promise<User[]> {
@@ -72,7 +85,9 @@ export const useUserStore = defineStore('user', () => {
     try {
       const encryptedId = cryptoService.encryptId(String(id));
       const response = await api.put<User>(`/users/${encryptedId}`, payload);
-      const index = users.value.findIndex(u => u.id === id);
+      
+      const numericId = Number(id);
+      const index = users.value.findIndex(u => Number(u.id) === numericId);
       if (index !== -1) {
         users.value[index] = response;
       }
@@ -93,7 +108,9 @@ export const useUserStore = defineStore('user', () => {
     try {
       const encryptedId = cryptoService.encryptId(String(id));
       await api.delete(`/users/${encryptedId}`);
-      users.value = users.value.filter(u => u.id !== id);
+      
+      const numericId = Number(id);
+      users.value = users.value.filter(u => Number(u.id) !== numericId);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Erro ao remover o utilizador.';
       error.value = message;
@@ -105,9 +122,11 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     users,
+    currentUser,
     isLoading,
     error,
     clearError,
+    getUserRole,
     list,
     register,
     update,

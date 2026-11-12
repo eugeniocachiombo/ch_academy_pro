@@ -7,7 +7,6 @@ export const api = axios.create({
   },
 });
 
-// Interceptor de Requisição: Injeta o token JWT se existir no localStorage
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
@@ -19,7 +18,6 @@ api.interceptors.request.use(
   (error: unknown) => Promise.reject(error)
 );
 
-// Interceptor de Resposta: Desempacota response.data e trata status 204
 api.interceptors.response.use(
   (response: AxiosResponse) => (response.status === 204 ? null : response.data),
   (error: unknown) => Promise.reject(error)

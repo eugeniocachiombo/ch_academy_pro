@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoleStore, type Role, type CreateRolePayload } from '@/stores/role.store'
+import { useRoleStore, type Role, type RolePayload } from '@/stores/role.store'
 import { showNotification } from '@/services/general_service'
 import RoleFormView from './RolesFormView.vue'
 import { useAuthStore } from '@/stores/auth.store'
@@ -18,7 +18,7 @@ const searchQuery = ref('')
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedRole = ref<Role | null>(null)
-const formData = ref<(CreateRolePayload & { id?: number }) | null>(null)
+const formData = ref<(RolePayload & { id?: number }) | null>(null)
 
 onMounted(async () => {
   try {

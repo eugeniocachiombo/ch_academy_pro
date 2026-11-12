@@ -44,7 +44,7 @@ const emptyForm = (): TeacherPayload & { id?: number } => ({
   codenumber: undefined,
   degree_id: undefined,
   specialty: '',
-  school_id: authStore.currentUser.school_id || null,
+  school_id: authStore?.currentUser?.school_id ? Number(authStore.currentUser.school_id) : null,
   person: {
     firstname: '',
     lastname: '',
@@ -203,7 +203,7 @@ watch(
         ...base,
         ...newData,
         degree_id: newData.degree_id ? Number(newData.degree_id) : undefined,
-        school_id: newData.school_id || authStore.currentUser.school_id || null,
+        school_id: newData.school_id ? Number(newData.school_id) : (authStore.currentUser?.school_id ? Number(authStore.currentUser.school_id) : null),
         person: {
           ...base.person!,
           ...newData.person,
@@ -258,7 +258,7 @@ const handleSubmit = async () => {
       specialty: form.value.specialty || null,
       school_id: form.value.school_id
         ? Number(form.value.school_id)
-        : (authStore.currentUser.school_id ? Number(authStore.currentUser.school_id) : null),
+        : (authStore.currentUser?.school_id ? Number(authStore.currentUser?.school_id) : null),
       person: {
         ...currentPerson,
         email: currentPerson.email || null,
