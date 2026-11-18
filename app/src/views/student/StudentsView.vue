@@ -5,7 +5,8 @@ import { showNotification } from '@/services/general_service'
 import StudentsFormView from './StudentsFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
-import { useRegisterStore } from '@/stores/register.store'
+import { useRegisterStore, RegisterStatus } from '@/stores/register.store'
+import { useYearStore } from '@/stores/year.store'
 import RegistersFormView from './RegistersFormView.vue'
 
 import DataTable from 'primevue/datatable'
@@ -73,6 +74,7 @@ const statusKeys: UserStatus[] = ['ACTIVE', 'INDEBT', 'GIVEUP', 'BLOCKED']
 const studentStore = useStudentStore()
 const authStore = useAuthStore()
 const registerStore = useRegisterStore()
+const yearStore = useYearStore()
 
 const p = (name: string) => authStore.getPermition(name)
 
@@ -94,8 +96,11 @@ const formDataRegister = ref<any | null>(null)
 
 onMounted(async () => {
   try {
-    await studentStore.list()
-    await registerStore.list()
+    await Promise.all([
+      studentStore.list(),
+      registerStore.list(),
+      yearStore.list()
+    ])
   } catch {}
 })
 
@@ -256,15 +261,47 @@ const handleSaved = async () => {
   )
 }
 
+const currentActiveYearId = computed(() => {
+  const years = yearStore.years || []
+  const activeYear = years.find((y: any) => y.isCurrent) || years[0]
+  return activeYear?.id || null
+})
+
+const getActiveRegistration = (studentId: number): any | null => {
+  const registers = registerStore.registers || []
+  const activeYearId = currentActiveYearId.value
+
+  return registers.find((reg: any) => {
+    const regStudentId = Number(reg.student_id ?? reg.student?.id)
+    const regStatus = String(reg.status ?? '').toUpperCase()
+    const regYearId = Number(reg.year_id ?? reg.year?.id)
+
+    const matchesStudent = regStudentId === Number(studentId)
+    const matchesStatus = regStatus === 'ACTIVE'
+    const matchesYear = activeYearId ? regYearId === Number(activeYearId) : true
+
+    return matchesStudent && matchesStatus && matchesYear
+  }) || null
+}
+
+const hasActiveRegistration = (studentId: number): boolean => {
+  return !!getActiveRegistration(studentId)
+}
+
 const openRegisterModal = (student: Student) => {
+  if (hasActiveRegistration(student.id)) {
+    showNotification('Este estudante já possui uma matrícula activa para o ano letivo atual.', 'error')
+    return
+  }
+
   isEditingRegister.value = false
   formDataRegister.value = {
     registnum: null,
     student_id: student.id,
     groupconfig_id: null,
-    year_id: null,
+    year_id: currentActiveYearId.value,
     date: new Date().toISOString().split('T')[0],
-    status: 'ACTIVE',
+    status: RegisterStatus.ACTIVE,
     school_id: student.school_id || null,
   }
   isModalOpenRegister.value = true
@@ -279,6 +316,37 @@ const handleRegisterSaved = async () => {
   await registerStore.list()
   closeRegisterModal()
   showNotification('Matrícula efetuada com sucesso.', 'success')
+}
+
+const updateRegistrationStatus = async (studentId: number, newStatus: string, successMessage: string) => {
+  const activeReg = getActiveRegistration(studentId)
+  if (!activeReg) {
+    showNotification('Nenhuma matrícula ativa encontrada para este aluno no ano letivo atual.', 'error')
+    return
+  }
+
+  try {
+    await registerStore.update(activeReg.id, {
+      ...activeReg,
+      status: newStatus,
+      student_id: activeReg.student_id,
+      groupconfig_id: activeReg.groupconfig_id,
+      year_id: activeReg.year_id,
+      date: activeReg.date
+    })
+    await registerStore.list()
+    showNotification(successMessage, 'success')
+  } catch (err: any) {
+    showNotification(err.message || 'Erro ao atualizar o estado da matrícula.', 'error')
+  }
+}
+
+const concludeRegistration = (studentId: number) => {
+  updateRegistrationStatus(studentId, RegisterStatus.CONCLUD, 'Matrícula concluída com sucesso.')
+}
+
+const cancelRegistration = (studentId: number) => {
+  updateRegistrationStatus(studentId, RegisterStatus.CANCELED, 'Matrícula cancelada com sucesso.')
 }
 
 const confirmDeleteStudent = (student: Student) => {
@@ -472,7 +540,7 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Aluno" style="width: 26%">
+        <Column header="Aluno" style="width: 22%">
           <template #body="slotProps">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
@@ -486,13 +554,13 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Nº do BI" style="width: 16%">
+        <Column header="Nº do BI" style="width: 15%">
           <template #body="slotProps">
             <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ slotProps.data.user?.person?.bi_number || '-' }}</span>
           </template>
         </Column>
 
-        <Column header="Telemóvel" style="width: 14%">
+        <Column header="Telemóvel" style="width: 13%">
           <template #body="slotProps">
             <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ slotProps.data.phone || slotProps.data.user?.person?.phone || '-' }}</span>
           </template>
@@ -517,10 +585,11 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Acções" style="width: 16%">
+        <Column header="Acções" style="width: 22%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
               <button
+                v-if="!hasActiveRegistration(slotProps.data.id)"
                 @click="openRegisterModal(slotProps.data)"
                 title="Efetuar Matrícula"
                 aria-label="Efetuar Matrícula"
@@ -528,6 +597,27 @@ const handleDelete = async () => {
               >
                 <i class="fa-solid fa-file-pen text-xs"></i>
               </button>
+
+              <button
+                v-if="hasActiveRegistration(slotProps.data.id)"
+                @click="concludeRegistration(slotProps.data.id)"
+                title="Concluir Matrícula"
+                aria-label="Concluir Matrícula"
+                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/50"
+              >
+                <i class="fa-solid fa-circle-check text-xs"></i>
+              </button>
+
+              <button
+                v-if="hasActiveRegistration(slotProps.data.id)"
+                @click="cancelRegistration(slotProps.data.id)"
+                title="Cancelar Matrícula"
+                aria-label="Cancelar Matrícula"
+                class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 flex items-center justify-center transition-colors hover:bg-amber-100 dark:hover:bg-amber-900/50"
+              >
+                <i class="fa-solid fa-ban text-xs"></i>
+              </button>
+
               <button
                 v-if="p('students.update')"
                 @click="openEditModal(slotProps.data)"
