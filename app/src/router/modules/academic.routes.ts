@@ -93,4 +93,10 @@ export const academicRoutes: RouteRecordRaw[] = [
     component: UnderConstructionView, 
     meta: { permission: 'transcripts.manage' } 
   },
+  { 
+    path: '/academico/horarios', 
+    name: 'schedules', 
+    component: () => import('@/views/academic/SchedulesView.vue'), 
+    meta: { permission: 'schedules.manage' } 
+  },
 ]

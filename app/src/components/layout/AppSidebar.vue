@@ -66,7 +66,7 @@ const menuItems = computed(() => [
       { id: 'rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
       { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },
       { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
-
+      { id: 'schedules', label: 'Horários', icon: 'fa-calendar-week', permition: p('schedules.manage') }
       
       // a desenvolver
       // { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
@@ -104,7 +104,7 @@ const menuItems = computed(() => [
     children: [
       { id: 'teachers', label: 'Docentes', icon: 'fa-id-badge', permition: p('teachers.manage') },
       { id: 'teacherocupations', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacherocupations.manage') },
-      { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
+      // { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },
   {
