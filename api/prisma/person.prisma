@@ -16,8 +16,8 @@ model Person {
   street            String?
   house_number      String?
 
-  users             User[]
+  users User[]
 
-  createdAt         DateTime? @default(now())
-  updatedAt         DateTime? @updatedAt
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
 }

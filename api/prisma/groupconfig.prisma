@@ -21,6 +21,7 @@ model Groupconfig {
   updatedAt         DateTime?          @updatedAt
   registers         Register[]
   teacherocupations Teacherocupation[]
+  schedules         Schedule[]
 
   @@unique([year_id, course_id, class_id, period_id, room_id])
 }
