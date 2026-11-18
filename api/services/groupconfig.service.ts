@@ -12,7 +12,16 @@ class GroupconfigService extends BaseService {
                 update: updateGroupconfigSchema
             }, 
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: {
+                    room: true,
+                    class: true,
+                    group: true,
+                    period: true,
+                    course: true,
+                    year: true,
+                    school: true
+                }
             }
         );
     }
