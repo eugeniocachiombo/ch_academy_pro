@@ -6,15 +6,16 @@ import cryptoService from '@/services/crypto.service';
 export interface Teacherocupation {
   id: number;
   teacher_id: number | string;
-  groupconfig_id: number | string;
   subject_id: number | string;
   year_id: number | string;
   school_id?: number | string | null;
+  teacher?: any;
+  subject?: any;
+  year?: any;
 }
 
 export interface TeacherocupationPayload {
   teacher_id: number | string;
-  groupconfig_id: number | string;
   subject_id: number | string;
   year_id: number | string;
   school_id?: number | string | null;

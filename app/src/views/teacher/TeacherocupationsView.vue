@@ -30,7 +30,7 @@ const assignmentMap = ref<Record<string, Id[]>>({})
 const originalAssignmentMap = ref<Record<string, Id[]>>({})
 
 const teacherSearchQuery = ref('')
-const groupSearchQuery = ref('')
+const subjectSearchQuery = ref('')
 const internalLoading = ref(false)
 const globalError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
@@ -40,14 +40,13 @@ const buildMapping = () => {
   teacherocupationStore.teacherocupations.forEach((to: any) => {
     const tId = String(to.teacher_id)
     const yId = String(to.year_id)
-    const sId = String(to.subject_id)
-    const gId = to.groupconfig_id
+    const sId = to.subject_id
 
-    if (gId == null) return
+    if (sId == null) return
 
-    const key = `${tId}_${yId}_${sId}`
+    const key = `${tId}_${yId}`
     if (!mapping[key]) mapping[key] = []
-    mapping[key].push(gId)
+    mapping[key].push(sId)
   })
   assignmentMap.value = JSON.parse(JSON.stringify(mapping))
   originalAssignmentMap.value = JSON.parse(JSON.stringify(mapping))
@@ -69,16 +68,13 @@ onMounted(async () => {
     if (yearStore.years.length > 0) {
       selectedYearId.value = yearStore.years[0].id
     }
-    if (subjectStore.subjects.length > 0) {
-      selectedSubjectId.value = subjectStore.subjects[0].id
-    }
 
     buildMapping()
   } catch {}
 })
 
 const totalTeachersCount = computed(() => teacherStore.teachers.filter((t: any) => t != null).length)
-const totalGroupsCount = computed(() => groupconfigStore.groupconfigs.filter((g: any) => g != null).length)
+const totalSubjectsCount = computed(() => subjectStore.subjects.filter((s: any) => s != null).length)
 
 const filteredTeachers = computed(() => {
   const q = teacherSearchQuery.value.toLowerCase()
@@ -94,29 +90,29 @@ const currentTeacher = computed(() => {
   return teacherStore.teachers.find((t: any) => same(t.id, selectedTeacherId.value!)) || null
 })
 
-const filteredGroups = computed(() => {
-  const q = groupSearchQuery.value.toLowerCase()
-  return groupconfigStore.groupconfigs.filter((grp: any) => {
-    if (!grp) return false
+const filteredSubjects = computed(() => {
+  const q = subjectSearchQuery.value.toLowerCase()
+  return subjectStore.subjects.filter((subj: any) => {
+    if (!subj) return false
     return !q ||
-      grp.name?.toLowerCase().includes(q) ||
-      grp.description?.toLowerCase().includes(q)
+      subj.name?.toLowerCase().includes(q) ||
+      subj.code?.toLowerCase().includes(q)
   })
 })
 
 const currentKey = computed(() => {
-  if (selectedTeacherId.value == null || selectedYearId.value == null || selectedSubjectId.value == null) return null
-  return `${selectedTeacherId.value}_${selectedYearId.value}_${selectedSubjectId.value}`
+  if (selectedTeacherId.value == null || selectedYearId.value == null) return null
+  return `${selectedTeacherId.value}_${selectedYearId.value}`
 })
 
-const isGroupAssigned = (groupId: Id) => {
+const isSubjectAssigned = (subjectId: Id) => {
   const key = currentKey.value
   if (!key) return false
   const assigned = assignmentMap.value[key] || []
-  return assigned.some(id => same(id, groupId))
+  return assigned.some(id => same(id, subjectId))
 }
 
-const toggleGroup = (groupId: Id) => {
+const toggleSubject = (subjectId: Id) => {
   const key = currentKey.value
   if (!key || !canEdit()) return
 
@@ -124,16 +120,16 @@ const toggleGroup = (groupId: Id) => {
   successMessage.value = null
 
   const currentAssigned = assignmentMap.value[key] || []
-  if (currentAssigned.some(id => same(id, groupId))) {
-    assignmentMap.value[key] = currentAssigned.filter(id => !same(id, groupId))
+  if (currentAssigned.some(id => same(id, subjectId))) {
+    assignmentMap.value[key] = currentAssigned.filter(id => !same(id, subjectId))
   } else {
-    assignmentMap.value[key] = [...currentAssigned, groupId]
+    assignmentMap.value[key] = [...currentAssigned, subjectId]
   }
 }
 
 const saveChanges = async () => {
   const key = currentKey.value
-  if (!key || selectedTeacherId.value == null || selectedYearId.value == null || selectedSubjectId.value == null) return
+  if (!key || selectedTeacherId.value == null || selectedYearId.value == null) return
   if (!canEdit()) return
 
   internalLoading.value = true
@@ -143,40 +139,37 @@ const saveChanges = async () => {
   try {
     const teacherId = selectedTeacherId.value
     const yearId = selectedYearId.value
-    const subjectId = selectedSubjectId.value
 
     const currentSelected = assignmentMap.value[key] || []
     const originalSelected = originalAssignmentMap.value[key] || []
 
-    const toAdd = currentSelected.filter(groupId => !originalSelected.some(o => same(o, groupId)))
-    const toRemove = originalSelected.filter(groupId => !currentSelected.some(c => same(c, groupId)))
+    const toAdd = currentSelected.filter(subjectId => !originalSelected.some(o => same(o, subjectId)))
+    const toRemove = originalSelected.filter(subjectId => !currentSelected.some(c => same(c, subjectId)))
 
-    for (const groupId of toRemove) {
+    for (const subjectId of toRemove) {
       const found = teacherocupationStore.teacherocupations.find(
         (to: any) =>
           same(to.teacher_id, teacherId) &&
           same(to.year_id, yearId) &&
-          same(to.subject_id, subjectId) &&
-          same(to.groupconfig_id, groupId)
+          same(to.subject_id, subjectId)
       )
       if (found && found.id) {
         await teacherocupationStore.remove(found.id)
       }
     }
 
-    for (const groupId of toAdd) {
+    for (const subjectId of toAdd) {
       await teacherocupationStore.create({
         teacher_id: teacherId,
         year_id: yearId,
-        subject_id: subjectId,
-        groupconfig_id: groupId
+        subject_id: subjectId
       })
     }
 
     await teacherocupationStore.list()
     buildMapping()
 
-    successMessage.value = 'Atribuições do professor actualizadas com sucesso!'
+    successMessage.value = 'Atribuições de disciplinas actualizadas com sucesso!'
     setTimeout(() => {
       successMessage.value = null
     }, 4000)
@@ -192,8 +185,8 @@ const saveChanges = async () => {
   <div class="p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Atribuição de Turmas a Professores</h1>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure as turmas e disciplinas lecionadas por cada professor por ano letivo.</p>
+        <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Atribuição de Disciplinas a Professores</h1>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure as disciplinas lecionadas por cada professor por ano letivo.</p>
       </div>
       <button
         v-if="currentKey && (p('teacherocupations.update') || p('teacherocupations.manage'))"
@@ -219,17 +212,17 @@ const saveChanges = async () => {
       </div>
       <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg shadow-indigo-500/5 transition-all">
         <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total de Turmas Disponíveis</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total de Disciplinas Disponíveis</span>
           <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 flex items-center justify-center">
-            <i class="fa-solid fa-layer-group text-sm"></i>
+            <i class="fa-solid fa-book text-sm"></i>
           </div>
         </div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalGroupsCount }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalSubjectsCount }}</div>
       </div>
     </div>
 
-    <!-- Filtros globais de Ano Letivo e Disciplina -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <!-- Filtro global de Ano Letivo -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl">
       <div>
         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Ano Letivo</label>
         <Select
@@ -243,24 +236,11 @@ const saveChanges = async () => {
           class="w-full text-xs"
         />
       </div>
-      <div>
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Disciplina</label>
-        <Select
-          v-model="selectedSubjectId"
-          :options="subjectStore.subjects"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="Selecione a disciplina"
-          filter
-          showClear
-          class="w-full text-xs"
-        />
-      </div>
     </div>
 
-    <div v-if="globalError || teacherStore.error || groupconfigStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-3">
+    <div v-if="globalError || teacherStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-3">
       <i class="fa-solid fa-circle-exclamation text-lg"></i>
-      <span>{{ globalError || teacherStore.error || groupconfigStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error }}</span>
+      <span>{{ globalError || teacherStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error }}</span>
     </div>
 
     <div v-if="successMessage" class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-3">
@@ -313,9 +293,9 @@ const saveChanges = async () => {
         <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h3 class="font-bold text-slate-900 dark:text-white text-base">
-              Turmas para: <span class="text-indigo-600 dark:text-indigo-400">{{ currentTeacher?.user?.name || 'Selecione um professor' }}</span>
+              Disciplinas para: <span class="text-indigo-600 dark:text-indigo-400">{{ currentTeacher?.user?.name || 'Selecione um professor' }}</span>
             </h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Marque as caixas de seleção correspondentes às turmas lecionadas.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Marque as caixas de seleção correspondentes às disciplinas lecionadas.</p>
           </div>
         </div>
 
@@ -323,44 +303,44 @@ const saveChanges = async () => {
           <div class="relative w-full">
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 text-sm"></i>
             <input
-              v-model="groupSearchQuery"
+              v-model="subjectSearchQuery"
               type="text"
-              placeholder="Pesquisar por nome ou descrição da turma..."
+              placeholder="Pesquisar por nome ou código da disciplina..."
               class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
             />
           </div>
         </div>
 
         <div class="p-6 overflow-y-auto max-h-[480px]">
-          <div v-if="teacherStore.isLoading || groupconfigStore.isLoading || teacherocupationStore.isLoading" class="py-12 text-center text-slate-400 dark:text-slate-500">
+          <div v-if="teacherStore.isLoading || subjectStore.isLoading || teacherocupationStore.isLoading" class="py-12 text-center text-slate-400 dark:text-slate-500">
             <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
-            <p class="text-xs">A carregar turmas...</p>
+            <p class="text-xs">A carregar disciplinas...</p>
           </div>
-          <div v-else-if="filteredGroups.length === 0" class="py-12 text-center text-slate-400 dark:text-slate-500">
+          <div v-else-if="filteredSubjects.length === 0" class="py-12 text-center text-slate-400 dark:text-slate-500">
             <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-            <p class="text-xs">Nenhuma turma encontrada.</p>
+            <p class="text-xs">Nenhuma disciplina encontrada.</p>
           </div>
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div
-              v-for="grp in (filteredGroups as any)"
-              :key="grp.id"
-              @click="toggleGroup(grp.id)"
+              v-for="subj in (filteredSubjects as any)"
+              :key="subj.id"
+              @click="toggleSubject(subj.id)"
               :class="[
                 'p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-3',
-                isGroupAssigned(grp.id)
+                isSubjectAssigned(subj.id)
                   ? 'bg-indigo-600/5 border-indigo-500/40 dark:bg-indigo-600/10 dark:border-indigo-500/50 shadow-sm'
                   : 'bg-slate-50/50 dark:bg-slate-950/30 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               ]"
             >
               <input
                 type="checkbox"
-                :checked="isGroupAssigned(grp.id)"
-                @click.stop="toggleGroup(grp.id)"
+                :checked="isSubjectAssigned(subj.id)"
+                @click.stop="toggleSubject(subj.id)"
                 class="mt-0.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
               />
               <div class="flex-1 truncate">
-                <div class="font-mono text-xs font-bold text-slate-900 dark:text-white">{{ grp.name }}</div>
-                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{{ grp.description || 'Sem descrição' }}</div>
+                <div class="font-mono text-xs font-bold text-slate-900 dark:text-white">{{ subj.name }}</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">Código: {{ subj.code || 'N/A' }}</div>
               </div>
             </div>
           </div>
