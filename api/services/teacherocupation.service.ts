@@ -12,7 +12,20 @@ class TeacherocupationService extends BaseService {
                 update: updateTeacherocupationSchema
             }, 
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: {
+                    teacher: {
+                        include: {
+                            user: {
+                                include: {
+                                    person: true
+                                }
+                            }
+                        }
+                    },
+                    subject: true,
+                    year: true
+                }
             }
         );
     }

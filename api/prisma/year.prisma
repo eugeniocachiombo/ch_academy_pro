@@ -17,6 +17,7 @@ model Year {
   periodtests       Periodtest[]
   serviceprices     Serviceprice[]
   tests             Test[]
+  schedules         Schedule[]
 
   @@unique([name, school_id])
 }

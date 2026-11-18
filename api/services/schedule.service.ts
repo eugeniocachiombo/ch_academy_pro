@@ -33,6 +33,7 @@ class ScheduleService extends BaseService {
                             }
                         }
                     },
+                    year: true,
                     school: true
                 }
             }

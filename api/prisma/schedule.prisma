@@ -3,6 +3,7 @@ model Schedule {
   groupconfig_id Int
   subject_id     Int
   teacher_id     Int
+  year_id        Int
   day_of_week    DayOfWeek
   start_time     String
   end_time       String
@@ -11,12 +12,13 @@ model Schedule {
   groupconfig Groupconfig @relation(fields: [groupconfig_id], references: [id], onDelete: Cascade)
   subject     Subject     @relation(fields: [subject_id], references: [id], onDelete: Cascade)
   teacher     Teacher     @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  year        Year        @relation(fields: [year_id], references: [id], onDelete: Cascade)
   school      School?     @relation(fields: [school_id], references: [id])
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  @@unique([groupconfig_id, day_of_week, start_time])
+  @@unique([groupconfig_id, year_id, day_of_week, start_time])
 }
 
 enum DayOfWeek {
