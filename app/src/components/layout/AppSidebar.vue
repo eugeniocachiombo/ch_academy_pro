@@ -103,7 +103,7 @@ const menuItems = computed(() => [
     icon: 'fa-chalkboard-user',
     children: [
       { id: 'teachers', label: 'Docentes', icon: 'fa-id-badge', permition: p('teachers.manage') },
-      { id: 'teacherpositions', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacherpositions.manage') },
+      { id: 'teacherocupations', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacherocupations.manage') },
       { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },

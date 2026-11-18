@@ -10,9 +10,9 @@ export const teachersRoutes: RouteRecordRaw[] = [
   },
   { 
     path: '/professores/alocacao', 
-    name: 'teacherpositions', 
+    name: 'teacherocupations', 
     component: () => import('@/views/teacher/TeacherocupationsView.vue'), 
-    meta: { permission: 'teacherpositions.manage' } 
+    meta: { permission: 'teacherocupations.manage' } 
   },
   { 
     path: '/professores/horarios', 
