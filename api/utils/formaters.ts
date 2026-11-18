@@ -15,7 +15,14 @@ export const formatPassword = async (password: string) => {
 };
 
 export const formatProcessNum = (value: number | string, year?: number | string) => {
-    const cleanNum = String(Number(value)).padStart(PROCESS_MIN_DIGITS, '0');
-    const currentYear = year || new Date().getFullYear();
+    const currentYear = String(year || new Date().getFullYear());
+    const strValue = String(value).trim();
+
+    if (strValue.startsWith(currentYear) && strValue.length > currentYear.length) {
+        const seq = strValue.slice(currentYear.length);
+        return `${currentYear}${seq.padStart(PROCESS_MIN_DIGITS, '0')}`;
+    }
+
+    const cleanNum = String(Number(strValue)).padStart(PROCESS_MIN_DIGITS, '0');
     return `${currentYear}${cleanNum}`;
 };

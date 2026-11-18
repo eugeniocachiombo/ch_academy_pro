@@ -3,12 +3,26 @@ import { formatProcessNum } from './formaters.js';
 
 export const nextProcessNum = async (tx?: any): Promise<string> => {
     const client = tx || prisma;
+    const currentYear = String(new Date().getFullYear());
+
     const last = await client.student.findFirst({
-        orderBy: { id: 'desc' },
+        where: {
+            processnum: {
+                startsWith: currentYear
+            }
+        },
+        orderBy: { processnum: 'desc' },
         select: { processnum: true }
     });
-    const lastNumber = Number(last?.processnum) || 0;
-    return formatProcessNum(lastNumber + 1);
+
+    if (!last || !last.processnum) {
+        return formatProcessNum(1, currentYear);
+    }
+
+    const currentSeq = parseInt(last.processnum.slice(currentYear.length), 10);
+    const nextSeq = isNaN(currentSeq) ? 1 : currentSeq + 1;
+
+    return formatProcessNum(nextSeq, currentYear);
 };
 
 export const nextTeacherCodeNum = async (tx?: any): Promise<string> => {
