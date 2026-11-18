@@ -75,7 +75,7 @@ const statusOptions = [
 watch(
   () => props.isOpen,
   (isOpen) => {
-    if (isOpen && !props.isEditing) {
+    if (isOpen && !props.isEditing && !props.initialData?.student_id) {
       const activeYear = years.value.find((y: any) => y.isCurrent) || years.value[0]
       if (activeYear) {
         form.value.year_id = activeYear.id
@@ -171,11 +171,12 @@ const handleSubmit = async () => {
             optionLabel="processnum"
             optionValue="id"
             filter
-            showClear
+            :showClear="!initialData?.student_id"
+            :disabled="!!initialData?.student_id"
             placeholder="Selecione o estudante..."
             @change="clearFieldError('student_id')"
             class="w-full"
-            :class="{ 'p-invalid': hasError('student_id') }"
+            :class="{ 'p-invalid': hasError('student_id'), 'opacity-70 cursor-not-allowed': !!initialData?.student_id }"
           >
             <template #option="slotProps">
               {{ slotProps.option?.user?.person?.firstname  }} {{ slotProps.option?.user?.person?.lastname  }} ({{ slotProps.option?.processnum }})

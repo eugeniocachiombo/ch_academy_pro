@@ -5,6 +5,8 @@ import { showNotification } from '@/services/general_service'
 import StudentsFormView from './StudentsFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import { useRegisterStore } from '@/stores/register.store'
+import RegistersFormView from './RegistersFormView.vue'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -70,6 +72,7 @@ const statusKeys: UserStatus[] = ['ACTIVE', 'INDEBT', 'GIVEUP', 'BLOCKED']
 
 const studentStore = useStudentStore()
 const authStore = useAuthStore()
+const registerStore = useRegisterStore()
 
 const p = (name: string) => authStore.getPermition(name)
 
@@ -85,9 +88,14 @@ const studentToDeleteId = ref<number | null>(null)
 const studentToDeleteName = ref('')
 const isDeleting = ref(false)
 
+const isModalOpenRegister = ref(false)
+const isEditingRegister = ref(false)
+const formDataRegister = ref<any | null>(null)
+
 onMounted(async () => {
   try {
     await studentStore.list()
+    await registerStore.list()
   } catch {}
 })
 
@@ -246,6 +254,31 @@ const handleSaved = async () => {
     wasEditing ? 'Dados do aluno actualizados com sucesso.' : 'Aluno registado com sucesso.',
     'success'
   )
+}
+
+const openRegisterModal = (student: Student) => {
+  isEditingRegister.value = false
+  formDataRegister.value = {
+    registnum: null,
+    student_id: student.id,
+    groupconfig_id: null,
+    year_id: null,
+    date: new Date().toISOString().split('T')[0],
+    status: 'ACTIVE',
+    school_id: student.school_id || null,
+  }
+  isModalOpenRegister.value = true
+}
+
+const closeRegisterModal = () => {
+  isModalOpenRegister.value = false
+  formDataRegister.value = null
+}
+
+const handleRegisterSaved = async () => {
+  await registerStore.list()
+  closeRegisterModal()
+  showNotification('Matrícula efetuada com sucesso.', 'success')
 }
 
 const confirmDeleteStudent = (student: Student) => {
@@ -439,7 +472,7 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Aluno" style="width: 30%">
+        <Column header="Aluno" style="width: 26%">
           <template #body="slotProps">
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
@@ -453,7 +486,7 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Nº do BI" style="width: 18%">
+        <Column header="Nº do BI" style="width: 16%">
           <template #body="slotProps">
             <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ slotProps.data.user?.person?.bi_number || '-' }}</span>
           </template>
@@ -484,9 +517,17 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Acções" style="width: 10%">
+        <Column header="Acções" style="width: 16%">
           <template #body="slotProps">
-            <div class="flex items-center gap-1.5" v-if="p('students.update') || p('students.delete')">
+            <div class="flex items-center gap-1.5">
+              <button
+                @click="openRegisterModal(slotProps.data)"
+                title="Efetuar Matrícula"
+                aria-label="Efetuar Matrícula"
+                class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 flex items-center justify-center transition-colors hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+              >
+                <i class="fa-solid fa-file-pen text-xs"></i>
+              </button>
               <button
                 v-if="p('students.update')"
                 @click="openEditModal(slotProps.data)"
@@ -527,6 +568,15 @@ const handleDelete = async () => {
       :is-deleting="isDeleting"
       @close="closeDeleteModal"
       @confirm="handleDelete"
+    />
+
+    <RegistersFormView
+      :is-open="isModalOpenRegister"
+      :is-editing="isEditingRegister"
+      :is-loading="registerStore.isLoading"
+      :initial-data="formDataRegister"
+      @close="closeRegisterModal"
+      @saved="handleRegisterSaved"
     />
   </div>
 </template>
