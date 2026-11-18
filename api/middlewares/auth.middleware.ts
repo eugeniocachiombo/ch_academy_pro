@@ -22,8 +22,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     return next();
   } catch (err: any) {
     // console.log("JWT erro:", err.message);
-    console.log("Token (início/fim):", token.slice(0, 15), "...", token.slice(-10), "| comprimento:", token.length);
-    console.log("Header/payload:", jwt.decode(token, { complete: true }));
+    // console.log("Token (início/fim):", token.slice(0, 15), "...", token.slice(-10), "| comprimento:", token.length);
+    // console.log("Header/payload:", jwt.decode(token, { complete: true }));
     return res.status(401).json({ message: "TOKEN_INVALID_OR_EXPIRED", error: err.message });
   }
 }
