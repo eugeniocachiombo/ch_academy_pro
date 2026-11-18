@@ -8,6 +8,7 @@ const modules = [
     { key: "teachers", label: "Professores" },
     { key: "registers", label: "Matrículas" },
     { key: "teacherocupations", label: "Alocação de Professores" },
+    { key: "schedules", label: "Horários" },
     
     { key: "courses", label: "Cursos" },
     { key: "subjects", label: "Disciplinas" },
