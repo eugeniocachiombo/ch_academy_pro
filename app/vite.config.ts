@@ -9,6 +9,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'assets/img/pwa-192x192.png', 'assets/img/pwa-512x512.png'],
+      workbox: {
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+      },
       manifest: {
         name: 'CH Academic Pro',
         short_name: 'CH Academic',
@@ -39,8 +45,17 @@ export default defineConfig({
       }
     })
   ],
-  build: {
-    chunkSizeWarningLimit: 1000, 
+  server: {
+    host: true
   },
-  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } }
+  build: {
+    chunkSizeWarningLimit: 1000,
+    target: 'es2015',
+    cssTarget: 'chrome61'
+  },
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  }
 })
