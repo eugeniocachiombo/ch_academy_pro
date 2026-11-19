@@ -57,16 +57,16 @@ const menuItems = computed(() => [
     icon: 'fa-book-open',
     children: [
       { id: 'years', label: 'Ano Letivo', icon: 'fa-calendar-days', permition: p('years.manage') },
+      { id: 'groupconfigs', label: 'Configurar Turmas', icon: 'fa-sliders', permition: p('groupconfigs.manage') },
+      { id: 'schedules', label: 'Horários', icon: 'fa-calendar-week', permition: p('schedules.manage') },
       { id: 'classes', label: 'Classes', icon: 'fa-layer-group', permition: p('classes.manage') },
       { id: 'classcourses', label: 'Classes dos Cursos', icon: 'fa-network-wired', permition: p('classcourses.manage') },
-      { id: 'groupconfigs', label: 'Configurar Turmas', icon: 'fa-sliders', permition: p('groupconfigs.manage') },
       { id: 'courses', label: 'Cursos', icon: 'fa-graduation-cap', permition: p('courses.manage') },
       { id: 'subjects', label: 'Disciplinas', icon: 'fa-book', permition: p('subjects.manage') },
       { id: 'class-subjects', label: 'Disciplinas das Classes', icon: 'fa-book-open-reader', permition: p('class-subjects.manage') },
       { id: 'rooms', label: 'Salas', icon: 'fa-door-open', permition: p('rooms.manage') },
       { id: 'groups', label: 'Turmas', icon: 'fa-chalkboard', permition: p('groups.manage') },
       { id: 'periods', label: 'Turnos', icon: 'fa-clock', permition: p('periods.manage') },
-      { id: 'schedules', label: 'Horários', icon: 'fa-calendar-week', permition: p('schedules.manage') }
       
       // a desenvolver
       // { id: 'academic-attendance', label: 'Frequência', icon: 'fa-clipboard-user', permition: p('attendance.manage') },
