@@ -5,14 +5,18 @@ import { createClassSubjectSchema, updateClassSubjectSchema } from '../validator
 class ClassSubjectService extends BaseService {
     constructor() {
         super(
-            classSubjectRepository, 
-            "classSubject", 
+            classSubjectRepository,
+            "classSubject",
             {
                 create: createClassSubjectSchema,
                 update: updateClassSubjectSchema
-            }, 
+            },
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: {
+                    subject: true,
+                    class: true
+                }
             }
         );
     }

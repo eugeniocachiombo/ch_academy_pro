@@ -5,6 +5,8 @@ import { useSubjectStore } from '@/stores/subject.store'
 import { useTeacherocupationStore } from '@/stores/teacherocupation.store'
 import { useYearStore } from '@/stores/year.store'
 import { useAuthStore } from '@/stores/auth.store'
+import { useClassSubjectStore } from '@/stores/class-subject.store'
+import { useClasscourseStore } from '@/stores/classcourse.store'
 import { showNotification } from '@/services/general_service'
 import Select from 'primevue/select'
 
@@ -25,6 +27,8 @@ const subjectStore = useSubjectStore()
 const teacherocupationStore = useTeacherocupationStore()
 const yearStore = useYearStore()
 const authStore = useAuthStore()
+const classSubjectStore = useClassSubjectStore()
+const classcourseStore = useClasscourseStore()
 
 const emptyForm = (): SchedulePayload & { id?: number } => ({
   groupconfig_id: null,
@@ -112,7 +116,9 @@ onMounted(async () => {
       scheduleStore.fetchGroupConfigs(),
       subjectStore.list(),
       teacherocupationStore.list(),
-      yearStore.list?.()
+      yearStore.list?.(),
+      classSubjectStore.list(),
+      classcourseStore.list()
     ])
   } catch (e) {
     console.error('Erro ao carregar dados auxiliares', e)
@@ -132,7 +138,7 @@ watch(() => form.value.groupconfig_id, (newId) => {
     const gc = (scheduleStore.groupConfigs || []).find((item: any) => item.id === Number(newId))
     if (gc) {
       form.value.school_id = gc.school_id || null
-      form.value.year_id = gc.year_id || null
+      form.value.year_id = gc.year_id ?? gc.year?.id ?? null
     }
   }
   if (!props.isEditing) {
@@ -154,9 +160,12 @@ watch(
 
     notifiedMissingActiveYear.value = false
 
-    if (!yearStore.years?.length && yearStore.list) {
-      await yearStore.list().catch(() => {})
-    }
+    await Promise.all([
+      !yearStore.years?.length && yearStore.list ? yearStore.list().catch(() => {}) : Promise.resolve(),
+      !classSubjectStore.classSubjects?.length ? classSubjectStore.list().catch(() => {}) : Promise.resolve(),
+      !classcourseStore.classcourses?.length ? classcourseStore.list().catch(() => {}) : Promise.resolve(),
+      !teacherocupationStore.teacherocupations?.length ? teacherocupationStore.list().catch(() => {}) : Promise.resolve()
+    ])
 
     if (!props.isEditing && isMissingActiveYear.value) {
       triggerMissingActiveYearNotice()
@@ -171,25 +180,81 @@ watch(isMissingActiveYear, (missing) => {
 })
 
 const availableSubjects = computed(() => {
-  return subjectStore.subjects || []
+  const subjects = subjectStore.subjects || []
+  const gc = selectedGroupConfig.value
+  if (!gc) return []
+
+  const classId = gc.class_id ?? gc.class?.id
+  const courseId = gc.course_id ?? gc.course?.id
+
+  if (!classId) return []
+
+  const classSubjectIds = new Set(
+    (classSubjectStore.classSubjects || [])
+      .filter((cs: any) => Number(cs.class_id) === Number(classId))
+      .map((cs: any) => Number(cs.subject_id))
+  )
+
+  if (!courseId) {
+    return subjects.filter((s: any) => classSubjectIds.has(Number(s.id)))
+  }
+
+  const hasClassCourseLink = (classcourseStore.classcourses || []).some(
+    (cc: any) => Number(cc.class_id) === Number(classId) && Number(cc.course_id) === Number(courseId)
+  )
+
+  if (!hasClassCourseLink) {
+    return []
+  }
+
+  return subjects.filter((s: any) => {
+    if (!classSubjectIds.has(Number(s.id))) return false
+    const subjectCourseId = s.course_id ?? s.course?.id
+    if (subjectCourseId !== undefined && subjectCourseId !== null) {
+      return Number(subjectCourseId) === Number(courseId)
+    }
+    return true
+  })
 })
 
 const availableTeachers = computed(() => {
-  if (!form.value.subject_id || !form.value.year_id) return []
+  if (!form.value.subject_id) return []
 
-  const occupations = teacherocupationStore.teacherocupations.filter((o: any) => {
-    const matchSubject = Number(o.subject_id) === Number(form.value.subject_id)
-    const matchYear = Number(o.year_id) === Number(form.value.year_id)
-    return matchSubject && matchYear
+  const gc = selectedGroupConfig.value
+  const targetYearId =
+    form.value.year_id ??
+    gc?.year_id ??
+    gc?.year?.id ??
+    activeYear.value?.id
+
+  const bySubject = (teacherocupationStore.teacherocupations || []).filter((o: any) => {
+    const occSubjectId = o.subject_id ?? o.subject?.id
+    return Number(occSubjectId) === Number(form.value.subject_id)
   })
+
+  const byYear = targetYearId
+    ? bySubject.filter((o: any) => {
+        const occYearId = o.year_id ?? o.year?.id
+        return occYearId !== undefined && occYearId !== null && Number(occYearId) === Number(targetYearId)
+      })
+    : bySubject
+
+  const occupations = byYear.length > 0 ? byYear : bySubject
 
   const map = new Map()
   occupations.forEach((o: any) => {
-    if (o.teacher) {
-      const teacherName = o.teacher.user?.name || `Professor #${o.teacher.id}`
-      map.set(o.teacher.id, { id: o.teacher.id, name: teacherName })
-    }
+    const teacherId = o.teacher?.id ?? o.teacher_id
+    if (!teacherId) return
+
+    const teacherName =
+      o.teacher?.user?.person?.name ||
+      o.teacher?.user?.name ||
+      o.teacher?.name ||
+      `Professor #${teacherId}`
+
+    map.set(Number(teacherId), { id: Number(teacherId), name: teacherName })
   })
+
   return Array.from(map.values())
 })
 

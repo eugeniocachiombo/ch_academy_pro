@@ -5,14 +5,21 @@ import { createCourseSchema, updateCourseSchema } from '../validators/course.sch
 class CourseService extends BaseService {
     constructor() {
         super(
-            courseRepository, 
-            "course", 
+            courseRepository,
+            "course",
             {
                 create: createCourseSchema,
                 update: updateCourseSchema
-            }, 
+            },
             {
-                tenant: 'mixed' 
+                tenant: 'mixed',
+                include: {
+                    classcourses: {
+                        include: {
+                            class: true
+                        }
+                    }
+                }
             }
         );
     }
