@@ -79,6 +79,19 @@ const clearFieldError = (field: string) => {
 const activeYear = computed(() => (yearStore.years || []).find((y: any) => y.isCurrent) || null)
 const isMissingActiveYear = computed(() => !props.isEditing && !activeYear.value)
 
+const availableGroupConfigs = computed(() => {
+  const list = scheduleStore.groupConfigs || []
+  if (props.isEditing) return list
+
+  const currentYearId = activeYear.value?.id
+  if (!currentYearId) return []
+
+  return list.filter((gc: any) => {
+    const gcYearId = gc?.year_id ?? gc?.year?.id
+    return Number(gcYearId) === Number(currentYearId)
+  })
+})
+
 const triggerMissingActiveYearNotice = () => {
   if (notifiedMissingActiveYear.value) return
   const msg = 'Não existe um ano lectivo activo. Active um ano lectivo antes de registar horários.'
@@ -111,12 +124,12 @@ onUnmounted(() => {
 })
 
 const selectedGroupConfig = computed(() => {
-  return scheduleStore.groupConfigs.find((gc: any) => gc.id === Number(form.value.groupconfig_id))
+  return (scheduleStore.groupConfigs || []).find((gc: any) => gc.id === Number(form.value.groupconfig_id))
 })
 
 watch(() => form.value.groupconfig_id, (newId) => {
   if (newId) {
-    const gc = scheduleStore.groupConfigs.find((item: any) => item.id === Number(newId))
+    const gc = (scheduleStore.groupConfigs || []).find((item: any) => item.id === Number(newId))
     if (gc) {
       form.value.school_id = gc.school_id || null
       form.value.year_id = gc.year_id || null
@@ -323,7 +336,7 @@ const handleSubmit = async () => {
           </label>
           <Select
             v-model="form.groupconfig_id"
-            :options="scheduleStore.groupConfigs"
+            :options="availableGroupConfigs"
             optionLabel="name"
             optionValue="id"
             filter
