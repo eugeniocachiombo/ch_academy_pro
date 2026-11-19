@@ -61,8 +61,30 @@ const clearFieldError = (field: string) => {
 }
 
 const students = computed(() => studentStore.students || [])
-const groupconfigs = computed(() => groupconfigStore.groupconfigs || [])
 const years = computed(() => yearStore.years || [])
+
+const availableOf = (config: any): number =>
+  Math.max(0, Number(config?.total_slots ?? 0) - Number(config?.total_enrolled ?? 0))
+
+const originalGroupconfigId = computed(() =>
+  props.isEditing && props.initialData?.groupconfig_id
+    ? Number(props.initialData.groupconfig_id)
+    : null
+)
+
+const groupconfigs = computed(() =>
+  (groupconfigStore.groupconfigs || []).map((g: any) => ({
+    ...g,
+    available: availableOf(g),
+    blocked: availableOf(g) <= 0 && Number(g.id) !== originalGroupconfigId.value,
+  }))
+)
+
+const selectedGroupconfig = computed(() =>
+  groupconfigs.value.find((g: any) => Number(g.id) === Number(form.value.groupconfig_id)) || null
+)
+
+const isGroupFull = computed(() => !!selectedGroupconfig.value?.blocked)
 
 const statusOptions = [
   { label: 'Activo', value: RegisterStatus.ACTIVE },
@@ -75,6 +97,9 @@ const statusOptions = [
 watch(
   () => props.isOpen,
   (isOpen) => {
+    if (isOpen) {
+      groupconfigStore.list?.().catch(() => {})
+    }
     if (isOpen && !props.isEditing && !props.initialData?.student_id) {
       const activeYear = years.value.find((y: any) => y.isCurrent) || years.value[0]
       if (activeYear) {
@@ -110,8 +135,16 @@ watch(
 const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (isGroupFull.value) {
+    fieldErrors.value = { groupconfig_id: ['Esta turma já não tem vagas disponíveis.'] }
+    generalMessage.value = 'Esta turma já não tem vagas disponíveis.'
+    showNotification(generalMessage.value, 'error')
+    return
+  }
+
   internalLoading.value = true
-  
+
   try {
     const payload: RegisterPayload = {
       registnum:
@@ -133,11 +166,13 @@ const handleSubmit = async () => {
     } else {
       await registerStore.create(payload)
     }
+    await groupconfigStore.list?.().catch(() => {})
     emit('saved')
   } catch (err: any) {
     fieldErrors.value = err.fieldErrors || {}
     generalMessage.value = err.message || 'Ocorreu um erro ao guardar a matrícula.'
     showNotification(generalMessage.value, 'error')
+    groupconfigStore.list?.().catch(() => {})
   } finally {
     internalLoading.value = false
   }
@@ -200,14 +235,58 @@ const handleSubmit = async () => {
             :options="groupconfigs"
             optionLabel="name"
             optionValue="id"
+            optionDisabled="blocked"
             filter
             showClear
             placeholder="Selecione a turma configurada..."
             @change="clearFieldError('groupconfig_id')"
             class="w-full"
-            :class="{ 'p-invalid': hasError('groupconfig_id') }"
-          />
+            :class="{ 'p-invalid': hasError('groupconfig_id') || isGroupFull }"
+          >
+            <template #option="slotProps">
+              <div class="flex items-center justify-between gap-3 w-full">
+                <span class="truncate">{{ slotProps.option.name }}</span>
+                <span
+                  class="text-[11px] font-semibold whitespace-nowrap"
+                  :class="slotProps.option.available > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
+                >
+                  {{ slotProps.option.available > 0 ? `${slotProps.option.available} vagas` : 'Lotada' }}
+                </span>
+              </div>
+            </template>
+          </Select>
           <span v-if="hasError('groupconfig_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('groupconfig_id') }}</span>
+
+          <div
+            v-if="selectedGroupconfig"
+            class="grid grid-cols-3 gap-3 mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800"
+          >
+            <div class="flex flex-col">
+              <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total de Vagas</span>
+              <span class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{{ selectedGroupconfig.total_slots }}</span>
+            </div>
+            <div class="flex flex-col border-l border-slate-200 dark:border-slate-700 pl-3">
+              <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Matriculados</span>
+              <span class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{{ selectedGroupconfig.total_enrolled ?? 0 }}</span>
+            </div>
+            <div class="flex flex-col border-l border-slate-200 dark:border-slate-700 pl-3">
+              <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Disponíveis</span>
+              <span
+                class="text-sm font-bold mt-0.5"
+                :class="selectedGroupconfig.available > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
+              >
+                {{ selectedGroupconfig.available }}
+              </span>
+            </div>
+          </div>
+
+          <div
+            v-if="isGroupFull"
+            class="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-2"
+          >
+            <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+            <span>Esta turma já não tem vagas disponíveis. Escolha outra configuração.</span>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,7 +337,7 @@ const handleSubmit = async () => {
           <button type="button" @click="$emit('close')" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 transition-colors">
             Cancelar
           </button>
-          <button type="submit" :disabled="internalLoading" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 flex items-center gap-2">
+          <button type="submit" :disabled="internalLoading || isGroupFull" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
             <i v-if="internalLoading" class="fa-solid fa-spinner animate-spin"></i>
             <span>{{ internalLoading ? 'A guardar...' : 'Guardar' }}</span>
           </button>
