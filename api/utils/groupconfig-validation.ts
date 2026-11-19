@@ -1,84 +1,115 @@
 const classesIsentas = [
-    "Pré-Iniciação",
-    "1ª Classe",
-    "2ª Classe",
-    "3ª Classe",
-    "4ª Classe",
-    "5ª Classe",
-    "6ª classe",
-    "7ª classe",
-    "8ª classe",
-    "9ª classe"
+  "pré-iniciação",
+  "pre-iniciacao",
+  "1ª classe",
+  "2ª classe",
+  "3ª classe",
+  "4ª classe",
+  "5ª classe",
+  "6ª classe",
+  "7ª classe",
+  "8ª classe",
+  "9ª classe",
 ];
 
+const normalizeText = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const normalizedExemptClasses = classesIsentas.map(normalizeText);
+
 export async function validateGroupconfigBusinessRules(
-    repository: any,
-    data: {
-        group_id?: number;
-        room_id?: number;
-        period_id?: number;
-        year_id?: number;
-        class_id?: number;
-        course_id?: number | null;
-    },
-    excludeId?: number
+  repository: any,
+  data: {
+    group_id?: number | null;
+    room_id?: number | null;
+    period_id?: number | null;
+    year_id?: number | null;
+    class_id?: number | null;
+    course_id?: number | null;
+  },
+  excludeId?: number,
+  tx?: any
 ) {
-    if (data.class_id) {
-        const classRecord = await repository.delegate("class").findUnique({
-            where: { id: data.class_id }
-        });
+  const fieldErrors: Record<string, string[]> = {};
+  const messages: string[] = [];
 
-        if (classRecord && classRecord.name) {
-            const normalizedClassName = classRecord.name.trim().toLowerCase();
-            const isExempt = classesIsentas.some(c => normalizedClassName.includes(c));
+  if (data.class_id) {
+    const classRecord = tx
+      ? await tx.class.findUnique({ where: { id: Number(data.class_id) } })
+      : await repository.findFirst({ where: { id: Number(data.class_id) } }, "class");
 
-            if (!isExempt && (!data.course_id || data.course_id <= 0)) {
-                throw {
-                    statusCode: 422,
-                    message: "Verifique os campos do formulário",
-                    fieldErrors: {
-                        course_id: ["O curso é obrigatório para esta classe."]
-                    }
-                };
-            }
-        }
+    if (classRecord?.name) {
+      const normalizedClassName = normalizeText(classRecord.name);
+      const isExempt = normalizedExemptClasses.some((exempt) =>
+        normalizedClassName.startsWith(exempt)
+      );
+
+      if (!isExempt && (!data.course_id || Number(data.course_id) <= 0)) {
+        fieldErrors.course_id = ["O curso é obrigatório para esta classe."];
+        messages.push("Verifique os campos do formulário");
+      }
+    }
+  }
+
+  if (data.period_id && data.year_id && (data.group_id || data.room_id)) {
+    const periodId = Number(data.period_id);
+    const yearId = Number(data.year_id);
+
+    const include = {
+      group: true,
+      room: true,
+      course: true,
+      class: true,
+    };
+
+    const baseWhere = {
+      year_id: yearId,
+      period_id: periodId,
+      ...(excludeId ? { id: { not: Number(excludeId) } } : {}),
+    };
+
+    const findConflict = async (extraWhere: Record<string, number>) => {
+      const queryArgs = { where: { ...baseWhere, ...extraWhere }, include };
+      return tx
+        ? await tx.groupconfig.findFirst(queryArgs)
+        : await repository.findFirst(queryArgs, "groupconfig");
+    };
+
+    const describe = (config: any) =>
+      `(Configuração existente: ${config.name}, Classe: ${
+        config.class?.name || "N/A"
+      }, Curso: ${config.course?.name || "N/A"})`;
+
+    if (data.group_id) {
+      const groupConflict = await findConflict({ group_id: Number(data.group_id) });
+      if (groupConflict) {
+        fieldErrors.group_id = ["A turma já se encontra ocupada neste horário."];
+        messages.push(
+          `A turma (${groupConflict.group?.name || "já seleccionada"}) já está associada a outro espaço/turma neste período e ano letivo ${describe(groupConflict)}.`
+        );
+      }
     }
 
-    if (data.group_id && data.room_id && data.period_id && data.year_id) {
-        const conflictingConfig = await repository.findFirst({
-            where: {
-                year_id: data.year_id,
-                period_id: data.period_id,
-                OR: [
-                    { group_id: data.group_id },
-                    { room_id: data.room_id }
-                ],
-                ...(excludeId ? { id: { not: excludeId } } : {})
-            },
-            include: {
-                group: true,
-                room: true,
-                course: true,
-                class: true
-            }
-        });
-
-        if (conflictingConfig) {
-            const isGroupConflict = conflictingConfig.group_id === data.group_id;
-            const conflictType = isGroupConflict ? "A turma" : "A sala";
-            const conflictValue = isGroupConflict ? conflictingConfig.group?.name : conflictingConfig.room?.name;
-            
-            const details = `(Configuração existente: ${conflictingConfig.name}, Classe: ${conflictingConfig.class?.name || 'N/A'}, Curso: ${conflictingConfig.course?.name || 'N/A'})`;
-
-            throw {
-                statusCode: 400,
-                message: `${conflictType} (${conflictValue || 'já seleccionada'}) já está associada a outro espaço/turma neste período e ano letivo ${details}.`,
-                fieldErrors: {
-                    [isGroupConflict ? "group_id" : "room_id"]: [
-                        `${conflictType} já se encontra ocupada neste horário.`
-                    ]
-                }
-            };
-        }
+    if (data.room_id) {
+      const roomConflict = await findConflict({ room_id: Number(data.room_id) });
+      if (roomConflict) {
+        fieldErrors.room_id = ["A sala já se encontra ocupada neste horário."];
+        messages.push(
+          `A sala (${roomConflict.room?.name || "já seleccionada"}) já está associada a outro espaço/turma neste período e ano letivo ${describe(roomConflict)}.`
+        );
+      }
     }
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    throw {
+      statusCode: 422,
+      message: messages[0] || "Verifique os campos do formulário",
+      fieldErrors,
+    };
+  }
 }

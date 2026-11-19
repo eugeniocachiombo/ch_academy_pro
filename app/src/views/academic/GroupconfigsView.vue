@@ -67,6 +67,14 @@ onMounted(async () => {
 
 const totalCount = computed(() => filteredGroupconfigs.value.length)
 
+const totalSlotsSum = computed(() =>
+  filteredGroupconfigs.value.reduce((acc, g) => acc + (Number(g.total_slots) || 0), 0)
+)
+
+const totalEnrolledSum = computed(() =>
+  filteredGroupconfigs.value.reduce((acc, g) => acc + (Number(g.total_enrolled) || 0), 0)
+)
+
 const filteredGroupconfigs = computed(() => {
   return groupconfigStore.groupconfigs.filter((g: any) => {
     if (!g) return false
@@ -102,7 +110,7 @@ const clearFilters = () => {
   selectedCourseFilter.value = null
   selectedPeriodFilter.value = null
   selectedRoomFilter.value = null
-  
+
   const activeYear = yearStore.years.find((y: any) => y?.isCurrent)
   selectedYearFilter.value = activeYear ? activeYear.id : null
 }
@@ -113,6 +121,8 @@ const openCreateModal = () => {
   selectedGroupconfig.value = null
   formData.value = {
     name: '',
+    total_slots: null,
+    total_enrolled: 0,
     group_id: null,
     year_id: selectedYearFilter.value || null,
     course_id: null,
@@ -131,6 +141,8 @@ const openEditModal = (groupconfig: Groupconfig) => {
   formData.value = {
     id: groupconfig.id,
     name: groupconfig.name,
+    total_slots: groupconfig.total_slots,
+    total_enrolled: groupconfig.total_enrolled,
     group_id: groupconfig.group_id,
     year_id: groupconfig.year_id,
     course_id: groupconfig.course_id,
@@ -172,11 +184,11 @@ const closeDeleteModal = () => {
 const handleDelete = async () => {
   if (!groupconfigToDeleteId.value) return
   isDeleting.value = true
-  
+
   try {
     await groupconfigStore.remove(groupconfigToDeleteId.value)
     await groupconfigStore.list()
-    
+
     isDeleteModalOpen.value = false
     groupconfigToDeleteId.value = null
     groupconfigToDeleteName.value = ''
@@ -188,6 +200,12 @@ const handleDelete = async () => {
   } finally {
     isDeleting.value = false
   }
+}
+
+const getAvailableSlots = (row: Groupconfig) => {
+  const total = Number(row.total_slots) || 0
+  const enrolled = Number(row.total_enrolled) || 0
+  return Math.max(0, total - enrolled)
 }
 </script>
 
@@ -212,7 +230,7 @@ const handleDelete = async () => {
       </button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg">
         <div class="flex items-center justify-between">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -223,6 +241,30 @@ const handleDelete = async () => {
           </div>
         </div>
         <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>
+      </div>
+
+      <div class="p-5 rounded-2xl border bg-emerald-600/10 border-emerald-500/50 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Total de Vagas
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+            <i class="fa-solid fa-chair text-sm"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalSlotsSum }}</div>
+      </div>
+
+      <div class="p-5 rounded-2xl border bg-amber-600/10 border-amber-500/50 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Total Ocupado
+          </span>
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+            <i class="fa-solid fa-user-check text-sm"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalEnrolledSum }}</div>
       </div>
     </div>
 
@@ -336,7 +378,7 @@ const handleDelete = async () => {
           </div>
         </template>
 
-        <Column field="name" header="Configuração" sortable style="width: 20%">
+        <Column field="name" header="Configuração" sortable style="width: 40%">
           <template #body="slotProps">
             <span class="font-bold text-slate-900 dark:text-white text-xs">
               {{ slotProps.data.name }}
@@ -344,7 +386,36 @@ const handleDelete = async () => {
           </template>
         </Column>
 
-        <Column header="Acções" style="width: 8%">
+        <Column field="total_slots" header="Total de Vagas" sortable style="width: 15%">
+          <template #body="slotProps">
+            <span class="font-semibold text-slate-700 dark:text-slate-200 text-xs">
+              {{ slotProps.data.total_slots ?? 0 }}
+            </span>
+          </template>
+        </Column>
+
+        <Column field="total_enrolled" header="Ocupadas" sortable style="width: 15%">
+          <template #body="slotProps">
+            <span class="font-semibold text-amber-600 dark:text-amber-400 text-xs">
+              {{ slotProps.data.total_enrolled ?? 0 }}
+            </span>
+          </template>
+        </Column>
+
+        <Column header="Disponíveis" style="width: 15%">
+          <template #body="slotProps">
+            <span
+              class="inline-flex items-center px-2.5 py-1 rounded-lg font-bold text-xs"
+              :class="getAvailableSlots(slotProps.data) > 0
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                : 'bg-red-500/10 text-red-600 dark:text-red-400'"
+            >
+              {{ getAvailableSlots(slotProps.data) }}
+            </span>
+          </template>
+        </Column>
+
+        <Column header="Acções" style="width: 15%">
           <template #body="slotProps">
             <div class="flex items-center gap-1.5" v-if="p('groupconfigs.update') || p('groupconfigs.delete')">
               <button

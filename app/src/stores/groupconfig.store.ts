@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia';
-import { ref } from 'vue';
-import { api } from '@/services/api';
-import cryptoService from '@/services/crypto.service';
-import { handleError, type ParsedError } from '@/helpers/handle-error';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { api } from '@/services/api'
+import cryptoService from '@/services/crypto.service'
+import { handleError, type ParsedError } from '@/helpers/handle-error'
 
 export interface Groupconfig {
   id: number;
@@ -11,7 +11,7 @@ export interface Groupconfig {
   total_enrolled: number;
   group_id: number;
   year_id: number;
-  course_id: number;
+  course_id: number | null;
   class_id: number;
   period_id: number;
   room_id: number;
@@ -58,15 +58,23 @@ export const useGroupconfigStore = defineStore('groupconfig', () => {
     }
   }
 
-  async function create(payload: GroupconfigPayload): Promise<Groupconfig> {
+  async function create(payload: GroupconfigPayload): Promise<Groupconfig>;
+  async function create(payload: GroupconfigPayload[]): Promise<Groupconfig[]>;
+  async function create(
+    payload: GroupconfigPayload | GroupconfigPayload[]
+  ): Promise<Groupconfig | Groupconfig[]> {
     isLoading.value = true;
     error.value = null;
     try {
-      const response = await api.post<Groupconfig>('/groupconfigs', payload);
-      groupconfigs.value.push(response);
+      const response = await api.post<Groupconfig | Groupconfig[]>('/groupconfigs', payload);
+      if (Array.isArray(response)) {
+        groupconfigs.value.push(...response);
+      } else {
+        groupconfigs.value.push(response);
+      }
       return response;
     } catch (err: any) {
-      const parsed: ParsedError = handleError(err, 'Erro ao criar a configuração de grupo.');
+      const parsed: ParsedError = handleError(err, 'Erro ao guardar a configuração de turma.');
       error.value = parsed.message;
       throw parsed;
     } finally {
@@ -80,7 +88,7 @@ export const useGroupconfigStore = defineStore('groupconfig', () => {
     try {
       const encryptedId = cryptoService.encryptId(String(id));
       const response = await api.put<Groupconfig>(`/groupconfigs/${encryptedId}`, payload);
-      const index = groupconfigs.value.findIndex(g => g.id === id);
+      const index = groupconfigs.value.findIndex(g => Number(g.id) === Number(id));
       if (index !== -1) {
         groupconfigs.value[index] = response;
       }
@@ -100,7 +108,7 @@ export const useGroupconfigStore = defineStore('groupconfig', () => {
     try {
       const encryptedId = cryptoService.encryptId(String(id));
       await api.delete(`/groupconfigs/${encryptedId}`);
-      groupconfigs.value = groupconfigs.value.filter(g => g.id !== id);
+      groupconfigs.value = groupconfigs.value.filter(g => Number(g.id) !== Number(id));
     } catch (err: any) {
       const parsed: ParsedError = handleError(err, 'Erro ao remover a configuração de grupo.');
       error.value = parsed.message;
