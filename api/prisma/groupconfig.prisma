@@ -1,13 +1,15 @@
 model Groupconfig {
-  id        Int    @id @default(autoincrement())
-  name      String
-  group_id  Int
-  year_id   Int
-  course_id Int?
-  class_id  Int
-  period_id Int
-  room_id   Int
-  school_id Int?
+  id             Int    @id @default(autoincrement())
+  name           String
+  total_slots    Int    @default(0)
+  total_enrolled Int    @default(0) 
+  group_id       Int
+  year_id        Int
+  course_id      Int?
+  class_id       Int
+  period_id      Int
+  room_id        Int
+  school_id      Int?
 
   group  Group   @relation(fields: [group_id], references: [id], onDelete: Cascade)
   year   Year    @relation(fields: [year_id], references: [id], onDelete: Cascade)

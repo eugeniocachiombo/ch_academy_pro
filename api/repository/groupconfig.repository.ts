@@ -28,6 +28,13 @@ class GroupconfigRepository extends BaseRepository {
         if (data && recordId) {
             const current = await this.findFirst({ where: { id: recordId } });
             if (current) {
+                // Regra: Não permitir reduzir vagas abaixo do total já matriculado
+                if (data.total_slots !== undefined && data.total_slots < current.total_enrolled) {
+                    throw new Error(
+                        `O total de vagas (${data.total_slots}) não pode ser inferior ao número de alunos já matriculados (${current.total_enrolled}).`
+                    );
+                }
+
                 const checkData = {
                     group_id: data.group_id !== undefined ? data.group_id : current.group_id,
                     room_id: data.room_id !== undefined ? data.room_id : current.room_id,

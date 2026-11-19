@@ -5,6 +5,7 @@ import { useGroupStore } from '@/stores/group.store'
 import { useYearStore } from '@/stores/year.store'
 import { useCourseStore } from '@/stores/course.store'
 import { useClassStore } from '@/stores/class.store'
+import { useClasscourseStore } from '@/stores/classcourse.store'
 import { usePeriodStore } from '@/stores/period.store'
 import { useRoomStore } from '@/stores/room.store'
 import { showNotification } from '@/services/general_service'
@@ -27,11 +28,14 @@ const groupStore = useGroupStore()
 const yearStore = useYearStore()
 const courseStore = useCourseStore()
 const classStore = useClassStore()
+const classcourseStore = useClasscourseStore()
 const periodStore = usePeriodStore()
 const roomStore = useRoomStore()
 
 const form = ref<GroupconfigPayload & { id?: number }>({
   name: '',
+  total_slots: null,
+  total_enrolled: 0,
   group_id: null,
   year_id: null,
   course_id: null,
@@ -52,6 +56,7 @@ onMounted(async () => {
       yearStore.list?.(),
       courseStore.list?.(),
       classStore.list?.(),
+      classcourseStore.list?.(),
       periodStore.list?.(),
       roomStore.list?.(),
     ])
@@ -70,31 +75,70 @@ const clearFieldError = (field: string) => {
   }
 }
 
-const groups = computed(() => groupStore.groups || [])
-const years = computed(() => yearStore.years || [])
-const courses = computed(() => courseStore.courses || [])
-const classes = computed(() => classStore.classes || [])
-const periods = computed(() => periodStore.periods || [])
-const rooms = computed(() => roomStore.rooms || [])
+const sortAscById = <T extends { id?: number | string }>(list: T[]): T[] => {
+  return [...list].sort((a, b) => Number(a.id ?? 0) - Number(b.id ?? 0))
+}
+
+const groups = computed(() => sortAscById(groupStore.groups || []))
+const years = computed(() => sortAscById(yearStore.years || []))
+const courses = computed(() => sortAscById(courseStore.courses || []))
+const periods = computed(() => sortAscById(periodStore.periods || []))
+const rooms = computed(() => sortAscById(roomStore.rooms || []))
+
+const classes = computed(() => {
+  const allClasses = classStore.classes || []
+  const selectedCourseId = form.value.course_id
+
+  if (!selectedCourseId) {
+    return []
+  }
+
+  const allowedClassIds = new Set(
+    (classcourseStore.classcourses || [])
+      .filter((cc) => Number(cc.course_id) === Number(selectedCourseId))
+      .map((cc) => Number(cc.class_id))
+  )
+
+  const filtered = allClasses.filter((cl: any) => allowedClassIds.has(Number(cl.id)))
+  return sortAscById(filtered)
+})
+
+watch(
+  () => form.value.course_id,
+  (newCourseId, oldCourseId) => {
+    if (oldCourseId !== undefined && newCourseId !== oldCourseId) {
+      const stillValid = classes.value.some((cl: any) => Number(cl.id) === Number(form.value.class_id))
+      if (!stillValid) {
+        form.value.class_id = null
+      }
+    }
+  }
+)
+
+const availableSlots = computed(() => {
+  const total = Number(form.value.total_slots) || 0
+  const enrolled = Number(form.value.total_enrolled) || 0
+  return Math.max(0, total - enrolled)
+})
 
 const generateConfigName = () => {
   if (props.isEditing) return
 
-  const selectedGroup = groups.value.find((g: any) => g.id === form.value.group_id)?.name || ''
-  const selectedYear = years.value.find((y: any) => y.id === form.value.year_id)?.name || ''
   const selectedCourse = courses.value.find((c: any) => c.id === form.value.course_id)?.name || ''
   const selectedClass = classes.value.find((cl: any) => cl.id === form.value.class_id)?.name || ''
+  const selectedGroup = groups.value.find((g: any) => g.id === form.value.group_id)?.name || ''
   const selectedPeriod = periods.value.find((p: any) => p.id === form.value.period_id)?.name || ''
   const selectedRoom = rooms.value.find((r: any) => r.id === form.value.room_id)?.name || ''
+  const selectedYear = years.value.find((y: any) => y.id === form.value.year_id)?.name || ''
 
-  const parts = [selectedCourse, selectedClass, selectedPeriod, selectedGroup, selectedRoom, selectedYear].filter(Boolean)
+  const parts = [selectedCourse, selectedClass, selectedGroup, selectedPeriod, selectedRoom, selectedYear].filter(Boolean)
   if (parts.length > 0) {
     form.value.name = parts.join(' - ')
   }
 }
 
 watch(
-  () => [form.value.group_id, form.value.year_id, form.value.course_id, form.value.class_id, form.value.period_id, form.value.room_id],
+  () => [form.value.course_id, form.value.class_id, form.value.group_id, form.value.period_id, form.value.room_id, form.value.year_id],
   () => {
     generateConfigName()
   }
@@ -119,6 +163,8 @@ watch(
       ? { ...newData }
       : {
           name: '',
+          total_slots: null,
+          total_enrolled: 0,
           group_id: null,
           year_id: years.value.find((y: any) => y.isCurrent)?.id || null,
           course_id: null,
@@ -137,10 +183,11 @@ const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
   internalLoading.value = true
-  
+
   try {
     const payload: GroupconfigPayload = {
       name: form.value.name,
+      total_slots: form.value.total_slots !== null ? Number(form.value.total_slots) : null,
       group_id: form.value.group_id ? Number(form.value.group_id) : null,
       year_id: form.value.year_id ? Number(form.value.year_id) : null,
       course_id: form.value.course_id ? Number(form.value.course_id) : null,
@@ -203,19 +250,54 @@ const handleSubmit = async () => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Turma</label>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Curso</label>
           <Select
-            v-model="form.group_id"
-            :options="groups"
+            v-model="form.course_id"
+            :options="courses"
             optionLabel="name"
             optionValue="id"
             filter
-            placeholder="Selecione a turma..."
-            @change="clearFieldError('group_id')"
+            placeholder="Selecione o curso..."
+            @change="clearFieldError('course_id')"
             class="w-full"
-            :class="{ 'p-invalid': hasError('group_id') }"
+            :class="{ 'p-invalid': hasError('course_id') }"
           />
-          <span v-if="hasError('group_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('group_id') }}</span>
+          <span v-if="hasError('course_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('course_id') }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Classe</label>
+            <Select
+              v-model="form.class_id"
+              :options="classes"
+              optionLabel="name"
+              optionValue="id"
+              filter
+              :disabled="!form.course_id"
+              :placeholder="form.course_id ? 'Selecione a classe...' : 'Selecione um curso primeiro'"
+              @change="clearFieldError('class_id')"
+              class="w-full"
+              :class="{ 'p-invalid': hasError('class_id') }"
+            />
+            <span v-if="hasError('class_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('class_id') }}</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Turma</label>
+            <Select
+              v-model="form.group_id"
+              :options="groups"
+              optionLabel="name"
+              optionValue="id"
+              filter
+              placeholder="Selecione a turma..."
+              @change="clearFieldError('group_id')"
+              class="w-full"
+              :class="{ 'p-invalid': hasError('group_id') }"
+            />
+            <span v-if="hasError('group_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('group_id') }}</span>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -240,40 +322,6 @@ const handleSubmit = async () => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Curso</label>
-            <Select
-              v-model="form.course_id"
-              :options="courses"
-              optionLabel="name"
-              optionValue="id"
-              filter
-              placeholder="Selecione o curso..."
-              @change="clearFieldError('course_id')"
-              class="w-full"
-              :class="{ 'p-invalid': hasError('course_id') }"
-            />
-            <span v-if="hasError('course_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('course_id') }}</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Classe</label>
-            <Select
-              v-model="form.class_id"
-              :options="classes"
-              optionLabel="name"
-              optionValue="id"
-              filter
-              placeholder="Selecione a classe..."
-              @change="clearFieldError('class_id')"
-              class="w-full"
-              :class="{ 'p-invalid': hasError('class_id') }"
-            />
-            <span v-if="hasError('class_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('class_id') }}</span>
-          </div>
-
-          <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Turno (Período)</label>
             <Select
               v-model="form.period_id"
@@ -290,20 +338,52 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Sala</label>
-          <Select
-            v-model="form.room_id"
-            :options="rooms"
-            optionLabel="name"
-            optionValue="id"
-            filter
-            placeholder="Selecione a sala..."
-            @change="clearFieldError('room_id')"
-            class="w-full"
-            :class="{ 'p-invalid': hasError('room_id') }"
-          />
-          <span v-if="hasError('room_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('room_id') }}</span>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Sala</label>
+            <Select
+              v-model="form.room_id"
+              :options="rooms"
+              optionLabel="name"
+              optionValue="id"
+              filter
+              placeholder="Selecione a sala..."
+              @change="clearFieldError('room_id')"
+              class="w-full"
+              :class="{ 'p-invalid': hasError('room_id') }"
+            />
+            <span v-if="hasError('room_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('room_id') }}</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Total de Vagas</label>
+            <input
+              v-model.number="form.total_slots"
+              type="number"
+              min="1"
+              placeholder="Ex: 35"
+              @input="clearFieldError('total_slots')"
+              class="w-full bg-white dark:bg-slate-950 border rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+              :class="hasError('total_slots') ? 'border-red-500' : 'border-slate-300 dark:border-slate-700'"
+            />
+            <span v-if="hasError('total_slots')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('total_slots') }}</span>
+          </div>
+        </div>
+
+        <div v-if="isEditing" class="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+          <div class="flex flex-col">
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Total Matriculado</span>
+            <span class="text-sm font-bold text-slate-900 dark:text-white mt-0.5">{{ form.total_enrolled ?? 0 }} alunos</span>
+          </div>
+          <div class="flex flex-col border-l border-slate-200 dark:border-slate-700 pl-3">
+            <span class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Vagas Disponíveis</span>
+            <span
+              class="text-sm font-bold mt-0.5"
+              :class="availableSlots > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
+            >
+              {{ availableSlots }} vagas
+            </span>
+          </div>
         </div>
 
         <div class="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800">
