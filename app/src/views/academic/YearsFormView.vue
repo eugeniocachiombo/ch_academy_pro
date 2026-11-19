@@ -39,13 +39,14 @@ const clearFieldError = (field: string) => {
 }
 
 watch(
-  () => props.initialData,
-  (newData) => {
-    if (newData) {
+  () => [props.isOpen, props.initialData],
+  ([_isOpen, newData]) => {
+    const data = newData as (YearPayload & { id?: number }) | null | undefined
+    if (data) {
       form.value = {
-        ...newData,
-        startdate: newData.startdate ? newData.startdate.split('T')[0] : '',
-        enddate: newData.enddate ? newData.enddate.split('T')[0] : ''
+        ...data,
+        startdate: data.startdate ? String(data.startdate).split('T')[0] : '',
+        enddate: data.enddate ? String(data.enddate).split('T')[0] : ''
       }
     } else {
       form.value = { name: '', school_id: null, isCurrent: false, startdate: '', enddate: '' }
