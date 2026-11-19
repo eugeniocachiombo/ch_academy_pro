@@ -1,9 +1,9 @@
-// SchedulessFormView.vue
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useScheduleStore, type SchedulePayload } from '@/stores/schedule.store'
 import { useSubjectStore } from '@/stores/subject.store'
 import { useTeacherocupationStore } from '@/stores/teacherocupation.store'
+import { useYearStore } from '@/stores/year.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { showNotification } from '@/services/general_service'
 import Select from 'primevue/select'
@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const scheduleStore = useScheduleStore()
 const subjectStore = useSubjectStore()
 const teacherocupationStore = useTeacherocupationStore()
+const yearStore = useYearStore()
 const authStore = useAuthStore()
 
 const emptyForm = (): SchedulePayload & { id?: number } => ({
@@ -41,6 +42,7 @@ const form = ref<SchedulePayload & { id?: number }>(emptyForm())
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
+const notifiedMissingActiveYear = ref(false)
 const formRef = ref<HTMLFormElement | null>(null)
 
 const daysOfWeek = [
@@ -74,6 +76,18 @@ const clearFieldError = (field: string) => {
   }
 }
 
+const activeYear = computed(() => (yearStore.years || []).find((y: any) => y.isCurrent) || null)
+const isMissingActiveYear = computed(() => !props.isEditing && !activeYear.value)
+
+const triggerMissingActiveYearNotice = () => {
+  if (notifiedMissingActiveYear.value) return
+  const msg = 'Não existe um ano lectivo activo. Active um ano lectivo antes de registar horários.'
+  fieldErrors.value = { year_id: [msg] }
+  generalMessage.value = msg
+  showNotification(msg, 'error')
+  notifiedMissingActiveYear.value = true
+}
+
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && props.isOpen && !internalLoading.value) emit('close')
 }
@@ -84,7 +98,8 @@ onMounted(async () => {
     await Promise.all([
       scheduleStore.fetchGroupConfigs(),
       subjectStore.list(),
-      teacherocupationStore.list()
+      teacherocupationStore.list(),
+      yearStore.list?.()
     ])
   } catch (e) {
     console.error('Erro ao carregar dados auxiliares', e)
@@ -104,7 +119,7 @@ watch(() => form.value.groupconfig_id, (newId) => {
     const gc = scheduleStore.groupConfigs.find((item: any) => item.id === Number(newId))
     if (gc) {
       form.value.school_id = gc.school_id || null
-      form.value.year_id = gc.year_id || null // Atribuição automática do ano letivo da turma config
+      form.value.year_id = gc.year_id || null
     }
   }
   if (!props.isEditing) {
@@ -114,6 +129,32 @@ watch(() => form.value.groupconfig_id, (newId) => {
     form.value.end_time = ''
   }
   clearFieldError('groupconfig_id')
+})
+
+watch(
+  () => props.isOpen,
+  async (isOpen) => {
+    if (!isOpen) {
+      notifiedMissingActiveYear.value = false
+      return
+    }
+
+    notifiedMissingActiveYear.value = false
+
+    if (!yearStore.years?.length && yearStore.list) {
+      await yearStore.list().catch(() => {})
+    }
+
+    if (!props.isEditing && isMissingActiveYear.value) {
+      triggerMissingActiveYearNotice()
+    }
+  }
+)
+
+watch(isMissingActiveYear, (missing) => {
+  if (props.isOpen && missing) {
+    triggerMissingActiveYearNotice()
+  }
 })
 
 const availableSubjects = computed(() => {
@@ -190,6 +231,13 @@ const handleSubmit = async () => {
   if (internalLoading.value) return
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (isMissingActiveYear.value) {
+    triggerMissingActiveYearNotice()
+    await scrollToFirstError()
+    return
+  }
+
   internalLoading.value = true
 
   try {
@@ -253,6 +301,17 @@ const handleSubmit = async () => {
       </div>
 
       <form ref="formRef" @submit.prevent="handleSubmit" class="p-6 space-y-4 overflow-y-auto flex-1" novalidate>
+        <div
+          v-if="isMissingActiveYear"
+          class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5"
+        >
+          <i class="fa-solid fa-calendar-xmark mt-0.5 flex-shrink-0"></i>
+          <div>
+            <p class="font-semibold">Sem ano lectivo activo</p>
+            <p class="mt-0.5">Active um ano lectivo antes de registar novos horários.</p>
+          </div>
+        </div>
+
         <div v-if="generalMessage && !Object.keys(fieldErrors || {}).length" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3">
           <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 flex-shrink-0"></i>
           <span>{{ generalMessage }}</span>
@@ -268,7 +327,8 @@ const handleSubmit = async () => {
             optionLabel="name"
             optionValue="id"
             filter
-            placeholder="Selecione a turma config..."
+            :disabled="isMissingActiveYear"
+            placeholder="Seleccione a turma config..."
             @change="clearFieldError('groupconfig_id')"
             class="w-full"
             :class="{ 'p-invalid': hasError('groupconfig_id') }"
@@ -278,7 +338,7 @@ const handleSubmit = async () => {
 
         <div v-if="selectedGroupConfig" class="grid grid-cols-2 gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
           <div>
-            <span class="text-slate-400 block">Ano Letivo:</span>
+            <span class="text-slate-400 block">Ano Lectivo:</span>
             <span class="font-bold text-slate-800 dark:text-slate-200">{{ selectedGroupConfig.year?.name || 'Automático' }}</span>
           </div>
           <div>
@@ -288,7 +348,7 @@ const handleSubmit = async () => {
           <div class="col-span-2">
             <span class="text-slate-400 block">Turno:</span>
             <span class="font-bold text-slate-800 dark:text-slate-200">
-              {{ selectedGroupConfig.period?.name || 'Não definido' }} 
+              {{ selectedGroupConfig.period?.name || 'Não definido' }}
               <span v-if="selectedGroupConfig.period?.starthour && selectedGroupConfig.period?.endhour" class="text-[10px] text-slate-500">
                 ({{ selectedGroupConfig.period.starthour }} - {{ selectedGroupConfig.period.endhour }})
               </span>
@@ -306,8 +366,8 @@ const handleSubmit = async () => {
             optionLabel="name"
             optionValue="id"
             filter
-            :disabled="!form.groupconfig_id"
-            placeholder="Selecione a disciplina..."
+            :disabled="!form.groupconfig_id || isMissingActiveYear"
+            placeholder="Seleccione a disciplina..."
             @change="clearFieldError('subject_id')"
             class="w-full"
             :class="{ 'p-invalid': hasError('subject_id') }"
@@ -325,8 +385,8 @@ const handleSubmit = async () => {
             optionLabel="name"
             optionValue="id"
             filter
-            :disabled="!form.subject_id"
-            placeholder="Selecione o professor..."
+            :disabled="!form.subject_id || isMissingActiveYear"
+            placeholder="Seleccione o professor..."
             @change="clearFieldError('teacher_id')"
             class="w-full"
             :class="{ 'p-invalid': hasError('teacher_id') }"
@@ -343,7 +403,8 @@ const handleSubmit = async () => {
             :options="daysOfWeek"
             optionLabel="label"
             optionValue="value"
-            placeholder="Selecione o dia..."
+            :disabled="isMissingActiveYear"
+            placeholder="Seleccione o dia..."
             @change="clearFieldError('day_of_week')"
             class="w-full"
             :class="{ 'p-invalid': hasError('day_of_week') }"
@@ -360,11 +421,12 @@ const handleSubmit = async () => {
               v-model="form.start_time"
               @input="clearFieldError('start_time')"
               type="time"
+              :disabled="isMissingActiveYear"
               :min="periodLimits.min"
               :max="periodLimits.max"
               :aria-invalid="hasError('start_time')"
               :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all',
+                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60',
                 hasError('start_time') ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-indigo-500/20'
               ]"
             />
@@ -379,11 +441,12 @@ const handleSubmit = async () => {
               v-model="form.end_time"
               @input="clearFieldError('end_time')"
               type="time"
+              :disabled="isMissingActiveYear"
               :min="form.start_time || periodLimits.min"
               :max="periodLimits.max"
               :aria-invalid="hasError('end_time')"
               :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all',
+                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 transition-all disabled:opacity-60',
                 hasError('end_time') ? 'border-red-500 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-indigo-500/20'
               ]"
             />
@@ -401,8 +464,8 @@ const handleSubmit = async () => {
           </button>
           <button
             type="submit"
-            :disabled="internalLoading"
-            class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+            :disabled="internalLoading || isMissingActiveYear"
+            class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <i v-if="internalLoading" class="fa-solid fa-spinner animate-spin"></i>
             <span>{{ internalLoading ? 'A guardar...' : 'Guardar' }}</span>

@@ -37,6 +37,7 @@ const form = ref<RegisterPayload & { id?: number }>({
 const fieldErrors = ref<Record<string, string[]>>()
 const generalMessage = ref('')
 const internalLoading = ref(false)
+const notifiedMissingActiveYear = ref(false)
 
 onMounted(async () => {
   try {
@@ -62,6 +63,9 @@ const clearFieldError = (field: string) => {
 
 const students = computed(() => studentStore.students || [])
 const years = computed(() => yearStore.years || [])
+
+const activeYear = computed(() => years.value.find((y: any) => y.isCurrent) || null)
+const isMissingActiveYear = computed(() => !props.isEditing && !activeYear.value)
 
 const availableOf = (config: any): number =>
   Math.max(0, Number(config?.total_slots ?? 0) - Number(config?.total_enrolled ?? 0))
@@ -94,23 +98,50 @@ const statusOptions = [
   { label: 'Cancelado', value: RegisterStatus.CANCELED },
 ]
 
+const triggerMissingActiveYearNotice = () => {
+  if (notifiedMissingActiveYear.value) return
+  const msg = 'Não existe um ano lectivo activo. Active um ano lectivo antes de criar matrículas.'
+  fieldErrors.value = { year_id: [msg] }
+  generalMessage.value = msg
+  showNotification(msg, 'warning')
+  notifiedMissingActiveYear.value = true
+}
+
 watch(
   () => props.isOpen,
-  (isOpen) => {
-    if (isOpen) {
-      groupconfigStore.list?.().catch(() => {})
+  async (isOpen) => {
+    if (!isOpen) {
+      notifiedMissingActiveYear.value = false
+      return
     }
-    if (isOpen && !props.isEditing && !props.initialData?.student_id) {
-      const activeYear = years.value.find((y: any) => y.isCurrent) || years.value[0]
-      if (activeYear) {
-        form.value.year_id = activeYear.id
-      }
+
+    fieldErrors.value = {}
+    generalMessage.value = ''
+    notifiedMissingActiveYear.value = false
+
+    const tasks: Promise<any>[] = []
+    if (groupconfigStore.list) tasks.push(groupconfigStore.list().catch(() => {}))
+    if (!years.value.length && yearStore.list) tasks.push(yearStore.list().catch(() => {}))
+    if (tasks.length) await Promise.all(tasks)
+
+    if (!props.isEditing && !props.initialData?.student_id) {
+      form.value.year_id = activeYear.value?.id ?? null
       form.value.date = new Date().toISOString().split('T')[0]
       form.value.status = RegisterStatus.ACTIVE
       form.value.registnum = null
     }
+
+    if (isMissingActiveYear.value) {
+      triggerMissingActiveYearNotice()
+    }
   }
 )
+
+watch(isMissingActiveYear, (missing) => {
+  if (props.isOpen && missing) {
+    triggerMissingActiveYearNotice()
+  }
+})
 
 watch(
   () => props.initialData,
@@ -121,7 +152,7 @@ watch(
           registnum: null,
           student_id: null,
           groupconfig_id: null,
-          year_id: years.value.find((y: any) => y.isCurrent)?.id || null,
+          year_id: activeYear.value?.id ?? null,
           date: new Date().toISOString().split('T')[0],
           status: RegisterStatus.ACTIVE,
           school_id: null,
@@ -135,6 +166,14 @@ watch(
 const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (isMissingActiveYear.value) {
+    const msg = 'Não é possível criar matrícula porque não existe um ano lectivo activo.'
+    fieldErrors.value = { year_id: [msg] }
+    generalMessage.value = msg
+    showNotification(msg, 'error')
+    return
+  }
 
   if (isGroupFull.value) {
     fieldErrors.value = { groupconfig_id: ['Esta turma já não tem vagas disponíveis.'] }
@@ -198,6 +237,17 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <div
+          v-if="isMissingActiveYear"
+          class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5"
+        >
+          <i class="fa-solid fa-calendar-xmark mt-0.5"></i>
+          <div>
+            <p class="font-semibold">Sem ano lectivo activo</p>
+            <p class="mt-0.5">Active um ano lectivo antes de criar novas matrículas.</p>
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Estudante</label>
           <Select
@@ -207,19 +257,19 @@ const handleSubmit = async () => {
             optionValue="id"
             filter
             :showClear="!initialData?.student_id"
-            :disabled="!!initialData?.student_id"
+            :disabled="!!initialData?.student_id || isMissingActiveYear"
             placeholder="Selecione o estudante..."
             @change="clearFieldError('student_id')"
             class="w-full"
-            :class="{ 'p-invalid': hasError('student_id'), 'opacity-70 cursor-not-allowed': !!initialData?.student_id }"
+            :class="{ 'p-invalid': hasError('student_id'), 'opacity-70 cursor-not-allowed': !!initialData?.student_id || isMissingActiveYear }"
           >
             <template #option="slotProps">
-              {{ slotProps.option?.user?.person?.firstname  }} {{ slotProps.option?.user?.person?.lastname  }} ({{ slotProps.option?.processnum }})
+              {{ slotProps.option?.user?.person?.firstname }} {{ slotProps.option?.user?.person?.lastname }} ({{ slotProps.option?.processnum }})
             </template>
             <template #value="slotProps">
               <span v-if="slotProps.value">
                 {{ students.find(s => s.id === slotProps.value)?.user?.person?.firstname }}
-                {{ students.find(s => s.id === slotProps.value)?.user?.person?.lastname }} 
+                {{ students.find(s => s.id === slotProps.value)?.user?.person?.lastname }}
                 ({{ students.find(s => s.id === slotProps.value)?.processnum }})
               </span>
               <span v-else class="text-slate-400">Selecione o estudante...</span>
@@ -236,6 +286,7 @@ const handleSubmit = async () => {
             optionLabel="name"
             optionValue="id"
             optionDisabled="blocked"
+            :disabled="isMissingActiveYear"
             filter
             showClear
             placeholder="Selecione a turma configurada..."
@@ -291,12 +342,13 @@ const handleSubmit = async () => {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Ano Letivo</label>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Ano Lectivo</label>
             <Select
               v-model="form.year_id"
               :options="years"
               optionLabel="name"
               optionValue="id"
+              :disabled="isMissingActiveYear"
               filter
               showClear
               placeholder="Selecione o ano..."
@@ -316,7 +368,8 @@ const handleSubmit = async () => {
             <input
               v-model="form.date"
               type="date"
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+              :disabled="isMissingActiveYear"
+              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 disabled:opacity-60"
             />
           </div>
         </div>
@@ -328,6 +381,7 @@ const handleSubmit = async () => {
             :options="statusOptions"
             optionLabel="label"
             optionValue="value"
+            :disabled="isMissingActiveYear"
             placeholder="Selecione o estado..."
             class="w-full"
           />
@@ -337,7 +391,11 @@ const handleSubmit = async () => {
           <button type="button" @click="$emit('close')" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 transition-colors">
             Cancelar
           </button>
-          <button type="submit" :disabled="internalLoading || isGroupFull" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+          <button
+            type="submit"
+            :disabled="internalLoading || isGroupFull || isMissingActiveYear"
+            class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
             <i v-if="internalLoading" class="fa-solid fa-spinner animate-spin"></i>
             <span>{{ internalLoading ? 'A guardar...' : 'Guardar' }}</span>
           </button>

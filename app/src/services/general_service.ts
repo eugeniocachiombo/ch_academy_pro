@@ -234,7 +234,7 @@ export const toast = reactive({
 
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
-export function showNotification(text: string, type: NotificationType = 'success'): void {
+export function showNotification(text: string, type: NotificationType = 'success', time?: number | null): void {
   toast.description = text
   toast.type = type
 
@@ -252,7 +252,7 @@ export function showNotification(text: string, type: NotificationType = 'success
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => {
     toast.visible = false
-  }, 3500)
+  }, time ?? 3500)
 }
 
 /* ------------------------------------------------------------------ */

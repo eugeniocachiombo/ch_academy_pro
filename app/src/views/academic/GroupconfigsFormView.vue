@@ -63,6 +63,7 @@ const rows = ref<DynamicRow[]>([createEmptyRow()])
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
+const notifiedMissingActiveYear = ref(false)
 
 onMounted(async () => {
   try {
@@ -139,6 +140,9 @@ const courses = computed(() => sortAscById(courseStore.courses || []))
 const periods = computed(() => sortAscById(periodStore.periods || []))
 const rooms = computed(() => sortAscById(roomStore.rooms || []))
 
+const activeYear = computed(() => years.value.find((y: any) => y.isCurrent) || null)
+const isMissingActiveYear = computed(() => !props.isEditing && !activeYear.value)
+
 const classes = computed(() => {
   const allClasses = classStore.classes || []
   if (!fixedCourseId.value) {
@@ -185,6 +189,15 @@ const onSlotsInput = (rowIndex: number, event: Event) => {
   clearRowFieldError(rowIndex, 'total_slots')
 }
 
+const triggerMissingActiveYearNotice = () => {
+  if (notifiedMissingActiveYear.value) return
+  const msg = 'Não existe um ano lectivo activo. Active um ano lectivo antes de registar configurações de turma.'
+  fieldErrors.value = { year_id: [msg] }
+  generalMessage.value = msg
+  showNotification(msg, 'error')
+  notifiedMissingActiveYear.value = true
+}
+
 watch(
   () => [fixedCourseId.value, fixedYearId.value],
   () => {
@@ -200,15 +213,32 @@ watch(
 
 watch(
   () => props.isOpen,
-  (isOpen) => {
-    if (isOpen && !props.isEditing && !fixedYearId.value) {
-      const activeYear = years.value.find((y: any) => y.isCurrent) || years.value[0]
-      if (activeYear) {
-        fixedYearId.value = Number(activeYear.id)
+  async (isOpen) => {
+    if (!isOpen) {
+      notifiedMissingActiveYear.value = false
+      return
+    }
+
+    notifiedMissingActiveYear.value = false
+
+    if (!years.value.length && yearStore.list) {
+      await yearStore.list().catch(() => {})
+    }
+
+    if (!props.isEditing) {
+      fixedYearId.value = activeYear.value ? Number(activeYear.value.id) : null
+      if (isMissingActiveYear.value) {
+        triggerMissingActiveYearNotice()
       }
     }
   }
 )
+
+watch(isMissingActiveYear, (missing) => {
+  if (props.isOpen && missing) {
+    triggerMissingActiveYearNotice()
+  }
+})
 
 watch(
   () => props.initialData,
@@ -236,8 +266,7 @@ watch(
     } else {
       editingId.value = null
       fixedCourseId.value = newData?.course_id ?? null
-      fixedYearId.value =
-        newData?.year_id ?? (years.value.find((y: any) => y.isCurrent)?.id || years.value[0]?.id || null)
+      fixedYearId.value = newData?.year_id ?? (activeYear.value ? Number(activeYear.value.id) : null)
       fixedSchoolId.value = newData?.school_id ?? null
       rows.value = [createEmptyRow()]
     }
@@ -246,6 +275,10 @@ watch(
 )
 
 const addRow = () => {
+  if (isMissingActiveYear.value) {
+    triggerMissingActiveYearNotice()
+    return
+  }
   rows.value.push(createEmptyRow())
 }
 
@@ -320,8 +353,10 @@ const normalizeBackendFieldErrors = (rawErrors: Record<string, any>): Record<str
 const validateRows = (): boolean => {
   const errors: Record<string, string[]> = {}
 
-  if (!fixedYearId.value) {
-    errors['year_id'] = ['O ano letivo é obrigatório.']
+  if (isMissingActiveYear.value) {
+    errors['year_id'] = ['Não existe um ano lectivo activo.']
+  } else if (!fixedYearId.value) {
+    errors['year_id'] = ['O ano lectivo é obrigatório.']
   }
 
   if (!fixedCourseId.value) {
@@ -349,7 +384,9 @@ const validateRows = (): boolean => {
   fieldErrors.value = errors
 
   if (Object.keys(errors).length > 0) {
-    generalMessage.value = 'Verifique os campos do formulário.'
+    generalMessage.value = isMissingActiveYear.value
+      ? 'Não é possível registar sem um ano lectivo activo.'
+      : 'Verifique os campos do formulário.'
     showNotification(generalMessage.value, 'error')
     return false
   }
@@ -360,6 +397,11 @@ const validateRows = (): boolean => {
 const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (isMissingActiveYear.value) {
+    triggerMissingActiveYearNotice()
+    return
+  }
 
   if (!validateRows()) return
 
@@ -414,6 +456,17 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 space-y-5 max-h-[78vh] overflow-y-auto">
+        <div
+          v-if="isMissingActiveYear"
+          class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-start gap-2.5"
+        >
+          <i class="fa-solid fa-calendar-xmark mt-0.5"></i>
+          <div>
+            <p class="font-semibold">Sem ano lectivo activo</p>
+            <p class="mt-0.5">Active um ano lectivo antes de registar novas configurações de turma.</p>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800">
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Curso</label>
@@ -423,7 +476,8 @@ const handleSubmit = async () => {
               optionLabel="name"
               optionValue="id"
               filter
-              placeholder="Selecione o curso..."
+              :disabled="isMissingActiveYear"
+              placeholder="Seleccione o curso..."
               @change="clearSharedError('course_id')"
               class="w-full"
               :class="{ 'p-invalid': hasError('course_id') }"
@@ -441,13 +495,14 @@ const handleSubmit = async () => {
               optionLabel="name"
               optionValue="id"
               filter
-              placeholder="Selecione o ano..."
+              :disabled="isMissingActiveYear"
+              placeholder="Seleccione o ano..."
               @change="clearSharedError('year_id'); clearAllConflictErrors()"
               class="w-full"
               :class="{ 'p-invalid': hasError('year_id') }"
             >
               <template #option="slotProps">
-                {{ slotProps.option.name }} {{ slotProps.option.isCurrent ? '(Ativo)' : '' }}
+                {{ slotProps.option.name }} {{ slotProps.option.isCurrent ? '(Activo)' : '' }}
               </template>
             </Select>
             <span v-if="hasError('year_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">
@@ -464,8 +519,9 @@ const handleSubmit = async () => {
             <button
               v-if="!isEditing"
               type="button"
+              :disabled="isMissingActiveYear"
               @click="addRow"
-              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 transition-colors"
+              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 dark:text-indigo-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <i class="fa-solid fa-plus"></i>
               <span>Adicionar Linha</span>
@@ -500,8 +556,8 @@ const handleSubmit = async () => {
                   optionLabel="name"
                   optionValue="id"
                   filter
-                  :disabled="!fixedCourseId"
-                  :placeholder="fixedCourseId ? 'Selecione a classe...' : 'Selecione um curso primeiro'"
+                  :disabled="!fixedCourseId || isMissingActiveYear"
+                  :placeholder="fixedCourseId ? 'Seleccione a classe...' : 'Seleccione um curso primeiro'"
                   @change="clearRowFieldError(index, 'class_id'); refreshRowName(index)"
                   class="w-full"
                   :class="{ 'p-invalid': hasRowError(index, 'class_id') }"
@@ -519,7 +575,8 @@ const handleSubmit = async () => {
                   optionLabel="name"
                   optionValue="id"
                   filter
-                  placeholder="Selecione o turno..."
+                  :disabled="isMissingActiveYear"
+                  placeholder="Seleccione o turno..."
                   @change="clearRowFieldError(index, 'period_id'); clearRowConflictErrors(index); refreshRowName(index)"
                   class="w-full"
                   :class="{ 'p-invalid': hasRowError(index, 'period_id') }"
@@ -539,7 +596,8 @@ const handleSubmit = async () => {
                   optionLabel="name"
                   optionValue="id"
                   filter
-                  placeholder="Selecione a sala..."
+                  :disabled="isMissingActiveYear"
+                  placeholder="Seleccione a sala..."
                   @change="clearRowFieldError(index, 'room_id'); refreshRowName(index)"
                   class="w-full"
                   :class="{ 'p-invalid': hasRowError(index, 'room_id') }"
@@ -557,7 +615,8 @@ const handleSubmit = async () => {
                   optionLabel="name"
                   optionValue="id"
                   filter
-                  placeholder="Selecione a turma..."
+                  :disabled="isMissingActiveYear"
+                  placeholder="Seleccione a turma..."
                   @change="clearRowFieldError(index, 'group_id'); refreshRowName(index)"
                   class="w-full"
                   :class="{ 'p-invalid': hasRowError(index, 'group_id') }"
@@ -573,9 +632,10 @@ const handleSubmit = async () => {
                   :value="row.total_slots ?? ''"
                   type="number"
                   min="1"
+                  :disabled="isMissingActiveYear"
                   placeholder="Ex: 35"
                   @input="onSlotsInput(index, $event)"
-                  class="w-full bg-white dark:bg-slate-950 border rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                  class="w-full bg-white dark:bg-slate-950 border rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors disabled:opacity-60"
                   :class="hasRowError(index, 'total_slots') ? 'border-red-500' : 'border-slate-300 dark:border-slate-700'"
                 />
                 <span v-if="hasRowError(index, 'total_slots')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">
@@ -621,7 +681,11 @@ const handleSubmit = async () => {
           <button type="button" @click="$emit('close')" class="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/40 hover:bg-slate-200 transition-colors">
             Cancelar
           </button>
-          <button type="submit" :disabled="internalLoading || isLoading" class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 flex items-center gap-2">
+          <button
+            type="submit"
+            :disabled="internalLoading || isLoading || isMissingActiveYear"
+            class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
             <i v-if="internalLoading || isLoading" class="fa-solid fa-spinner animate-spin"></i>
             <span>{{ internalLoading || isLoading ? 'A guardar...' : 'Guardar' }}</span>
           </button>
