@@ -108,6 +108,16 @@ const menuItems = computed(() => [
     ],
   },
   {
+    key: 'rh',
+    label: 'Recursos Humanos',
+    icon: 'fa-user-group',
+    children: [
+      { id: 'departments', label: 'Departamentos', icon: 'fa-building', permition: p('departments.manage') },
+      { id: 'positions', label: 'Cargos', icon: 'fa-briefcase', permition: p('positions.manage') },
+      { id: 'employees', label: 'Funcionários', icon: 'fa-id-card', permition: p('employees.manage') },
+    ],
+  },
+  {
     key: 'communications',
     label: 'Comunicações',
     icon: 'fa-bullhorn',
