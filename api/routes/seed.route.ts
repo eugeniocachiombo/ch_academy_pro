@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { seedAdmin } from '../prisma/seeders/admin.seed';
 import { seedAcademic } from '../prisma/seeders/academic.seed';
 import { seedProvinceMunicipality } from '../prisma/seeders/province.seed';
+import { seedPositions } from '../prisma/seeders/position.seed.js';
 
 
 const seedRoutes = Router();
@@ -16,6 +17,7 @@ seedRoutes.get("/seed/execute", async (req: Request, res: Response) => {
                 await seedAdmin(tx);
                 await seedAcademic(tx);
                 await seedProvinceMunicipality(tx);
+                await seedPositions(tx);
             },
             { maxWait: 10000, timeout: 120000 }
         );
