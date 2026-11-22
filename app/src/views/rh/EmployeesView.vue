@@ -37,11 +37,24 @@ const employeeToDeleteName = ref('')
 const isDeleting = ref(false)
 
 onMounted(async () => {
-  await Promise.allSettled([
-    employeeStore.list(),
-    !teacherStore.teachers.length ? teacherStore.list() : Promise.resolve(),
-  ])
+  await Promise.allSettled([employeeStore.list(), teacherStore.list()])
 })
+
+const toId = (v: any): number | null => {
+  if (v === null || v === undefined || v === '') return null
+  const n = Number(v)
+  return Number.isNaN(n) ? null : n
+}
+
+const normalizeBi = (v: any): string =>
+  typeof v === 'string' ? v.trim().toLowerCase().replace(/\s/g, '') : ''
+
+const currentSchoolId = computed<number | null>(() =>
+  toId((authStore.currentUser as any)?.school_id ?? (authStore.currentUser as any)?.school?.id),
+)
+
+const getEmployeeSchoolId = (emp: Employee): number | null =>
+  toId(emp.school_id ?? (emp as any).school?.id) ?? currentSchoolId.value
 
 const totalCount = computed(() => employeeStore.employees.filter((emp: any) => emp != null).length)
 
@@ -54,22 +67,15 @@ const getEmployeeLabel = (emp: Employee) => {
 
 const getEmployeePositions = (emp: Employee) => extractEmployeePositions(emp)
 
-const hasTeacherPosition = (emp: Employee): boolean =>
-  hasPositionNamed(emp, 'professor')
+const hasTeacherPosition = (emp: Employee): boolean => hasPositionNamed(emp, 'professor')
 
 const hasTeacherAccount = (emp: Employee): boolean => {
-  const empPersonId = emp.person_id ?? emp.person?.id
-  const empBi = emp.person?.bi_number?.trim().toLowerCase()
+  const schoolId = getEmployeeSchoolId(emp)
 
-  return teacherStore.teachers.some((t: any) => {
-    if (!t) return false
-    const teacherPersonId = t.person_id ?? t.user?.person_id ?? t.person?.id
-    if (empPersonId && teacherPersonId && Number(empPersonId) === Number(teacherPersonId)) {
-      return true
-    }
-    const teacherBi = (t.user?.person?.bi_number ?? t.person?.bi_number)?.trim().toLowerCase()
-    return Boolean(empBi && teacherBi && empBi === teacherBi)
-  })
+  const person_id = emp?.person?.id;
+  const tr = teacherStore.teachers.find((e) => e.user?.person?.id == person_id  && e.school_id == schoolId);
+
+  return tr;
 }
 
 const canAssociateTeacher = (emp: Employee): boolean =>
@@ -111,8 +117,9 @@ const openAssociateTeacherModal = (emp: Employee) => {
     codenumber: undefined,
     degree_id: undefined,
     specialty: '',
-    school_id: emp.school_id ? Number(emp.school_id) : null,
+    school_id: getEmployeeSchoolId(emp),
     person: {
+      id: person?.id ?? null,
       firstname: person?.firstname ?? '',
       middlename: person?.middlename ?? '',
       lastname: person?.lastname ?? '',
@@ -130,6 +137,7 @@ const openAssociateTeacherModal = (emp: Employee) => {
       house_number: person?.house_number ?? '',
     },
   }
+  console.log(teacherFormData.value)
   isTeacherModalOpen.value = true
 }
 

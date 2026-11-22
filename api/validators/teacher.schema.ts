@@ -3,6 +3,7 @@ import { createUserSchema, updateSchema } from "./user.schema.js";
 import { createPersonSchema, updatePersonSchema } from "./person.schema.js";
 
 export const createTeacherSchema = z.object({
+    id: z.coerce.number().int().positive().nullable().optional(),
     codenumber: z.string().optional().nullable(),
     degree_id: z.number({ error: "O grau académico é obrigatório" }),
     specialty: z.string().optional().nullable(),

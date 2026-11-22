@@ -57,33 +57,58 @@ class TeacherService extends BaseService {
     }
 
     async create(ctx: CrudContext, data: unknown) {
+        const rawPersonId = Number((data as any)?.person?.id) || null;
+    
         const schema = this.schemas?.create;
         let body = schema ? await schema.parseAsync(data) : data;
         body = await this.beforeCreate(body, ctx);
-
+    
         const { user: _ignoredUser, person: personDto, ...teacherDto } = body as any;
         const teacherData = this.prepareData('teacher', ctx, teacherDto, true);
-        const schoolId = teacherData.school_id;
-        
-
+        const schoolId = teacherData.school_id ?? null;
+    
         return await prisma.$transaction(async (tx) => {
-
+    
             const codenumber = teacherData.codenumber || await nextTeacherCodeNum(tx);
-            const personPayload = this.prepareData('person', ctx, personDto, true, true);
-            const { bi_number } = personPayload;
-            let person = await personRepository.findFirst({
-                where: {bi_number: bi_number}
-            })
-
-            if(!person){
-                person = await personRepository.create({ data: personPayload }, "person", tx);
+    
+            let person: any = null;
+    
+            if (rawPersonId) {
+                person = await personRepository.findFirst({
+                    where: { id: rawPersonId }
+                }, "person", tx);
+    
+                if (!person) {
+                    throw new Error("NOT_FOUND");
+                }
+            } else {
+                const personPayload = this.prepareData('person', ctx, personDto, true, true);
+    
+                if (personPayload.bi_number) {
+                    person = await personRepository.findFirst({
+                        where: { bi_number: personPayload.bi_number }
+                    }, "person", tx);
+                }
+    
+                if (!person) {
+                    person = await personRepository.create({ data: personPayload }, "person", tx);
+                }
             }
-
+    
+            const alreadyTeacher = await teacherRepository.findFirst({
+                where: { school_id: schoolId, user: { person_id: person.id } },
+                select: { id: true }
+            }, "teacher", tx);
+    
+            if (alreadyTeacher) {
+                throw new Error("TEACHER_ALREADY_EXISTS");
+            }
+    
             const name = formatCapitalized(`${person.firstname} ${person.lastname}`);
             const username = codenumber;
             const password = await formatPassword('123456');
             const email = person.email || `${username}@teacher.com`;
-
+    
             const userPayload = this.prepareData('user', ctx, {
                 name,
                 username,
@@ -94,7 +119,7 @@ class TeacherService extends BaseService {
                 school_id: schoolId
             }, true);
             const user = await userRepository.create({ data: userPayload }, "user", tx);
-
+    
             const role = await roleRepository.findFirst({ where: { name: 'teacher' } }, "role", tx);
             if (role) {
                 await userRoleRepository.create({
@@ -105,7 +130,7 @@ class TeacherService extends BaseService {
                     }
                 }, "userRole", tx);
             }
-
+    
             const teacher = await teacherRepository.create({
                 data: {
                     ...teacherData,
@@ -113,11 +138,10 @@ class TeacherService extends BaseService {
                     user_id: user.id
                 }
             }, 'teacher', tx);
-
+    
             return teacher;
         });
     }
-
     async update(ctx: CrudContext, id: number, data: unknown) {
         const schema = this.schemas?.update;
         let body = schema ? await schema.parseAsync(data) : data;
