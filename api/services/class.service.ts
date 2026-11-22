@@ -14,7 +14,7 @@ class ClassService extends BaseService {
             {
                 tenant: 'mixed',
                 include: {
-                    classSubjects: {
+                    class_subjects: {
                         include: {
                             subject: true
                         }
