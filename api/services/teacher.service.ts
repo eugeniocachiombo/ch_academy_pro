@@ -64,8 +64,11 @@ class TeacherService extends BaseService {
         const { user: _ignoredUser, person: personDto, ...teacherDto } = body as any;
         const teacherData = this.prepareData('teacher', ctx, teacherDto, true);
         const schoolId = teacherData.school_id;
+        
 
         return await prisma.$transaction(async (tx) => {
+
+            const codenumber = teacherData.codenumber || await nextTeacherCodeNum(tx);
             const personPayload = this.prepareData('person', ctx, personDto, true, true);
             const { bi_number } = personPayload;
             let person = await personRepository.findFirst({
@@ -77,7 +80,7 @@ class TeacherService extends BaseService {
             }
 
             const name = formatCapitalized(`${person.firstname} ${person.lastname}`);
-            const username = person.bi_number || `teacher_${Date.now()}`;
+            const username = codenumber;
             const password = await formatPassword('123456');
             const email = person.email || `${username}@teacher.com`;
 
@@ -103,7 +106,6 @@ class TeacherService extends BaseService {
                 }, "userRole", tx);
             }
 
-            const codenumber = teacherData.codenumber || await nextTeacherCodeNum(tx);
             const teacher = await teacherRepository.create({
                 data: {
                     ...teacherData,
