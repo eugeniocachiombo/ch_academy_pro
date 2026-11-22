@@ -31,6 +31,8 @@ import { seedRoutes } from './routes/seed.route.js';
 import { departmentRoutes } from "./routes/department.routes.js";
 import { positionRoutes } from "./routes/position.routes.js";
 import { employeeRoutes } from "./routes/employee.routes.js";
+import { provinceRoutes } from "./routes/province.routes.js";
+import { municipalityRoutes } from "./routes/municipality.routes.js";
 
 const app = express();
 
@@ -73,7 +75,9 @@ app.use(
   scheduleRoutes,
   departmentRoutes,
   positionRoutes,
-  employeeRoutes
+  employeeRoutes,
+  provinceRoutes,
+  municipalityRoutes
 );
 
 app.get("/", (req, res) => {
