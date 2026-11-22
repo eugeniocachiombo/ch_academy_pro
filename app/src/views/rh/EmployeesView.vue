@@ -137,7 +137,6 @@ const openAssociateTeacherModal = (emp: Employee) => {
       house_number: person?.house_number ?? '',
     },
   }
-  console.log(teacherFormData.value)
   isTeacherModalOpen.value = true
 }
 
