@@ -2,6 +2,8 @@
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useStudentStore, type StudentPayload } from '@/stores/student.store.js'
 import { useSchoolStore } from '@/stores/school.store.js'
+import { useProvinceStore } from '@/stores/province.store'
+import { useMunicipalityStore } from '@/stores/municipality.store'
 import { useAuthStore } from '@/stores/auth.store.js'
 import { showNotification } from '@/services/general_service'
 import Select from 'primevue/select'
@@ -22,6 +24,8 @@ const emit = defineEmits<{
 
 const studentStore = useStudentStore()
 const schoolStore = useSchoolStore()
+const provinceStore = useProvinceStore()
+const municipalityStore = useMunicipalityStore()
 const authStore = useAuthStore()
 
 const knownFields = [
@@ -31,19 +35,44 @@ const knownFields = [
   'person.lastname',
   'person.bi_number',
   'person.birthday',
+  'birthday',
   'person.gender',
-  'person.email',
+  'person.phone',
+  'person.alternative_phone',
+  'person.province',
+  'person.municipality',
+  'person.neighborhood',
+  'person.street',
   'phone',
-  'address',
   'origin_school',
   'fathername',
   'mothername'
 ]
 
+const monthOptions = [
+  { label: 'Janeiro', value: 1 },
+  { label: 'Fevereiro', value: 2 },
+  { label: 'Março', value: 3 },
+  { label: 'Abril', value: 4 },
+  { label: 'Maio', value: 5 },
+  { label: 'Junho', value: 6 },
+  { label: 'Julho', value: 7 },
+  { label: 'Agosto', value: 8 },
+  { label: 'Setembro', value: 9 },
+  { label: 'Outubro', value: 10 },
+  { label: 'Novembro', value: 11 },
+  { label: 'Dezembro', value: 12 },
+]
+
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: 100 }, (_, idx) => {
+  const year = currentYear - 5 - idx
+  return { label: String(year), value: year }
+})
+
 const emptyForm = (): StudentPayload & { id?: number } => ({
   processnum: undefined,
   phone: '',
-  address: '',
   fathername: '',
   mothername: '',
   origin_school: '',
@@ -70,6 +99,14 @@ const emptyForm = (): StudentPayload & { id?: number } => ({
 const form = ref<StudentPayload & { id?: number }>(emptyForm())
 const person = computed(() => form.value.person!)
 
+const birthDay = ref<number | null>(null)
+const birthMonth = ref<number | null>(null)
+const birthYear = ref<number | null>(null)
+
+const selectedProvinceId = ref<number | null>(null)
+const selectedMunicipalityId = ref<number | null>(null)
+const isHydrating = ref(false)
+
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
@@ -79,13 +116,24 @@ const biInput = ref<HTMLInputElement | null>(null)
 const biStatus = ref<BiStatus>('idle')
 const originalBi = ref('')
 
-const todayIso = new Date().toISOString().split('T')[0]
-
 const schools = computed(() => schoolStore.schools || [])
 
 const showBiCheck = computed(() => !props.isEditing || person.value.bi_number !== originalBi.value)
 
 const biHasError = computed(() => hasError('person.bi_number') || biStatus.value === 'exists')
+
+const daysInMonth = computed(() => {
+  if (!birthMonth.value) return 31
+  const yearForCalc = birthYear.value || 2000
+  return new Date(yearForCalc, birthMonth.value, 0).getDate()
+})
+
+const dayOptions = computed(() =>
+  Array.from({ length: daysInMonth.value }, (_, idx) => {
+    const day = idx + 1
+    return { label: String(day).padStart(2, '0'), value: day }
+  })
+)
 
 const age = computed(() => {
   const birthday = person.value.birthday
@@ -105,6 +153,21 @@ const unmatchedErrors = computed(() =>
     .flatMap(([, messages]) => messages)
 )
 
+const sortedProvinces = computed(() =>
+  [...(provinceStore.provinces || [])].sort((a: any, b: any) =>
+    String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-AO', { sensitivity: 'base' })
+  )
+)
+
+const filteredMunicipalities = computed(() => {
+  if (!selectedProvinceId.value) return []
+  return (municipalityStore.municipalities || [])
+    .filter((m: any) => Number(m.province_id) === Number(selectedProvinceId.value))
+    .sort((a: any, b: any) =>
+      String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-AO', { sensitivity: 'base' })
+    )
+})
+
 const normalizeErrors = (err: any): Record<string, string[]> => {
   const raw = err?.errors ?? err?.fieldErrors ?? err?.response?.data?.errors ?? err?.data?.errors ?? {}
   const result: Record<string, string[]> = {}
@@ -114,17 +177,23 @@ const normalizeErrors = (err: any): Record<string, string[]> => {
   return result
 }
 
-const getFieldError = (field: string): string => fieldErrors.value[field]?.[0] ?? ''
+const getFieldError = (field: string): string =>
+  fieldErrors.value[field]?.[0] ??
+  (field.startsWith('person.') ? fieldErrors.value[field.replace(/^person\./, '')]?.[0] : '') ??
+  ''
 
 function hasError(field: string): boolean {
   return !!getFieldError(field)
 }
 
 const clearFieldError = (field: string) => {
-  if (fieldErrors.value[field]) {
-    const { [field]: _removed, ...rest } = fieldErrors.value
-    fieldErrors.value = rest
+  const shortField = field.replace(/^person\./, '')
+  const keys = [field, `person.${shortField}`, shortField]
+  const next = { ...fieldErrors.value }
+  for (const key of keys) {
+    delete next[key]
   }
+  fieldErrors.value = next
 }
 
 const inputClass = (field: string, force = false) => [
@@ -141,8 +210,110 @@ const setGender = (value: string) => {
 
 const onBiInput = () => {
   clearFieldError('person.bi_number')
+  person.value.nif = person.value.bi_number || ''
   biStatus.value = 'idle'
 }
+
+const syncBirthdayPartsFromForm = () => {
+  const raw = person.value.birthday?.trim()
+  if (!raw) {
+    birthDay.value = null
+    birthMonth.value = null
+    birthYear.value = null
+    return
+  }
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (isoMatch) {
+    birthYear.value = Number(isoMatch[1])
+    birthMonth.value = Number(isoMatch[2])
+    birthDay.value = Number(isoMatch[3])
+    return
+  }
+
+  const parsed = new Date(raw)
+  if (!Number.isNaN(parsed.getTime())) {
+    birthYear.value = parsed.getUTCFullYear()
+    birthMonth.value = parsed.getUTCMonth() + 1
+    birthDay.value = parsed.getUTCDate()
+  }
+}
+
+watch([birthDay, birthMonth, birthYear], ([day, month, year]) => {
+  if (isHydrating.value) return
+  clearFieldError('birthday')
+
+  if (day && month && day > daysInMonth.value) {
+    birthDay.value = daysInMonth.value
+    return
+  }
+
+  if (day && month && year) {
+    const dd = String(day).padStart(2, '0')
+    const mm = String(month).padStart(2, '0')
+    person.value.birthday = `${year}-${mm}-${dd}`
+  } else {
+    person.value.birthday = ''
+  }
+})
+
+const syncLocationIdsFromNames = () => {
+  const provName = person.value.province?.trim().toLowerCase()
+  const munName = person.value.municipality?.trim().toLowerCase()
+
+  const foundProv = provName
+    ? (provinceStore.provinces || []).find((p: any) => p.name?.toLowerCase() === provName)
+    : null
+  selectedProvinceId.value = foundProv ? Number(foundProv.id) : null
+
+  const foundMun = munName
+    ? (municipalityStore.municipalities || []).find(
+        (m: any) =>
+          m.name?.toLowerCase() === munName &&
+          (!selectedProvinceId.value || Number(m.province_id) === Number(selectedProvinceId.value))
+      )
+    : null
+  selectedMunicipalityId.value = foundMun ? Number(foundMun.id) : null
+}
+
+watch(selectedProvinceId, (newProvId) => {
+  if (isHydrating.value) return
+  clearFieldError('province')
+  clearFieldError('municipality')
+
+  if (!newProvId) {
+    person.value.province = ''
+    selectedMunicipalityId.value = null
+    person.value.municipality = ''
+    return
+  }
+
+  const prov = (provinceStore.provinces || []).find((p: any) => Number(p.id) === Number(newProvId))
+  person.value.province = prov?.name ?? ''
+
+  const currentMunValid = (municipalityStore.municipalities || []).some(
+    (m: any) =>
+      Number(m.id) === Number(selectedMunicipalityId.value) &&
+      Number(m.province_id) === Number(newProvId)
+  )
+  if (!currentMunValid) {
+    selectedMunicipalityId.value = null
+    person.value.municipality = ''
+  }
+})
+
+watch(selectedMunicipalityId, (newMunId) => {
+  if (isHydrating.value) return
+  clearFieldError('municipality')
+
+  if (!newMunId) {
+    person.value.municipality = ''
+    return
+  }
+
+  const mun = (municipalityStore.municipalities || []).find((m: any) => Number(m.id) === Number(newMunId))
+  person.value.municipality = mun?.name ?? ''
+})
 
 const verifyBi = async () => {
   const bi = (person.value.bi_number || '').trim()
@@ -164,10 +335,18 @@ const onKeydown = (event: KeyboardEvent) => {
 onMounted(async () => {
   document.addEventListener('keydown', onKeydown)
   try {
-    await schoolStore.list?.()
+    await Promise.allSettled([
+      schoolStore.list?.(),
+      !(provinceStore.provinces?.length) ? provinceStore.list?.() : Promise.resolve(),
+      !(municipalityStore.municipalities?.length) ? municipalityStore.list?.() : Promise.resolve(),
+    ])
   } catch (e) {
     console.error('Erro ao carregar dados auxiliares', e)
   }
+  isHydrating.value = true
+  syncBirthdayPartsFromForm()
+  syncLocationIdsFromNames()
+  isHydrating.value = false
 })
 
 onUnmounted(() => {
@@ -196,16 +375,19 @@ watch(
 watch(
   () => props.initialData,
   (newData) => {
+    isHydrating.value = true
     if (newData) {
       const base = emptyForm()
       form.value = {
         ...base,
         ...newData,
-        phone: newData.phone ?? '',
+        phone: newData.phone ?? newData.person?.phone ?? '',
         school_id: newData.school_id || Number(authStore.currentUser?.school_id) || null,
         person: {
           ...base.person!,
           ...newData.person,
+          phone: newData.person?.phone ?? newData.phone ?? '',
+          nif: newData.person?.bi_number || newData.person?.nif || '',
           birthday: newData.person?.birthday ? newData.person.birthday.split('T')[0] : ''
         }
       }
@@ -214,9 +396,12 @@ watch(
       form.value = emptyForm()
       originalBi.value = ''
     }
+    syncBirthdayPartsFromForm()
+    syncLocationIdsFromNames()
     biStatus.value = 'idle'
     fieldErrors.value = {}
     generalMessage.value = ''
+    isHydrating.value = false
   },
   { immediate: true, deep: true }
 )
@@ -252,10 +437,25 @@ const handleSubmit = async () => {
 
   try {
     const currentPerson = form.value.person!
+    const selectedProvName =
+      (provinceStore.provinces || []).find((p: any) => Number(p.id) === Number(selectedProvinceId.value))
+        ?.name ?? currentPerson.province
+
+    const selectedMunName =
+      (municipalityStore.municipalities || []).find(
+        (m: any) => Number(m.id) === Number(selectedMunicipalityId.value)
+      )?.name ?? currentPerson.municipality
+
+    const birthdayValue =
+      birthDay.value && birthMonth.value && birthYear.value
+        ? `${birthYear.value}-${String(birthMonth.value).padStart(2, '0')}-${String(birthDay.value).padStart(2, '0')}`
+        : currentPerson.birthday || ''
+
+    const resolvedPhone = currentPerson.phone || form.value.phone || ''
+
     const payload: StudentPayload = {
       processnum: form.value.processnum ? String(form.value.processnum) : undefined,
-      phone: form.value.phone || '',
-      address: form.value.address || null,
+      phone: resolvedPhone,
       fathername: form.value.fathername || null,
       mothername: form.value.mothername || null,
       origin_school: form.value.origin_school || null,
@@ -264,8 +464,17 @@ const handleSubmit = async () => {
         : (authStore.currentUser?.school_id ? Number(authStore.currentUser?.school_id) : null),
       person: {
         ...currentPerson,
-        email: currentPerson.email || null,
-        birthday: currentPerson.birthday ? new Date(currentPerson.birthday).toISOString() : ''
+        middlename: currentPerson.middlename || null,
+        nif: currentPerson.bi_number || null,
+        phone: resolvedPhone || null,
+        alternative_phone: currentPerson.alternative_phone || null,
+        email: null,
+        province: selectedProvName || null,
+        municipality: selectedMunName || null,
+        neighborhood: currentPerson.neighborhood || null,
+        street: currentPerson.street || null,
+        house_number: null,
+        birthday: birthdayValue ? new Date(birthdayValue).toISOString() : ''
       }
     }
 
@@ -319,20 +528,6 @@ const handleSubmit = async () => {
 
       <form ref="formRef" @submit.prevent="handleSubmit" class="p-6 space-y-6 overflow-y-auto flex-1" novalidate>
         <div
-          v-if="generalMessage"
-          role="alert"
-          class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3"
-        >
-          <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 shrink-0"></i>
-          <div class="space-y-1">
-            <p class="font-semibold">{{ generalMessage }}</p>
-            <ul v-if="unmatchedErrors.length" class="list-disc pl-4 space-y-0.5">
-              <li v-for="(message, index) in unmatchedErrors" :key="index">{{ message }}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div
           v-if="!isEditing"
           class="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs flex items-start gap-3"
         >
@@ -341,6 +536,23 @@ const handleSubmit = async () => {
             O <strong>nº de processo</strong> é gerado automaticamente e serve de <strong>nome de utilizador</strong>.
             A palavra-passe inicial é <strong>123456</strong>.
           </p>
+        </div>
+
+        <div class="hidden">
+          <label for="student-school" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Escola</label>
+          <Select
+            inputId="student-school"
+            v-model="form.school_id"
+            :options="schools"
+            optionLabel="name"
+            optionValue="id"
+            filter
+            disabled
+            placeholder="Selecione a escola..."
+            class="w-full opacity-75 cursor-not-allowed"
+            :class="{ 'p-invalid': hasError('school_id') }"
+          />
+          <span v-if="hasError('school_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium">{{ getFieldError('school_id') }}</span>
         </div>
 
         <section>
@@ -388,24 +600,8 @@ const handleSubmit = async () => {
           <span v-if="hasError('person.bi_number')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.bi_number') }}</span>
         </section>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" v-if="isEditing">
           <div>
-            <label for="student-school" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Escola</label>
-            <Select
-              inputId="student-school"
-              v-model="form.school_id"
-              :options="schools"
-              optionLabel="name"
-              optionValue="id"
-              filter
-              disabled
-              placeholder="Selecione a escola..."
-              class="w-full opacity-75 cursor-not-allowed"
-              :class="{ 'p-invalid': hasError('school_id') }"
-            />
-            <span v-if="hasError('school_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium">{{ getFieldError('school_id') }}</span>
-          </div>
-          <div v-if="isEditing">
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nº de Processo</label>
             <div class="w-full bg-slate-100 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-mono font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-2">
               <i class="fa-solid fa-lock text-[10px] text-slate-400"></i>
@@ -461,23 +657,51 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-            <div>
-              <label for="student-birthday" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Data de Nascimento <span class="text-red-500">*</span>
-                <span v-if="age !== null" class="font-normal text-slate-400 ml-1">({{ age }} {{ age === 1 ? 'ano' : 'anos' }})</span>
-              </label>
-              <input
-                id="student-birthday"
-                v-model="person.birthday"
-                @input="clearFieldError('person.birthday')"
-                type="date"
-                :max="todayIso"
-                :aria-invalid="hasError('person.birthday')"
-                :class="inputClass('person.birthday')"
+          <div class="space-y-1.5 mt-3">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Data de Nascimento <span class="text-red-500">*</span>
+              <span v-if="age !== null" class="font-normal text-slate-400 ml-1">({{ age }} {{ age === 1 ? 'ano' : 'anos' }})</span>
+            </label>
+            <div
+              class="grid grid-cols-3 gap-3"
+              :aria-invalid="hasError('person.birthday')"
+              tabindex="-1"
+            >
+              <Select
+                v-model="birthDay"
+                :options="dayOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Dia"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('person.birthday') ? 'p-invalid' : '']"
               />
-              <span v-if="hasError('person.birthday')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.birthday') }}</span>
+              <Select
+                v-model="birthMonth"
+                :options="monthOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Mês"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('person.birthday') ? 'p-invalid' : '']"
+              />
+              <Select
+                v-model="birthYear"
+                :options="yearOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Ano"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('person.birthday') ? 'p-invalid' : '']"
+              />
             </div>
+            <span v-if="hasError('person.birthday')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.birthday') }}</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
             <div>
               <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Género <span class="text-red-500">*</span></span>
               <div
@@ -522,56 +746,92 @@ const handleSubmit = async () => {
               </div>
               <span v-if="hasError('person.gender')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.gender') }}</span>
             </div>
+
             <div>
-              <label for="student-email" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
+              <label for="student-person-phone" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefone</label>
               <input
-                id="student-email"
-                v-model="person.email"
-                @input="clearFieldError('person.email')"
-                type="email"
+                id="student-person-phone"
+                v-model="person.phone"
+                @input="clearFieldError('person.phone')"
+                type="tel"
+                inputmode="tel"
                 autocomplete="off"
-                placeholder="Ex: joao@email.com"
-                :aria-invalid="hasError('person.email')"
-                :class="inputClass('person.email')"
+                maxlength="15"
+                placeholder="Ex: 923 000 000"
+                :aria-invalid="hasError('person.phone')"
+                :class="inputClass('person.phone')"
               />
-              <span v-if="hasError('person.email')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.email') }}</span>
+              <span v-if="hasError('person.phone')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.phone') }}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Província</label>
+              <Select
+                v-model="selectedProvinceId"
+                :options="sortedProvinces"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Selecione a província"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('person.province') ? 'p-invalid' : '']"
+              />
+              <span v-if="hasError('person.province')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.province') }}</span>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Município</label>
+              <Select
+                v-model="selectedMunicipalityId"
+                :options="filteredMunicipalities"
+                optionLabel="name"
+                optionValue="id"
+                :placeholder="selectedProvinceId ? 'Selecione o município' : 'Selecione primeiro a província'"
+                :disabled="!selectedProvinceId"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('person.municipality') ? 'p-invalid' : '']"
+              />
+              <span v-if="hasError('person.municipality')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('person.municipality') }}</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label for="student-neighborhood" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bairro</label>
+              <input
+                id="student-neighborhood"
+                v-model="person.neighborhood"
+                @input="clearFieldError('person.neighborhood')"
+                type="text"
+                autocomplete="off"
+                placeholder="Ex: Benfica"
+                :class="inputClass('person.neighborhood')"
+              />
+            </div>
+
+            <div>
+              <label for="student-street" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Rua</label>
+              <input
+                id="student-street"
+                v-model="person.street"
+                @input="clearFieldError('person.street')"
+                type="text"
+                autocomplete="off"
+                placeholder="Ex: Rua Direita"
+                :class="inputClass('person.street')"
+              />
             </div>
           </div>
         </section>
 
         <section class="pt-5 border-t border-slate-100 dark:border-slate-800">
           <h4 class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-address-book"></i> Contacto e Filiação
+            <i class="fa-solid fa-address-book"></i> Filiação e Proveniência
           </h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label for="student-phone" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telemóvel <span class="text-red-500">*</span></label>
-              <input
-                id="student-phone"
-                v-model="form.phone"
-                @input="clearFieldError('phone')"
-                type="tel"
-                inputmode="tel"
-                autocomplete="off"
-                maxlength="15"
-                placeholder="Ex: 923 000 000"
-                :aria-invalid="hasError('phone')"
-                :class="inputClass('phone')"
-              />
-              <span v-if="hasError('phone')" class="text-[11px] text-red-500 mt-1 block font-medium">{{ getFieldError('phone') }}</span>
-            </div>
-            <div>
-              <label for="student-address" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Morada</label>
-              <input
-                id="student-address"
-                v-model="form.address"
-                @input="clearFieldError('address')"
-                type="text"
-                autocomplete="off"
-                placeholder="Ex: Bairro Azul, Rua 12"
-                :class="inputClass('address')"
-              />
-            </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label for="student-fathername" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome do Pai</label>
               <input
@@ -596,7 +856,7 @@ const handleSubmit = async () => {
                 :class="inputClass('mothername')"
               />
             </div>
-            <div class="sm:col-span-2">
+            <div>
               <label for="student-origin" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Escola de Origem</label>
               <input
                 id="student-origin"
