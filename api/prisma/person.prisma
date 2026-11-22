@@ -5,8 +5,8 @@ model Person {
   lastname          String
   birthday          DateTime @db.Date()
   gender            String
-  bi_number         String   @unique
-  nif               String?  @unique
+  bi_number         String   
+  nif               String?  
   phone             String?
   alternative_phone String?
   email             String?  @unique
