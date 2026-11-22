@@ -1,9 +1,16 @@
 import { z } from "zod";
+import { createPersonSchema, updatePersonSchema } from "./person.schema.js";
 
 export const createEmployeeSchema = z.object({
-    person_id: z.number({ required_error: "A pessoa é obrigatória" }).int().positive(),
-    department_id: z.number().int().positive().nullable().optional(),
-    position_id: z.number().int().positive().nullable().optional(),
-});
-
-export const updateEmployeeSchema = createEmployeeSchema.partial();
+    person: createPersonSchema,
+    department_id: z.coerce.number().int().positive().nullable().optional(),
+    position_id: z.coerce.number().int().positive().nullable().optional(),
+    school_id: z.coerce.number().int().positive().nullable().optional(),
+  });
+  
+  export const updateEmployeeSchema = z.object({
+    person: updatePersonSchema.optional(),
+    department_id: z.coerce.number().int().positive().nullable().optional(),
+    position_id: z.coerce.number().int().positive().nullable().optional(),
+    school_id: z.coerce.number().int().positive().nullable().optional(),
+  });
