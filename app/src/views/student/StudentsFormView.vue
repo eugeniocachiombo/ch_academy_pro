@@ -422,16 +422,16 @@ const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
 
-  if (showBiCheck.value && person.value.bi_number && biStatus.value !== 'available') {
-    await verifyBi()
-  }
+  // if (showBiCheck.value && person.value.bi_number && biStatus.value !== 'available') {
+  //   await verifyBi()
+  // }
 
-  if (biStatus.value === 'exists') {
-    generalMessage.value = 'Verifique os campos do formulário'
-    fieldErrors.value = { 'person.bi_number': ['Já existe uma pessoa registada com este Nº do BI.'] }
-    await scrollToFirstError()
-    return
-  }
+  // if (biStatus.value === 'exists') {
+  //   generalMessage.value = 'Verifique os campos do formulário'
+  //   fieldErrors.value = { 'person.bi_number': ['Já existe uma pessoa registada com este Nº do BI.'] }
+  //   await scrollToFirstError()
+  //   return
+  // }
 
   internalLoading.value = true
 
