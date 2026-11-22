@@ -12,9 +12,9 @@ const defaultPositions = [
   { name: 'Contabilista', editable: false },
   { name: 'Técnico de Recursos Humanos', editable: false },
   { name: 'Técnico de Informática', editable: false },
-  { name: 'Recepcionista', editable: true },
-  { name: 'Auxiliar de Limpeza', editable: true },
-  { name: 'Segurança', editable: true },
+  { name: 'Recepcionista', editable: false },
+  { name: 'Auxiliar de Limpeza', editable: false },
+  { name: 'Segurança', editable: false },
 ];
 
 export async function seedPositions(tx: any = prisma) {

@@ -397,11 +397,6 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6 space-y-5 overflow-y-auto">
-        <div v-if="generalMessage && !Object.keys(fieldErrors).length" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3">
-          <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 flex-shrink-0"></i>
-          <span>{{ generalMessage }}</span>
-        </div>
-
         <div class="space-y-4">
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Dados Pessoais</h4>
 
