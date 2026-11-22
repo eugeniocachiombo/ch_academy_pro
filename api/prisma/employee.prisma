@@ -1,0 +1,18 @@
+model Employee {
+  id Int @id @default(autoincrement())
+
+  person_id Int
+  person    Person @relation(fields: [person_id], references: [id])
+
+  department_id Int?
+  department    Department? @relation(fields: [department_id], references: [id])
+
+  position_id Int?
+  position    Position? @relation(fields: [position_id], references: [id])
+
+  school_id Int?
+  school    School? @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+}
