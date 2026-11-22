@@ -5,6 +5,7 @@ import { showNotification } from '@/services/general_service'
 import EmployeesFormView from './EmployeesFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
+import EmployeeDetail from './EmployeeDetail.vue'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -24,6 +25,18 @@ const isDeleteModalOpen = ref(false)
 const employeeToDeleteId = ref<number | null>(null)
 const employeeToDeleteName = ref('')
 const isDeleting = ref(false)
+const isDetailModalOpen = ref(false)
+const employeeToView = ref<Employee | null>(null)
+
+const openDetailModal = (emp: Employee) => {
+  employeeToView.value = emp
+  isDetailModalOpen.value = true
+}
+
+const closeDetailModal = () => {
+  isDetailModalOpen.value = false
+  employeeToView.value = null
+}
 
 onMounted(async () => {
   try {
@@ -310,6 +323,14 @@ const handleDelete = async () => {
               v-if="p('employees.update') || p('employees.delete')"
             >
               <button
+                @click="openDetailModal(slotProps.data)"
+                title="Ver ficha"
+                class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
+              >
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+
+              <button
                 v-if="p('employees.update')"
                 @click="openEditModal(slotProps.data)"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
@@ -336,6 +357,12 @@ const handleDelete = async () => {
       :initial-data="formData"
       @close="closeModal"
       @saved="handleSaved"
+    />
+
+    <EmployeeDetail
+      :is-open="isDetailModalOpen"
+      :employee="employeeToView"
+      @close="closeDetailModal"
     />
 
     <ConfirmDeleteModal

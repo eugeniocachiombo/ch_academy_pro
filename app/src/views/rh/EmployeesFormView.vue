@@ -3,7 +3,10 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useEmployeeStore, type EmployeePayload } from '@/stores/employee.store'
 import { useDepartmentStore } from '@/stores/department.store'
 import { usePositionStore } from '@/stores/position.store'
+import { useProvinceStore } from '@/stores/province.store'
+import { useMunicipalityStore } from '@/stores/municipality.store'
 import { showNotification } from '@/services/general_service'
+import Select from 'primevue/select'
 
 const props = defineProps<{
   isOpen: boolean
@@ -20,6 +23,13 @@ const emit = defineEmits<{
 const employeeStore = useEmployeeStore()
 const departmentStore = useDepartmentStore()
 const positionStore = usePositionStore()
+const provinceStore = useProvinceStore()
+const municipalityStore = useMunicipalityStore()
+
+const genderOptions = [
+  { label: 'Masculino', value: 'M' },
+  { label: 'Feminino', value: 'F' },
+]
 
 const createEmptyForm = (): EmployeePayload & { id?: number; position_ids: number[] } => ({
   person: {
@@ -37,7 +47,7 @@ const createEmptyForm = (): EmployeePayload & { id?: number; position_ids: numbe
     municipality: '',
     neighborhood: '',
     street: '',
-    house_number: '',
+    house_number: null,
   },
   department_id: null,
   position_id: null,
@@ -45,6 +55,10 @@ const createEmptyForm = (): EmployeePayload & { id?: number; position_ids: numbe
 })
 
 const form = ref<EmployeePayload & { id?: number; position_ids: number[] }>(createEmptyForm())
+const selectedProvinceId = ref<number | null>(null)
+const selectedMunicipalityId = ref<number | null>(null)
+const isHydrating = ref(false)
+
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
@@ -62,9 +76,29 @@ const clearFieldError = (field: string) => {
   fieldErrors.value = next
 }
 
+const sortedProvinces = computed(() =>
+  [...provinceStore.provinces].sort((a: any, b: any) =>
+    String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-AO', { sensitivity: 'base' })
+  )
+)
+
+const filteredMunicipalities = computed(() => {
+  if (!selectedProvinceId.value) return []
+  return municipalityStore.municipalities
+    .filter((m: any) => Number(m.province_id) === Number(selectedProvinceId.value))
+    .sort((a: any, b: any) =>
+      String(a.name ?? '').localeCompare(String(b.name ?? ''), 'pt-AO', { sensitivity: 'base' })
+    )
+})
+
 const selectedPositions = computed(() =>
   positionStore.positions.filter((pos) => form.value.position_ids.includes(pos.id))
 )
+
+const onBiInput = () => {
+  clearFieldError('bi_number')
+  form.value.person.nif = form.value.person.bi_number || ''
+}
 
 const togglePosition = (positionId: number) => {
   clearFieldError('position_ids')
@@ -84,16 +118,80 @@ const togglePosition = (positionId: number) => {
   }
 }
 
+const syncLocationIdsFromNames = () => {
+  const provName = form.value.person.province?.trim().toLowerCase()
+  const munName = form.value.person.municipality?.trim().toLowerCase()
+
+  const foundProv = provName
+    ? provinceStore.provinces.find((p: any) => p.name?.toLowerCase() === provName)
+    : null
+  selectedProvinceId.value = foundProv ? Number(foundProv.id) : null
+
+  const foundMun = munName
+    ? municipalityStore.municipalities.find(
+        (m: any) =>
+          m.name?.toLowerCase() === munName &&
+          (!selectedProvinceId.value || Number(m.province_id) === Number(selectedProvinceId.value))
+      )
+    : null
+  selectedMunicipalityId.value = foundMun ? Number(foundMun.id) : null
+}
+
+watch(selectedProvinceId, (newProvId) => {
+  if (isHydrating.value) return
+  clearFieldError('province')
+  clearFieldError('municipality')
+
+  if (!newProvId) {
+    form.value.person.province = ''
+    selectedMunicipalityId.value = null
+    form.value.person.municipality = ''
+    return
+  }
+
+  const prov = provinceStore.provinces.find((p: any) => Number(p.id) === Number(newProvId))
+  form.value.person.province = prov?.name ?? ''
+
+  const currentMunValid = municipalityStore.municipalities.some(
+    (m: any) =>
+      Number(m.id) === Number(selectedMunicipalityId.value) &&
+      Number(m.province_id) === Number(newProvId)
+  )
+  if (!currentMunValid) {
+    selectedMunicipalityId.value = null
+    form.value.person.municipality = ''
+  }
+})
+
+watch(selectedMunicipalityId, (newMunId) => {
+  if (isHydrating.value) return
+  clearFieldError('municipality')
+
+  if (!newMunId) {
+    form.value.person.municipality = ''
+    return
+  }
+
+  const mun = municipalityStore.municipalities.find((m: any) => Number(m.id) === Number(newMunId))
+  form.value.person.municipality = mun?.name ?? ''
+})
+
 onMounted(async () => {
   await Promise.allSettled([
     !departmentStore.departments.length ? departmentStore.list() : Promise.resolve(),
     !positionStore.positions.length ? positionStore.list() : Promise.resolve(),
+    !provinceStore.provinces.length ? provinceStore.list() : Promise.resolve(),
+    !municipalityStore.municipalities.length ? municipalityStore.list() : Promise.resolve(),
   ])
+  isHydrating.value = true
+  syncLocationIdsFromNames()
+  isHydrating.value = false
 })
 
 watch(
   () => props.initialData,
   (newData) => {
+    isHydrating.value = true
     const base = createEmptyForm()
     if (newData) {
       const initialIds = Array.from(
@@ -110,13 +208,16 @@ watch(
         person: {
           ...base.person,
           ...(newData.person || {}),
+          nif: newData.person?.nif || newData.person?.bi_number || '',
         },
       }
     } else {
       form.value = base
     }
+    syncLocationIdsFromNames()
     fieldErrors.value = {}
     generalMessage.value = ''
+    isHydrating.value = false
   },
   { immediate: true, deep: true }
 )
@@ -133,19 +234,28 @@ const handleSubmit = async () => {
         ? Number(form.value.position_id)
         : normalizedIds[0] ?? null
 
+    const selectedProvName =
+      provinceStore.provinces.find((p: any) => Number(p.id) === Number(selectedProvinceId.value))
+        ?.name ?? form.value.person.province
+
+    const selectedMunName =
+      municipalityStore.municipalities.find(
+        (m: any) => Number(m.id) === Number(selectedMunicipalityId.value)
+      )?.name ?? form.value.person.municipality
+
     const payload: EmployeePayload = {
       person: {
         ...form.value.person,
         middlename: form.value.person.middlename || null,
-        nif: form.value.person.nif || form.value.person.bi_number || null,
+        nif: form.value.person.bi_number || form.value.person.nif || null,
         phone: form.value.person.phone || null,
         alternative_phone: form.value.person.alternative_phone || null,
         email: form.value.person.email || null,
-        province: form.value.person.province || null,
-        municipality: form.value.person.municipality || null,
+        province: selectedProvName || null,
+        municipality: selectedMunName || null,
         neighborhood: form.value.person.neighborhood || null,
         street: form.value.person.street || null,
-        house_number: form.value.person.house_number || null,
+        house_number: null,
       },
       department_id: form.value.department_id ? Number(form.value.department_id) : null,
       position_id: primaryPositionId,
@@ -248,15 +358,17 @@ const handleSubmit = async () => {
 
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Género</label>
-              <select
+              <Select
                 v-model="form.person.gender"
                 @change="clearFieldError('gender')"
-                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('gender') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-              >
-                <option value="">Selecione</option>
-                <option value="M">Masculino</option>
-                <option value="F">Feminino</option>
-              </select>
+                :options="genderOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Selecione o género"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('gender') ? 'p-invalid' : '']"
+              />
               <span v-if="hasError('gender')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('gender') }}</span>
             </div>
 
@@ -264,7 +376,7 @@ const handleSubmit = async () => {
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Número do BI</label>
               <input
                 v-model="form.person.bi_number"
-                @input="clearFieldError('bi_number')"
+                @input="onBiInput"
                 type="text"
                 placeholder="Ex: 000000000LA000"
                 :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('bi_number') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
@@ -273,18 +385,7 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">NIF</label>
-              <input
-                v-model="form.person.nif"
-                @input="clearFieldError('nif')"
-                type="text"
-                placeholder="Opcional"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
-              />
-            </div>
-
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Telefone</label>
               <input
@@ -309,55 +410,56 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Província</label>
-              <input
-                v-model="form.person.province"
-                type="text"
-                placeholder="Ex: Luanda"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
+              <Select
+                v-model="selectedProvinceId"
+                :options="sortedProvinces"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Selecione a província"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('province') ? 'p-invalid' : '']"
               />
+              <span v-if="hasError('province')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('province') }}</span>
             </div>
 
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Município</label>
-              <input
-                v-model="form.person.municipality"
-                type="text"
-                placeholder="Ex: Belas"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
+              <Select
+                v-model="selectedMunicipalityId"
+                :options="filteredMunicipalities"
+                optionLabel="name"
+                optionValue="id"
+                :placeholder="selectedProvinceId ? 'Selecione o município' : 'Selecione primeiro a província'"
+                :disabled="!selectedProvinceId"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('municipality') ? 'p-invalid' : '']"
               />
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Bairro</label>
-              <input
-                v-model="form.person.neighborhood"
-                type="text"
-                placeholder="Opcional"
-                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
-              />
+              <span v-if="hasError('municipality')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('municipality') }}</span>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Rua</label>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Bairro</label>
               <input
-                v-model="form.person.street"
+                v-model="form.person.neighborhood"
                 type="text"
-                placeholder="Opcional"
+                placeholder="Ex: Benfica"
                 class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
               />
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Nº da Casa</label>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Rua</label>
               <input
-                v-model="form.person.house_number"
+                v-model="form.person.street"
                 type="text"
-                placeholder="Opcional"
+                placeholder="Ex: Rua Direita"
                 class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
               />
             </div>
@@ -369,16 +471,17 @@ const handleSubmit = async () => {
 
           <div>
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Departamento</label>
-            <select
+            <Select
               v-model="form.department_id"
               @change="clearFieldError('department_id')"
-              :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('department_id') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
-            >
-              <option :value="null">Sem departamento</option>
-              <option v-for="dept in departmentStore.departments" :key="dept.id" :value="dept.id">
-                {{ dept.name }}
-              </option>
-            </select>
+              :options="departmentStore.departments"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Sem departamento"
+              filter
+              showClear
+              :class="['w-full rounded-xl text-sm', hasError('department_id') ? 'p-invalid' : '']"
+            />
             <span v-if="hasError('department_id')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('department_id') }}</span>
           </div>
 
@@ -409,15 +512,17 @@ const handleSubmit = async () => {
 
           <div v-if="selectedPositions.length > 1">
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Cargo Principal</label>
-            <select
+            <Select
               v-model="form.position_id"
               @change="clearFieldError('position_id')"
-              class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500 transition-all"
-            >
-              <option v-for="pos in selectedPositions" :key="pos.id" :value="pos.id">
-                {{ pos.name }}
-              </option>
-            </select>
+              :options="selectedPositions"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Selecione o cargo principal"
+              filter
+              showClear
+              class="w-full rounded-xl text-sm"
+            />
           </div>
         </div>
 
