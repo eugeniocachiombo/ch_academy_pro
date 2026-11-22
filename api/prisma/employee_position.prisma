@@ -1,0 +1,22 @@
+model EmployeePosition {
+  id Int @id @default(autoincrement())
+
+  employee_id Int
+  employee    Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  position_id Int
+  position    Position @relation(fields: [position_id], references: [id])
+
+  is_primary Boolean   @default(false)
+  active     Boolean   @default(true)
+  start_date DateTime? @default(now())
+  end_date   DateTime?
+
+  school_id Int?
+  school    School? @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([employee_id, position_id])
+}

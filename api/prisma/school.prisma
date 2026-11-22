@@ -49,4 +49,5 @@ model School {
   departments       Department[]
   employees         Employee[]
   positions         Position[]
+  employeePositions EmployeePosition[]
 }
