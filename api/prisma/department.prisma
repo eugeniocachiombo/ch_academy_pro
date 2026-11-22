@@ -1,0 +1,14 @@
+model Department {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  school_id Int?
+  school    School?  @relation(fields: [school_id], references: [id])
+  editable  Boolean? @default(true)
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  positions Position[]
+  employees Employee[]
+}
