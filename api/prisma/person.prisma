@@ -18,6 +18,7 @@ model Person {
 
   users User[]
 
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  createdAt DateTime?  @default(now())
+  updatedAt DateTime?  @updatedAt
+  employees Employee[]
 }

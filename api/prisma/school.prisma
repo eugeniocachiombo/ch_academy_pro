@@ -46,4 +46,7 @@ model School {
   degrees           Degree[]
   subjects          Subject[]
   schedules         Schedule[]
+  departments       Department[]
+  employees         Employee[]
+  positions         Position[]
 }

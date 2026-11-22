@@ -2,7 +2,7 @@ model Groupconfig {
   id             Int    @id @default(autoincrement())
   name           String
   total_slots    Int    @default(0)
-  total_enrolled Int    @default(0) 
+  total_enrolled Int    @default(0)
   group_id       Int
   year_id        Int
   course_id      Int?
