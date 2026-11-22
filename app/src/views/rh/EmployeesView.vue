@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useEmployeeStore, type Employee, type EmployeePayload } from '@/stores/employee.store'
+import { useTeacherStore, type TeacherPayload } from '@/stores/teacher.store.js'
 import { showNotification } from '@/services/general_service'
+import { extractEmployeePositions, hasPositionNamed } from '@/helpers/employee-positions'
 import EmployeesFormView from './EmployeesFormView.vue'
+import EmployeeDetail from './EmployeeDetail.vue'
+import TeachersFormView from '@/views/teacher/TeachersFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
-import EmployeeDetail from './EmployeeDetail.vue'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 
 const employeeStore = useEmployeeStore()
+const teacherStore = useTeacherStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
@@ -21,27 +25,22 @@ const isEditing = ref(false)
 const selectedEmployee = ref<Employee | null>(null)
 const formData = ref<(EmployeePayload & { id?: number }) | null>(null)
 
+const isDetailModalOpen = ref(false)
+const employeeToView = ref<Employee | null>(null)
+
+const isTeacherModalOpen = ref(false)
+const teacherFormData = ref<(TeacherPayload & { id?: number }) | null>(null)
+
 const isDeleteModalOpen = ref(false)
 const employeeToDeleteId = ref<number | null>(null)
 const employeeToDeleteName = ref('')
 const isDeleting = ref(false)
-const isDetailModalOpen = ref(false)
-const employeeToView = ref<Employee | null>(null)
-
-const openDetailModal = (emp: Employee) => {
-  employeeToView.value = emp
-  isDetailModalOpen.value = true
-}
-
-const closeDetailModal = () => {
-  isDetailModalOpen.value = false
-  employeeToView.value = null
-}
 
 onMounted(async () => {
-  try {
-    await employeeStore.list()
-  } catch {}
+  await Promise.allSettled([
+    employeeStore.list(),
+    !teacherStore.teachers.length ? teacherStore.list() : Promise.resolve(),
+  ])
 })
 
 const totalCount = computed(() => employeeStore.employees.filter((emp: any) => emp != null).length)
@@ -53,18 +52,28 @@ const getEmployeeLabel = (emp: Employee) => {
   return fullName || `Funcionário #${emp.id}`
 }
 
-const getEmployeePositions = (emp: Employee) => {
-  if (emp.employee_positions?.length) {
-    return emp.employee_positions
-      .map((ep) => ({
-        id: ep.position_id,
-        name: ep.position?.name || '',
-        is_primary: ep.is_primary,
-      }))
-      .filter((item) => item.name)
-  }
-  return emp.position ? [{ id: emp.position.id, name: emp.position.name, is_primary: true }] : []
+const getEmployeePositions = (emp: Employee) => extractEmployeePositions(emp)
+
+const hasTeacherPosition = (emp: Employee): boolean =>
+  hasPositionNamed(emp, 'professor')
+
+const hasTeacherAccount = (emp: Employee): boolean => {
+  const empPersonId = emp.person_id ?? emp.person?.id
+  const empBi = emp.person?.bi_number?.trim().toLowerCase()
+
+  return teacherStore.teachers.some((t: any) => {
+    if (!t) return false
+    const teacherPersonId = t.person_id ?? t.user?.person_id ?? t.person?.id
+    if (empPersonId && teacherPersonId && Number(empPersonId) === Number(teacherPersonId)) {
+      return true
+    }
+    const teacherBi = (t.user?.person?.bi_number ?? t.person?.bi_number)?.trim().toLowerCase()
+    return Boolean(empBi && teacherBi && empBi === teacherBi)
+  })
 }
+
+const canAssociateTeacher = (emp: Employee): boolean =>
+  p('teachers.create') && hasTeacherPosition(emp) && !hasTeacherAccount(emp)
 
 const filteredEmployees = computed(() => {
   return employeeStore.employees.filter((emp: any) => {
@@ -83,6 +92,58 @@ const filteredEmployees = computed(() => {
     )
   })
 })
+
+const openDetailModal = (emp: Employee) => {
+  employeeToView.value = emp
+  isDetailModalOpen.value = true
+}
+
+const closeDetailModal = () => {
+  isDetailModalOpen.value = false
+  employeeToView.value = null
+}
+
+const openAssociateTeacherModal = (emp: Employee) => {
+  if (!p('teachers.create')) return
+  const person = emp.person
+
+  teacherFormData.value = {
+    codenumber: undefined,
+    degree_id: undefined,
+    specialty: '',
+    school_id: emp.school_id ? Number(emp.school_id) : null,
+    person: {
+      firstname: person?.firstname ?? '',
+      middlename: person?.middlename ?? '',
+      lastname: person?.lastname ?? '',
+      birthday: person?.birthday ? String(person.birthday).split('T')[0] : '',
+      gender: person?.gender ?? '',
+      bi_number: person?.bi_number ?? '',
+      nif: person?.nif ?? person?.bi_number ?? '',
+      phone: person?.phone ?? '',
+      alternative_phone: person?.alternative_phone ?? '',
+      email: person?.email ?? '',
+      province: person?.province ?? '',
+      municipality: person?.municipality ?? '',
+      neighborhood: person?.neighborhood ?? '',
+      street: person?.street ?? '',
+      house_number: person?.house_number ?? '',
+    },
+  }
+  isTeacherModalOpen.value = true
+}
+
+const closeTeacherModal = () => {
+  isTeacherModalOpen.value = false
+  teacherFormData.value = null
+  teacherStore.clearError()
+}
+
+const handleTeacherSaved = async () => {
+  await Promise.allSettled([teacherStore.list(), employeeStore.list()])
+  closeTeacherModal()
+  showNotification('Conta de professor associada com sucesso.', 'success')
+}
 
 const openCreateModal = () => {
   if (!p('employees.create')) return
@@ -118,22 +179,24 @@ const openEditModal = (emp: Employee) => {
   isEditing.value = true
   selectedEmployee.value = emp
 
-  const positionIds = emp.employee_positions?.length
-    ? emp.employee_positions.map((ep) => ep.position_id)
-    : emp.position_id
-      ? [emp.position_id]
-      : []
+  const positions = extractEmployeePositions(emp)
+  const positionIds = positions.map((pos) => pos.id)
+  const primaryId =
+    positions.find((pos) => pos.is_primary)?.id ??
+    (emp.position_id ? Number(emp.position_id) : null) ??
+    positionIds[0] ??
+    null
 
   formData.value = {
     id: emp.id,
     department_id: emp.department_id ?? null,
-    position_id: emp.position_id ?? positionIds[0] ?? null,
+    position_id: primaryId,
     position_ids: positionIds,
     person: {
       firstname: emp.person?.firstname ?? '',
       middlename: emp.person?.middlename ?? '',
       lastname: emp.person?.lastname ?? '',
-      birthday: emp.person?.birthday ? emp.person.birthday.slice(0, 10) : '',
+      birthday: emp.person?.birthday ? String(emp.person.birthday).slice(0, 10) : '',
       gender: emp.person?.gender ?? '',
       bi_number: emp.person?.bi_number ?? '',
       nif: emp.person?.nif ?? '',
@@ -264,7 +327,7 @@ const handleDelete = async () => {
         :loading="employeeStore.isLoading"
         paginator
         :rows="10"
-        tableStyle="min-width: 50rem"
+        tableStyle="min-width: 55rem"
       >
         <template #empty>
           <div class="py-12 text-center text-slate-400 dark:text-slate-500">
@@ -272,7 +335,8 @@ const handleDelete = async () => {
             <p class="text-xs">Nenhum registo encontrado.</p>
           </div>
         </template>
-        <Column field="person.firstname" header="Funcionário" sortable style="width: 30%">
+
+        <Column field="person.firstname" header="Funcionário" sortable style="width: 26%">
           <template #body="slotProps">
             <div class="flex flex-col">
               <span class="font-semibold text-slate-900 dark:text-white text-sm">{{
@@ -284,14 +348,16 @@ const handleDelete = async () => {
             </div>
           </template>
         </Column>
-        <Column field="department.name" header="Departamento" sortable style="width: 22%">
+
+        <Column field="department.name" header="Departamento" sortable style="width: 18%">
           <template #body="slotProps">
             <span class="text-sm text-slate-600 dark:text-slate-300">{{
               slotProps.data.department?.name || '—'
             }}</span>
           </template>
         </Column>
-        <Column header="Cargos" style="width: 33%">
+
+        <Column header="Cargos" style="width: 28%">
           <template #body="slotProps">
             <div class="flex flex-wrap gap-1.5">
               <span
@@ -316,15 +382,14 @@ const handleDelete = async () => {
             </div>
           </template>
         </Column>
-        <Column header="Acções" style="width: 15%">
+
+        <Column header="Acções" style="width: 28%">
           <template #body="slotProps">
-            <div
-              class="flex items-center gap-1.5"
-              v-if="p('employees.update') || p('employees.delete')"
-            >
+            <div class="flex flex-wrap items-center gap-1.5">
               <button
                 @click="openDetailModal(slotProps.data)"
                 title="Ver ficha"
+                aria-label="Ver ficha"
                 class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
               >
                 <i class="fa-solid fa-eye text-xs"></i>
@@ -333,16 +398,31 @@ const handleDelete = async () => {
               <button
                 v-if="p('employees.update')"
                 @click="openEditModal(slotProps.data)"
+                title="Editar funcionário"
+                aria-label="Editar funcionário"
                 class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
               >
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
+
               <button
                 v-if="p('employees.delete')"
                 @click="confirmDeleteEmployee(slotProps.data)"
+                title="Eliminar funcionário"
+                aria-label="Eliminar funcionário"
                 class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
               >
                 <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+
+              <button
+                v-if="canAssociateTeacher(slotProps.data)"
+                type="button"
+                @click="openAssociateTeacherModal(slotProps.data)"
+                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-colors"
+              >
+                <i class="fa-solid fa-chalkboard-user text-[11px]"></i>
+                <span>Associar uma conta de professor</span>
               </button>
             </div>
           </template>
@@ -363,6 +443,15 @@ const handleDelete = async () => {
       :is-open="isDetailModalOpen"
       :employee="employeeToView"
       @close="closeDetailModal"
+    />
+
+    <TeachersFormView
+      :is-open="isTeacherModalOpen"
+      :is-editing="false"
+      :is-loading="teacherStore.isLoading"
+      :initial-data="teacherFormData"
+      @close="closeTeacherModal"
+      @saved="handleTeacherSaved"
     />
 
     <ConfirmDeleteModal

@@ -15,7 +15,6 @@ const EMPLOYEE_INCLUDE = {
   position: true,
   school: true,
   employeePositions: {
-    where: { active: true },
     include: { position: true },
   },
 };

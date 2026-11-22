@@ -9,6 +9,7 @@ import { nextTeacherCodeNum } from '../utils/process-number.js';
 import { roleRepository } from '../repository/role.repository.js';
 import { userRoleRepository } from '../repository/user-role.repository.js';
 import { prisma } from '../lib/prisma.js';
+import { json } from 'zod';
 
 class TeacherService extends BaseService {
     constructor() {
@@ -66,7 +67,14 @@ class TeacherService extends BaseService {
 
         return await prisma.$transaction(async (tx) => {
             const personPayload = this.prepareData('person', ctx, personDto, true, true);
-            const person = await personRepository.create({ data: personPayload }, "person", tx);
+            const { bi_number } = personPayload;
+            let person = await personRepository.findFirst({
+                where: {bi_number: bi_number}
+            })
+
+            if(!person){
+                person = await personRepository.create({ data: personPayload }, "person", tx);
+            }
 
             const name = formatCapitalized(`${person.firstname} ${person.lastname}`);
             const username = person.bi_number || `teacher_${Date.now()}`;

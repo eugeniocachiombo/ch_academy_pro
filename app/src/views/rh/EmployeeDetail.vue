@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Employee } from '@/stores/employee.store'
+import { extractEmployeePositions } from '@/helpers/employee-positions'
 
 const props = defineProps<{
   isOpen: boolean
@@ -32,20 +33,7 @@ const formattedBirthday = computed(() => {
   return date.toLocaleDateString('pt-AO')
 })
 
-const positionsList = computed(() => {
-  const emp = props.employee
-  if (!emp) return []
-  if (emp.employee_positions?.length) {
-    return emp.employee_positions
-      .map((ep) => ({
-        id: ep.position_id,
-        name: ep.position?.name || '',
-        is_primary: ep.is_primary,
-      }))
-      .filter((item) => item.name)
-  }
-  return emp.position ? [{ id: emp.position.id, name: emp.position.name, is_primary: true }] : []
-})
+const positionsList = computed(() => extractEmployeePositions(props.employee))
 
 const formatValue = (val?: string | number | null) => {
   if (val === null || val === undefined || String(val).trim() === '') return '—'
@@ -172,10 +160,13 @@ const formatValue = (val?: string | number | null) => {
                       ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
                       : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                   "
-                  class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium border"
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border"
                 >
                   <i v-if="pos.is_primary" class="fa-solid fa-star text-[10px] text-indigo-500"></i>
                   <span>{{ pos.name }}</span>
+                  <span class="text-[10px] opacity-75">
+                    ({{ pos.is_primary ? 'Principal' : 'Secundário' }})
+                  </span>
                 </span>
               </div>
               <span v-else class="font-medium text-slate-400 mt-0.5 block">—</span>
