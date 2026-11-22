@@ -33,18 +33,40 @@ onMounted(async () => {
 
 const totalCount = computed(() => employeeStore.employees.filter((emp: any) => emp != null).length)
 
-const getEmployeeLabel = (emp: Employee) =>
-  emp.person?.name || `Funcionário #${emp.id}`
+const getEmployeeLabel = (emp: Employee) => {
+  const fullName = [emp.person?.firstname, emp.person?.middlename, emp.person?.lastname]
+    .filter(Boolean)
+    .join(' ')
+  return fullName || `Funcionário #${emp.id}`
+}
+
+const getEmployeePositions = (emp: Employee) => {
+  if (emp.employee_positions?.length) {
+    return emp.employee_positions
+      .map((ep) => ({
+        id: ep.position_id,
+        name: ep.position?.name || '',
+        is_primary: ep.is_primary,
+      }))
+      .filter((item) => item.name)
+  }
+  return emp.position ? [{ id: emp.position.id, name: emp.position.name, is_primary: true }] : []
+}
 
 const filteredEmployees = computed(() => {
   return employeeStore.employees.filter((emp: any) => {
     if (!emp) return false
     const q = searchQuery.value.toLowerCase()
+    const fullName = getEmployeeLabel(emp).toLowerCase()
+    const positionsText = getEmployeePositions(emp)
+      .map((pos) => pos.name.toLowerCase())
+      .join(' ')
     return (
       !q ||
-      emp.person?.name?.toLowerCase().includes(q) ||
+      fullName.includes(q) ||
+      emp.person?.bi_number?.toLowerCase().includes(q) ||
       emp.department?.name?.toLowerCase().includes(q) ||
-      emp.position?.name?.toLowerCase().includes(q)
+      positionsText.includes(q)
     )
   })
 })
@@ -53,7 +75,28 @@ const openCreateModal = () => {
   if (!p('employees.create')) return
   isEditing.value = false
   selectedEmployee.value = null
-  formData.value = { person_id: 0, department_id: null, position_id: null }
+  formData.value = {
+    department_id: null,
+    position_id: null,
+    position_ids: [],
+    person: {
+      firstname: '',
+      middlename: '',
+      lastname: '',
+      birthday: '',
+      gender: '',
+      bi_number: '',
+      nif: '',
+      phone: '',
+      alternative_phone: '',
+      email: '',
+      province: '',
+      municipality: '',
+      neighborhood: '',
+      street: '',
+      house_number: '',
+    },
+  }
   isModalOpen.value = true
 }
 
@@ -61,10 +104,18 @@ const openEditModal = (emp: Employee) => {
   if (!p('employees.update')) return
   isEditing.value = true
   selectedEmployee.value = emp
+
+  const positionIds = emp.employee_positions?.length
+    ? emp.employee_positions.map((ep) => ep.position_id)
+    : emp.position_id
+      ? [emp.position_id]
+      : []
+
   formData.value = {
     id: emp.id,
     department_id: emp.department_id ?? null,
-    position_id: emp.position_id ?? null,
+    position_id: emp.position_id ?? positionIds[0] ?? null,
+    position_ids: positionIds,
     person: {
       firstname: emp.person?.firstname ?? '',
       middlename: emp.person?.middlename ?? '',
@@ -145,7 +196,7 @@ const handleDelete = async () => {
           Funcionários
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Gira os funcionários existentes na instituição.
+          Gira os funcionários e respetivos cargos na instituição.
         </p>
       </div>
       <button
@@ -185,7 +236,7 @@ const handleDelete = async () => {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Pesquisar por nome, departamento ou cargo..."
+          placeholder="Pesquisar por nome, BI, departamento ou cargo..."
           class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
         />
       </div>
@@ -208,28 +259,51 @@ const handleDelete = async () => {
             <p class="text-xs">Nenhum registo encontrado.</p>
           </div>
         </template>
-        <Column field="person.name" header="Funcionário" sortable style="width: 35%">
+        <Column field="person.firstname" header="Funcionário" sortable style="width: 30%">
           <template #body="slotProps">
-            <span class="font-semibold text-slate-900 dark:text-white text-sm">{{
-              getEmployeeLabel(slotProps.data)
-            }}</span>
+            <div class="flex flex-col">
+              <span class="font-semibold text-slate-900 dark:text-white text-sm">{{
+                getEmployeeLabel(slotProps.data)
+              }}</span>
+              <span v-if="slotProps.data.person?.bi_number" class="text-xs text-slate-500">
+                BI: {{ slotProps.data.person.bi_number }}
+              </span>
+            </div>
           </template>
         </Column>
-        <Column field="department.name" header="Departamento" sortable style="width: 25%">
+        <Column field="department.name" header="Departamento" sortable style="width: 22%">
           <template #body="slotProps">
             <span class="text-sm text-slate-600 dark:text-slate-300">{{
               slotProps.data.department?.name || '—'
             }}</span>
           </template>
         </Column>
-        <Column field="position.name" header="Cargo" sortable style="width: 20%">
+        <Column header="Cargos" style="width: 33%">
           <template #body="slotProps">
-            <span class="text-sm text-slate-600 dark:text-slate-300">{{
-              slotProps.data.position?.name || '—'
-            }}</span>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="pos in getEmployeePositions(slotProps.data)"
+                :key="pos.id"
+                :class="
+                  pos.is_primary
+                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                "
+                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-medium border"
+              >
+                <i v-if="pos.is_primary" class="fa-solid fa-star text-[10px] text-indigo-500"></i>
+                <span>{{ pos.name }}</span>
+              </span>
+              <span
+                v-if="!getEmployeePositions(slotProps.data).length"
+                class="text-sm text-slate-400"
+              >
+                —
+              </span>
+            </div>
           </template>
         </Column>
-        <Column header="Acções" style="width: 20%">
+        <Column header="Acções" style="width: 15%">
           <template #body="slotProps">
             <div
               class="flex items-center gap-1.5"

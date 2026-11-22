@@ -1,8 +1,24 @@
 import { BaseService, type CrudContext } from "./base.service.js";
 import { employeeRepository } from "../repository/employee.repository.js";
+import { employeePositionRepository } from "../repository/employee-position.repository.js";
 import { personRepository } from "../repository/person.repository.js";
 import { createEmployeeSchema, updateEmployeeSchema } from "../validators/employee.schema.js";
 import { prisma } from "../lib/prisma.js";
+import {
+  normalizeEmployeePerson,
+  normalizeEmployeePositions,
+} from "../utils/employee.util.js";
+
+const EMPLOYEE_INCLUDE = {
+  person: true,
+  department: true,
+  position: true,
+  school: true,
+  employeePositions: {
+    where: { active: true },
+    include: { position: true },
+  },
+};
 
 class EmployeeService extends BaseService {
   constructor() {
@@ -16,12 +32,7 @@ class EmployeeService extends BaseService {
       {
         tenant: "mixed",
         modes: { person: "global" },
-        include: {
-          person: true,
-          department: true,
-          position: true,
-          school: true,
-        },
+        include: EMPLOYEE_INCLUDE,
       }
     );
   }
@@ -29,18 +40,15 @@ class EmployeeService extends BaseService {
   protected async beforeCreate(data: unknown, _ctx: CrudContext): Promise<unknown> {
     const body = data as any;
     if (body?.person) {
-      body.person = {
-        ...body.person,
-        nif: body.person.nif || body.person.bi_number,
-      };
+      body.person = normalizeEmployeePerson(body.person, true);
     }
     return body;
   }
 
   protected async beforeUpdate(data: unknown, _ctx: CrudContext): Promise<unknown> {
     const body = data as any;
-    if (body?.person?.bi_number && !body.person.nif) {
-      body.person = { ...body.person, nif: body.person.bi_number };
+    if (body?.person) {
+      body.person = normalizeEmployeePerson(body.person, false);
     }
     return body;
   }
@@ -50,8 +58,21 @@ class EmployeeService extends BaseService {
     let body = schema ? await schema.parseAsync(data) : data;
     body = await this.beforeCreate(body, ctx);
 
-    const { person: personDto, ...employeeDto } = body as any;
-    const employeeData = this.prepareData("employee", ctx, employeeDto, true);
+    const {
+      person: personDto,
+      position_ids: positionIds,
+      position_id: rawPositionId,
+      ...employeeDto
+    } = body as any;
+
+    const { uniqueIds, primaryPositionId } = normalizeEmployeePositions(rawPositionId, positionIds);
+    const employeeData = this.prepareData(
+      "employee",
+      ctx,
+      { ...employeeDto, position_id: primaryPositionId },
+      true
+    );
+    const schoolId = employeeData.school_id ?? (ctx as any)?.school_id ?? null;
 
     return await prisma.$transaction(async (tx) => {
       const personPayload = this.prepareData("person", ctx, personDto, true, true);
@@ -61,14 +82,36 @@ class EmployeeService extends BaseService {
         {
           data: {
             ...employeeData,
+            school_id: schoolId,
             person_id: person.id,
+            position_id: primaryPositionId,
           },
         },
         "employee",
         tx
       );
 
-      return employee;
+      for (const posId of uniqueIds) {
+        await employeePositionRepository.create(
+          {
+            data: {
+              employee_id: employee.id,
+              position_id: posId,
+              is_primary: posId === primaryPositionId,
+              active: true,
+              school_id: schoolId,
+            },
+          },
+          "employeePosition",
+          tx
+        );
+      }
+
+      return await employeeRepository.findFirst(
+        { where: { id: employee.id }, include: EMPLOYEE_INCLUDE },
+        "employee",
+        tx
+      );
     });
   }
 
@@ -77,15 +120,27 @@ class EmployeeService extends BaseService {
     let body = schema ? await schema.parseAsync(data) : data;
     body = await this.beforeUpdate(body, ctx);
 
-    const { person: personDto, ...employeeDto } = body as any;
-    const employeeData = this.prepareData("employee", ctx, employeeDto, false);
+    const {
+      person: personDto,
+      position_ids: positionIds,
+      position_id: rawPositionId,
+      ...employeeDto
+    } = body as any;
+
+    const shouldSyncPositions = positionIds !== undefined || rawPositionId !== undefined;
+    const { uniqueIds, primaryPositionId } = normalizeEmployeePositions(rawPositionId, positionIds);
+
+    const employeeData = this.prepareData(
+      "employee",
+      ctx,
+      shouldSyncPositions ? { ...employeeDto, position_id: primaryPositionId } : employeeDto,
+      false
+    );
     const parsedId = Number(this.parseId(id));
 
     return await prisma.$transaction(async (tx) => {
       const existingEmployee = await employeeRepository.findFirst(
-        {
-          where: this.writeScope("employee", ctx, { id: parsedId }),
-        },
+        { where: this.writeScope("employee", ctx, { id: parsedId }) },
         "employee",
         tx
       );
@@ -96,25 +151,47 @@ class EmployeeService extends BaseService {
       if (personDto && existingEmployee.person_id) {
         const personPayload = this.prepareData("person", ctx, personDto, false, true);
         await personRepository.update(
-          {
-            where: { id: existingEmployee.person_id },
-            data: personPayload,
-          },
+          { where: { id: existingEmployee.person_id }, data: personPayload },
           "person",
           tx
         );
       }
 
-      const updatedEmployee = await employeeRepository.update(
-        {
-          where: { id: parsedId },
-          data: employeeData,
-        },
+      await employeeRepository.update(
+        { where: { id: parsedId }, data: employeeData },
         "employee",
         tx
       );
 
-      return updatedEmployee;
+      if (shouldSyncPositions) {
+        await tx.employeePosition.deleteMany({
+          where: { employee_id: parsedId },
+        });
+
+        const schoolId = employeeData.school_id ?? existingEmployee.school_id ?? null;
+
+        for (const posId of uniqueIds) {
+          await employeePositionRepository.create(
+            {
+              data: {
+                employee_id: parsedId,
+                position_id: posId,
+                is_primary: posId === primaryPositionId,
+                active: true,
+                school_id: schoolId,
+              },
+            },
+            "employeePosition",
+            tx
+          );
+        }
+      }
+
+      return await employeeRepository.findFirst(
+        { where: { id: parsedId }, include: EMPLOYEE_INCLUDE },
+        "employee",
+        tx
+      );
     });
   }
 }

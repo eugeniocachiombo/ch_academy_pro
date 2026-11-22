@@ -26,6 +26,15 @@ export interface Person extends PersonPayload {
   id: number;
 }
 
+export interface EmployeePositionItem {
+  id: number;
+  employee_id: number;
+  position_id: number;
+  is_primary: boolean;
+  active: boolean;
+  position?: { id: number; name: string } | null;
+}
+
 export interface Employee {
   id: number;
   person_id: number;
@@ -34,6 +43,7 @@ export interface Employee {
   department?: { id: number; name: string } | null;
   position_id?: number | null;
   position?: { id: number; name: string } | null;
+  employee_positions?: EmployeePositionItem[];
   school_id?: number | null;
   createdAt?: string;
   updatedAt?: string;
@@ -43,6 +53,8 @@ export interface EmployeePayload {
   person: PersonPayload;
   department_id?: number | null;
   position_id?: number | null;
+  position_ids?: number[];
+  school_id?: number | null;
 }
 
 export const useEmployeeStore = defineStore('employee', () => {
