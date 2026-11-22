@@ -271,14 +271,14 @@ const handleDelete = async () => {
           Consulte, registe e actualize os professores da instituição.
         </p>
       </div>
-      <button
+      <!-- <button
         v-if="p('teachers.create')"
         @click="openCreateModal"
         class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
       >
         <i class="fa-solid fa-plus-circle text-sm"></i>
         <span>Novo Professor</span>
-      </button>
+      </button> -->
     </div>
 
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -490,14 +490,14 @@ const handleDelete = async () => {
       </DataTable>
     </div>
 
-    <TeachersFormView
+    <!-- <TeachersFormView
       :is-open="isModalOpen"
       :is-editing="isEditing"
       :is-loading="teacherStore.isLoading"
       :initial-data="formData"
       @close="closeModal"
       @saved="handleSaved"
-    />
+    /> -->
 
     <ConfirmDeleteModal
       :is-open="isDeleteModalOpen"
