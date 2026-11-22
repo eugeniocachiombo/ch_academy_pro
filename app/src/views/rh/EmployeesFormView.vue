@@ -31,6 +31,27 @@ const genderOptions = [
   { label: 'Feminino', value: 'F' },
 ]
 
+const monthOptions = [
+  { label: 'Janeiro', value: 1 },
+  { label: 'Fevereiro', value: 2 },
+  { label: 'Março', value: 3 },
+  { label: 'Abril', value: 4 },
+  { label: 'Maio', value: 5 },
+  { label: 'Junho', value: 6 },
+  { label: 'Julho', value: 7 },
+  { label: 'Agosto', value: 8 },
+  { label: 'Setembro', value: 9 },
+  { label: 'Outubro', value: 10 },
+  { label: 'Novembro', value: 11 },
+  { label: 'Dezembro', value: 12 },
+]
+
+const currentYear = new Date().getFullYear()
+const yearOptions = Array.from({ length: 100 }, (_, idx) => {
+  const year = currentYear - 5 - idx
+  return { label: String(year), value: year }
+})
+
 const createEmptyForm = (): EmployeePayload & { id?: number; position_ids: number[] } => ({
   person: {
     firstname: '',
@@ -55,6 +76,10 @@ const createEmptyForm = (): EmployeePayload & { id?: number; position_ids: numbe
 })
 
 const form = ref<EmployeePayload & { id?: number; position_ids: number[] }>(createEmptyForm())
+const birthDay = ref<number | null>(null)
+const birthMonth = ref<number | null>(null)
+const birthYear = ref<number | null>(null)
+
 const selectedProvinceId = ref<number | null>(null)
 const selectedMunicipalityId = ref<number | null>(null)
 const isHydrating = ref(false)
@@ -75,6 +100,62 @@ const clearFieldError = (field: string) => {
   }
   fieldErrors.value = next
 }
+
+const daysInMonth = computed(() => {
+  if (!birthMonth.value) return 31
+  const yearForCalc = birthYear.value || 2000
+  return new Date(yearForCalc, birthMonth.value, 0).getDate()
+})
+
+const dayOptions = computed(() =>
+  Array.from({ length: daysInMonth.value }, (_, idx) => {
+    const day = idx + 1
+    return { label: String(day).padStart(2, '0'), value: day }
+  })
+)
+
+const syncBirthdayPartsFromForm = () => {
+  const raw = form.value.person.birthday?.trim()
+  if (!raw) {
+    birthDay.value = null
+    birthMonth.value = null
+    birthYear.value = null
+    return
+  }
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw)
+  if (isoMatch) {
+    birthYear.value = Number(isoMatch[1])
+    birthMonth.value = Number(isoMatch[2])
+    birthDay.value = Number(isoMatch[3])
+    return
+  }
+
+  const parsed = new Date(raw)
+  if (!Number.isNaN(parsed.getTime())) {
+    birthYear.value = parsed.getUTCFullYear()
+    birthMonth.value = parsed.getUTCMonth() + 1
+    birthDay.value = parsed.getUTCDate()
+  }
+}
+
+watch([birthDay, birthMonth, birthYear], ([day, month, year]) => {
+  if (isHydrating.value) return
+  clearFieldError('birthday')
+
+  if (day && month && day > daysInMonth.value) {
+    birthDay.value = daysInMonth.value
+    return
+  }
+
+  if (day && month && year) {
+    const dd = String(day).padStart(2, '0')
+    const mm = String(month).padStart(2, '0')
+    form.value.person.birthday = `${year}-${mm}-${dd}`
+  } else {
+    form.value.person.birthday = ''
+  }
+})
 
 const sortedProvinces = computed(() =>
   [...provinceStore.provinces].sort((a: any, b: any) =>
@@ -184,6 +265,7 @@ onMounted(async () => {
     !municipalityStore.municipalities.length ? municipalityStore.list() : Promise.resolve(),
   ])
   isHydrating.value = true
+  syncBirthdayPartsFromForm()
   syncLocationIdsFromNames()
   isHydrating.value = false
 })
@@ -214,6 +296,7 @@ watch(
     } else {
       form.value = base
     }
+    syncBirthdayPartsFromForm()
     syncLocationIdsFromNames()
     fieldErrors.value = {}
     generalMessage.value = ''
@@ -225,6 +308,16 @@ watch(
 const handleSubmit = async () => {
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (!birthDay.value || !birthMonth.value || !birthYear.value) {
+    fieldErrors.value = {
+      birthday: ['Selecione o dia, o mês e o ano de nascimento.'],
+    }
+    generalMessage.value = 'Preencha a data de nascimento completa (dia, mês e ano).'
+    showNotification(generalMessage.value, 'error')
+    return
+  }
+
   internalLoading.value = true
 
   try {
@@ -243,9 +336,14 @@ const handleSubmit = async () => {
         (m: any) => Number(m.id) === Number(selectedMunicipalityId.value)
       )?.name ?? form.value.person.municipality
 
+    const dd = String(birthDay.value).padStart(2, '0')
+    const mm = String(birthMonth.value).padStart(2, '0')
+    const birthdayValue = `${birthYear.value}-${mm}-${dd}`
+
     const payload: EmployeePayload = {
       person: {
         ...form.value.person,
+        birthday: birthdayValue,
         middlename: form.value.person.middlename || null,
         nif: form.value.person.bi_number || form.value.person.nif || null,
         phone: form.value.person.phone || null,
@@ -344,18 +442,44 @@ const handleSubmit = async () => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Data de Nascimento</label>
-              <input
-                v-model="form.person.birthday"
-                @change="clearFieldError('birthday')"
-                type="date"
-                :class="['w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all', hasError('birthday') ? 'border-red-500' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500']"
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Data de Nascimento</label>
+            <div class="grid grid-cols-3 gap-3">
+              <Select
+                v-model="birthDay"
+                :options="dayOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Dia"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('birthday') ? 'p-invalid' : '']"
               />
-              <span v-if="hasError('birthday')" class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium">{{ getFieldError('birthday') }}</span>
+              <Select
+                v-model="birthMonth"
+                :options="monthOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Mês"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('birthday') ? 'p-invalid' : '']"
+              />
+              <Select
+                v-model="birthYear"
+                :options="yearOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Ano"
+                filter
+                showClear
+                :class="['w-full rounded-xl text-sm', hasError('birthday') ? 'p-invalid' : '']"
+              />
             </div>
+            <span v-if="hasError('birthday')" class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium">{{ getFieldError('birthday') }}</span>
+          </div>
 
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Género</label>
               <Select
