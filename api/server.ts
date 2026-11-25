@@ -33,8 +33,11 @@ import { positionRoutes } from "./routes/position.routes.js";
 import { employeeRoutes } from "./routes/employee.routes.js";
 import { provinceRoutes } from "./routes/province.routes.js";
 import { municipalityRoutes } from "./routes/municipality.routes.js";
+import { studentPresenceRoutes } from "./routes/student-presence.routes.js";
+import { studentPresenceListRoutes } from "./routes/student-presence-list.routes.js";
 
 const app = express();
+const port = 1999
 
 app.use(cors({
   origin: "*", 
@@ -77,7 +80,9 @@ app.use(
   positionRoutes,
   employeeRoutes,
   provinceRoutes,
-  municipalityRoutes
+  municipalityRoutes,
+  studentPresenceRoutes,
+  studentPresenceListRoutes
 );
 
 app.get("/", (req, res) => {
@@ -89,8 +94,8 @@ app.get("/", (req, res) => {
 
 
 if (process.env.NODE_ENV !== "production") {
-  app.listen(1999, () => {
-    console.log("Servidor a rodar na porta 3000");
+  app.listen(port, () => {
+    console.log("Servidor a rodar na porta 1999" + port);
   });
 }
 
