@@ -24,6 +24,7 @@ model Groupconfig {
   registers         Register[]
   teacherocupations Teacherocupation[]
   schedules         Schedule[]
+  studentPresences  StudentPresence[]
 
   @@unique([year_id, course_id, class_id, period_id, room_id])
 }

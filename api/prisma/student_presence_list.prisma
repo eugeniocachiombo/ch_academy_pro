@@ -1,0 +1,16 @@
+model StudentPresenceList {
+  id                  Int            @id @default(autoincrement())
+  student_presence_id Int
+  student_id          Int
+  status              PresenceStatus @default(PRESENT)
+  school_id           Int?
+
+  student_presence StudentPresence @relation(fields: [student_presence_id], references: [id], onDelete: Cascade)
+  student          Student         @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  school           School?         @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([student_presence_id, student_id])
+}

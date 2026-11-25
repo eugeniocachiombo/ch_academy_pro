@@ -19,6 +19,7 @@ model Student {
   studentparents  Studentparent[]
   registers       Register[]
 
-  school_id Int?
-  school    School? @relation(fields: [school_id], references: [id])
+  school_id            Int?
+  school               School?               @relation(fields: [school_id], references: [id])
+  studentPresenceLists StudentPresenceList[]
 }

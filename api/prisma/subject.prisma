@@ -16,6 +16,7 @@ model Subject {
   presences         Presence[]
   tests             Test[]
   schedules         Schedule[]
+  studentPresences  StudentPresence[]
 
   @@unique([name, school_id])
   @@unique([code, school_id])

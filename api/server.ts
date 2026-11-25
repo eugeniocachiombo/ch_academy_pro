@@ -89,7 +89,7 @@ app.get("/", (req, res) => {
 
 
 if (process.env.NODE_ENV !== "production") {
-  app.listen(3000, () => {
+  app.listen(1999, () => {
     console.log("Servidor a rodar na porta 3000");
   });
 }

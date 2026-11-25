@@ -1,0 +1,18 @@
+model StudentPresence {
+  id             Int       @id @default(autoincrement())
+  date           DateTime? @default(now())
+  groupconfig_id Int
+  teacher_id     Int
+  subject_id     Int
+  school_id      Int?
+
+  groupconfig Groupconfig @relation(fields: [groupconfig_id], references: [id], onDelete: Cascade)
+  teacher     Teacher     @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  subject     Subject     @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  school      School?     @relation(fields: [school_id], references: [id])
+
+  createdAt DateTime? @default(now())
+  updatedAt DateTime? @updatedAt
+
+  student_presence_lists StudentPresenceList[]
+}
