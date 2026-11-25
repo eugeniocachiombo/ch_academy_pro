@@ -14,6 +14,12 @@ export const teachersRoutes: RouteRecordRaw[] = [
     component: () => import('@/views/teacher/TeacherocupationsView.vue'), 
     meta: { permission: 'teacherocupations.manage' } 
   },
+  {
+    path: '/professores/presencas',
+    name: 'student-presences',
+    component: () => import('@/views/teacher/StudentPresencesView.vue'),
+    meta: { permission: 'student-presences.manage' }
+  },
   { 
     path: '/professores/horarios', 
     name: 'teachers-schedule', 

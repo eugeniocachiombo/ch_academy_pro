@@ -12,6 +12,7 @@ const modules = [
     { key: "departments", label: "Departamentos" },
     { key: "positions", label: "Cargos" },
     { key: "employees", label: "Funcionários" },
+    { key: "student-presences", label: "Presença de Estudantes" },
 
     
     { key: "courses", label: "Cursos" },
