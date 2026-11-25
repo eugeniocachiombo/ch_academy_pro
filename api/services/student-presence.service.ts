@@ -18,11 +18,19 @@ class StudentPresenceService extends BaseService {
                 tenant: "mixed",
                 include: {
                     groupconfig: true,
-                    teacher: true,
+                    teacher: {
+                        include: {
+                            user: true,
+                        },
+                    },
                     subject: true,
                     student_presence_lists: {
                         include: {
-                            student: true,
+                            student: {
+                                include: {
+                                    user: true,
+                                },
+                            },
                         },
                     },
                 },

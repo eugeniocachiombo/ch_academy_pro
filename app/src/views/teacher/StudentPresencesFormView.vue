@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import Select from 'primevue/select'
 import {
   useStudentPresenceStore,
   type StudentPresence,
@@ -9,6 +10,7 @@ import {
   useStudentPresenceListStore,
   type PresenceStatus,
 } from '@/stores/student-presence-list.store'
+import { useClassSubjectStore } from '@/stores/class-subject.store'
 import { api } from '@/services/api'
 import { showNotification } from '@/services/general_service'
 
@@ -16,8 +18,13 @@ interface StudentRow {
   list_id?: number
   student_id: number
   name: string
-  codenumber?: string
+  processnum?: string
   status: PresenceStatus
+}
+
+interface SelectOption {
+  label: string
+  value: number
 }
 
 const props = defineProps<{
@@ -35,6 +42,7 @@ const emit = defineEmits<{
 
 const presenceStore = useStudentPresenceStore()
 const presenceListStore = useStudentPresenceListStore()
+const classSubjectStore = useClassSubjectStore()
 
 const form = ref<StudentPresencePayload & { id?: number }>({
   date: new Date().toISOString().slice(0, 10),
@@ -48,11 +56,76 @@ const groupconfigs = ref<any[]>([])
 const teachers = ref<any[]>([])
 const subjects = ref<any[]>([])
 const studentRows = ref<StudentRow[]>([])
+const studentSearchQuery = ref('')
 const loadingStudents = ref(false)
 
 const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
+
+const selectedGroupconfig = computed(() => {
+  if (!form.value.groupconfig_id) return null
+  return groupconfigs.value.find((gc) => Number(gc.id) === Number(form.value.groupconfig_id)) ?? null
+})
+
+const selectedClassId = computed<number | null>(() => {
+  const gc = selectedGroupconfig.value
+  if (!gc) return null
+  const rawClassId = gc.class_id ?? gc.class?.id ?? null
+  return rawClassId !== null && rawClassId !== undefined ? Number(rawClassId) : null
+})
+
+const groupconfigOptions = computed<SelectOption[]>(() =>
+  groupconfigs.value.map((gc) => ({
+    label: gc.name,
+    value: gc.id,
+  }))
+)
+
+const subjectOptions = computed<SelectOption[]>(() => {
+  const classId = selectedClassId.value
+  if (!classId) return []
+
+  const allowedSubjectIds = new Set(
+    classSubjectStore.classSubjects
+      .filter((cs) => Number(cs.class_id) === classId)
+      .map((cs) => Number(cs.subject_id))
+  )
+
+  return subjects.value
+    .filter((sub) => allowedSubjectIds.has(Number(sub.id)))
+    .map((sub) => ({
+      label: sub.name,
+      value: sub.id,
+    }))
+})
+
+const teacherOptions = computed<SelectOption[]>(() =>
+  teachers.value.map((t) => ({
+    label: t.user?.name || t.codenumber || `Professor #${t.id}`,
+    value: t.id,
+  }))
+)
+
+const filteredStudentRows = computed(() => {
+  const q = studentSearchQuery.value.trim().toLowerCase()
+  if (!q) return studentRows.value
+  return studentRows.value.filter(
+    (row) =>
+      row.name.toLowerCase().includes(q) ||
+      (row.processnum && row.processnum.toLowerCase().includes(q))
+  )
+})
+
+const liveCounts = computed(() => {
+  const present = studentRows.value.filter((r) => r.status === 'PRESENT').length
+  const absent = studentRows.value.filter((r) => r.status === 'ABSENT').length
+  const justified = studentRows.value.filter((r) => r.status === 'JUSTIFICATED').length
+  return { present, absent, justified }
+})
+
+const formatStudentLabel = (row: StudentRow) =>
+  row.processnum ? `${row.name} (${row.processnum})` : row.name
 
 const getFieldError = (field: string) => fieldErrors.value[field]?.[0] ?? ''
 const hasError = (field: string) => !!getFieldError(field)
@@ -70,6 +143,7 @@ const loadOptions = async () => {
       api.get<any[]>('/groupconfigs').catch(() => []),
       api.get<any[]>('/teachers').catch(() => []),
       api.get<any[]>('/subjects').catch(() => []),
+      classSubjectStore.list().catch(() => []),
     ])
     groupconfigs.value = gcRes || []
     teachers.value = tRes || []
@@ -87,16 +161,16 @@ const buildStudentRows = async (groupconfigId: number | null) => {
 
   loadingStudents.value = true
   try {
-    // Se estiver a editar, aproveita a lista já guardada
     const existingList = props.existingPresence?.student_presence_lists || []
 
-    // Procura os alunos matriculados na turma (registers)
-    const gc = groupconfigs.value.find((g) => g.id === groupconfigId)
+    const gc = groupconfigs.value.find((g) => Number(g.id) === Number(groupconfigId))
     let registers = gc?.registers || []
 
     if (!registers.length) {
       const registersRes = await api.get<any[]>('/registers').catch(() => [])
-      registers = (registersRes || []).filter((r: any) => r.groupconfig_id === groupconfigId)
+      registers = (registersRes || []).filter(
+        (r: any) => Number(r.groupconfig_id) === Number(groupconfigId)
+      )
     }
 
     if (registers.length) {
@@ -107,16 +181,16 @@ const buildStudentRows = async (groupconfigId: number | null) => {
           list_id: savedItem?.id,
           student_id: reg.student_id,
           name: student.user?.name || student.name || `Aluno #${reg.student_id}`,
-          codenumber: student.codenumber || '',
+          processnum: String(student.processnum ?? student.codenumber ?? ''),
           status: savedItem?.status || 'PRESENT',
         }
       })
     } else if (existingList.length) {
-      studentRows.value = existingList.map((item) => ({
+      studentRows.value = existingList.map((item: any) => ({
         list_id: item.id,
         student_id: item.student_id,
         name: item.student?.user?.name || item.student?.name || `Aluno #${item.student_id}`,
-        codenumber: item.student?.codenumber || '',
+        processnum: String(item.student?.processnum ?? item.student?.codenumber ?? ''),
         status: item.status,
       }))
     } else {
@@ -139,8 +213,12 @@ watch(
           subject_id: null,
           school_id: null,
         }
+    studentSearchQuery.value = ''
     fieldErrors.value = {}
     generalMessage.value = ''
+    if (!classSubjectStore.classSubjects.length) {
+      await classSubjectStore.list().catch(() => [])
+    }
     await buildStudentRows(form.value.groupconfig_id)
   },
   { immediate: true, deep: true }
@@ -148,11 +226,25 @@ watch(
 
 const onGroupconfigChange = async () => {
   clearFieldError('groupconfig_id')
+  studentSearchQuery.value = ''
+
+  if (!classSubjectStore.classSubjects.length) {
+    await classSubjectStore.list().catch(() => [])
+  }
+
+  const validSubjectIds = new Set(subjectOptions.value.map((opt) => Number(opt.value)))
+  if (form.value.subject_id && !validSubjectIds.has(Number(form.value.subject_id))) {
+    form.value.subject_id = null
+  }
+
   await buildStudentRows(form.value.groupconfig_id)
 }
 
 const markAllAs = (status: PresenceStatus) => {
-  studentRows.value = studentRows.value.map((row) => ({ ...row, status }))
+  const targetIds = new Set(filteredStudentRows.value.map((r) => r.student_id))
+  studentRows.value = studentRows.value.map((row) =>
+    targetIds.has(row.student_id) ? { ...row, status } : row
+  )
 }
 
 const handleSubmit = async () => {
@@ -177,7 +269,6 @@ const handleSubmit = async () => {
       presenceRecord = await presenceStore.create(payload)
     }
 
-    // Guarda ou actualiza cada aluno na StudentPresenceList
     for (const row of studentRows.value) {
       if (row.list_id) {
         await presenceListStore.update(row.list_id, {
@@ -210,10 +301,10 @@ const handleSubmit = async () => {
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
   >
     <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
     >
       <div
-        class="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
+        class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
       >
         <div class="flex items-center gap-3">
           <div
@@ -226,7 +317,7 @@ const handleSubmit = async () => {
               {{ isEditing ? 'Editar Chamada' : 'Nova Chamada de Presença' }}
             </h3>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              Seleccione a turma, disciplina, professor e marque a presença dos alunos.
+              Configure a aula à esquerda e marque a presença dos alunos à direita.
             </p>
           </div>
         </div>
@@ -238,212 +329,281 @@ const handleSubmit = async () => {
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-6 space-y-4 overflow-y-auto flex-1">
+      <form @submit.prevent="handleSubmit" class="flex-1 flex flex-col overflow-hidden">
         <div
           v-if="generalMessage && !Object.keys(fieldErrors).length"
-          class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3"
+          class="mx-6 mt-4 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3"
         >
           <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 flex-shrink-0"></i>
           <span>{{ generalMessage }}</span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-              >Data</label
-            >
-            <input
-              v-model="form.date"
-              @input="clearFieldError('date')"
-              type="date"
-              :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
-                hasError('date')
-                  ? 'border-red-500'
-                  : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
-              ]"
-            />
-            <span
-              v-if="hasError('date')"
-              class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium"
-              >{{ getFieldError('date') }}</span
-            >
-          </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-y-auto lg:overflow-hidden">
+          <div
+            class="lg:col-span-4 p-6 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30 lg:overflow-y-auto"
+          >
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Dados da Aula
+            </p>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-              >Turma</label
-            >
-            <select
-              v-model.number="form.groupconfig_id"
-              @change="onGroupconfigChange"
-              :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
-                hasError('groupconfig_id')
-                  ? 'border-red-500'
-                  : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
-              ]"
-            >
-              <option :value="null" disabled>Seleccione a turma</option>
-              <option v-for="gc in groupconfigs" :key="gc.id" :value="gc.id">
-                {{ gc.name }}
-              </option>
-            </select>
-            <span
-              v-if="hasError('groupconfig_id')"
-              class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium"
-              >{{ getFieldError('groupconfig_id') }}</span
-            >
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-              >Disciplina</label
-            >
-            <select
-              v-model.number="form.subject_id"
-              @change="clearFieldError('subject_id')"
-              :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
-                hasError('subject_id')
-                  ? 'border-red-500'
-                  : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
-              ]"
-            >
-              <option :value="null" disabled>Seleccione a disciplina</option>
-              <option v-for="sub in subjects" :key="sub.id" :value="sub.id">
-                {{ sub.name }}
-              </option>
-            </select>
-            <span
-              v-if="hasError('subject_id')"
-              class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium"
-              >{{ getFieldError('subject_id') }}</span
-            >
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-              >Professor</label
-            >
-            <select
-              v-model.number="form.teacher_id"
-              @change="clearFieldError('teacher_id')"
-              :class="[
-                'w-full bg-slate-50 dark:bg-slate-950 border rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
-                hasError('teacher_id')
-                  ? 'border-red-500'
-                  : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
-              ]"
-            >
-              <option :value="null" disabled>Seleccione o professor</option>
-              <option v-for="t in teachers" :key="t.id" :value="t.id">
-                {{ t.user?.name || t.codenumber }}
-              </option>
-            </select>
-            <span
-              v-if="hasError('teacher_id')"
-              class="text-[11px] text-red-600 dark:text-red-400 mt-1.5 block font-medium"
-              >{{ getFieldError('teacher_id') }}</span
-            >
-          </div>
-        </div>
-
-        <!-- Lista de Alunos da Turma -->
-        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 space-y-3">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Lista de Alunos ({{ studentRows.length }})
-            </span>
-            <div v-if="studentRows.length" class="flex items-center gap-1.5">
-              <button
-                type="button"
-                @click="markAllAs('PRESENT')"
-                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >Data</label
               >
-                Todos Presentes
-              </button>
-              <button
-                type="button"
-                @click="markAllAs('ABSENT')"
-                class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
+              <input
+                v-model="form.date"
+                @input="clearFieldError('date')"
+                type="date"
+                :class="[
+                  'w-full bg-white dark:bg-slate-950 border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
+                  hasError('date')
+                    ? 'border-red-500'
+                    : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
+                ]"
+              />
+              <span
+                v-if="hasError('date')"
+                class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
+                >{{ getFieldError('date') }}</span
               >
-                Todos Faltas
-              </button>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >Turma</label
+              >
+              <Select
+                v-model="form.groupconfig_id"
+                :options="groupconfigOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccione a turma"
+                filter
+                showClear
+                @change="onGroupconfigChange"
+                :class="[
+                  'w-full rounded-xl text-sm',
+                  hasError('groupconfig_id') ? 'border-red-500' : '',
+                ]"
+              />
+              <span
+                v-if="hasError('groupconfig_id')"
+                class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
+                >{{ getFieldError('groupconfig_id') }}</span
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >Disciplina</label
+              >
+              <Select
+                v-model="form.subject_id"
+                :options="subjectOptions"
+                optionLabel="label"
+                optionValue="value"
+                :disabled="!selectedClassId"
+                :placeholder="
+                  selectedClassId ? 'Seleccione a disciplina' : 'Seleccione primeiro a turma'
+                "
+                filter
+                showClear
+                @change="clearFieldError('subject_id')"
+                :class="[
+                  'w-full rounded-xl text-sm',
+                  hasError('subject_id') ? 'border-red-500' : '',
+                ]"
+              />
+              <span
+                v-if="hasError('subject_id')"
+                class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
+                >{{ getFieldError('subject_id') }}</span
+              >
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
+                >Professor</label
+              >
+              <Select
+                v-model="form.teacher_id"
+                :options="teacherOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccione o professor"
+                filter
+                showClear
+                @change="clearFieldError('teacher_id')"
+                :class="[
+                  'w-full rounded-xl text-sm',
+                  hasError('teacher_id') ? 'border-red-500' : '',
+                ]"
+              />
+              <span
+                v-if="hasError('teacher_id')"
+                class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
+                >{{ getFieldError('teacher_id') }}</span
+              >
+            </div>
+
+            <div
+              v-if="studentRows.length"
+              class="pt-3 border-t border-slate-200 dark:border-slate-800 grid grid-cols-3 gap-2 text-center"
+            >
+              <div class="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <span class="block text-sm font-bold text-emerald-600 dark:text-emerald-400">{{
+                  liveCounts.present
+                }}</span>
+                <span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
+                  >Presentes</span
+                >
+              </div>
+              <div class="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
+                <span class="block text-sm font-bold text-red-600 dark:text-red-400">{{
+                  liveCounts.absent
+                }}</span>
+                <span class="text-[10px] font-semibold text-red-700 dark:text-red-300">Faltas</span>
+              </div>
+              <div class="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <span class="block text-sm font-bold text-amber-600 dark:text-amber-400">{{
+                  liveCounts.justified
+                }}</span>
+                <span class="text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+                  >Justif.</span
+                >
+              </div>
             </div>
           </div>
 
-          <div
-            v-if="loadingStudents"
-            class="py-8 text-center text-xs text-slate-500 dark:text-slate-400"
-          >
-            <i class="fa-solid fa-spinner animate-spin mr-1.5"></i> A carregar alunos da turma...
-          </div>
-
-          <div
-            v-else-if="!studentRows.length"
-            class="py-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400"
-          >
-            Seleccione uma turma com alunos matriculados para marcar presenças.
-          </div>
-
-          <div v-else class="space-y-2 max-h-64 overflow-y-auto pr-1">
-            <div
-              v-for="row in studentRows"
-              :key="row.student_id"
-              class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
-            >
-              <div>
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ row.name }}</p>
-                <p v-if="row.codenumber" class="text-[11px] font-mono text-slate-500">
-                  {{ row.codenumber }}
-                </p>
+          <div class="lg:col-span-8 p-6 flex flex-col space-y-3 lg:overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span
+                class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400"
+              >
+                Alunos da Turma ({{ filteredStudentRows.length }} / {{ studentRows.length }})
+              </span>
+              <div v-if="studentRows.length" class="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  @click="markAllAs('PRESENT')"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                >
+                  Todos Presentes
+                </button>
+                <button
+                  type="button"
+                  @click="markAllAs('ABSENT')"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
+                >
+                  Todos Faltas
+                </button>
+                <button
+                  type="button"
+                  @click="markAllAs('JUSTIFICATED')"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                >
+                  Todos Justificados
+                </button>
               </div>
+            </div>
 
-              <div class="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  @click="row.status = 'PRESENT'"
-                  :class="[
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    row.status === 'PRESENT'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
-                  ]"
-                >
-                  Presente
-                </button>
-                <button
-                  type="button"
-                  @click="row.status = 'ABSENT'"
-                  :class="[
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    row.status === 'ABSENT'
-                      ? 'bg-red-600 text-white shadow'
-                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
-                  ]"
-                >
-                  Falta
-                </button>
-                <button
-                  type="button"
-                  @click="row.status = 'JUSTIFICATED'"
-                  :class="[
-                    'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                    row.status === 'JUSTIFICATED'
-                      ? 'bg-amber-500 text-white shadow'
-                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
-                  ]"
-                >
-                  Justificado
-                </button>
+            <div v-if="studentRows.length" class="relative">
+              <i
+                class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"
+              ></i>
+              <input
+                v-model="studentSearchQuery"
+                type="text"
+                placeholder="Pesquisar aluno por nome ou Nº de processo..."
+                class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-8 py-2.5 text-xs text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+              <button
+                v-if="studentSearchQuery"
+                type="button"
+                @click="studentSearchQuery = ''"
+                title="Limpar pesquisa"
+                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            </div>
+
+            <div
+              v-if="loadingStudents"
+              class="flex-1 flex items-center justify-center py-10 text-xs text-slate-500 dark:text-slate-400"
+            >
+              <i class="fa-solid fa-spinner animate-spin mr-1.5"></i> A carregar alunos da turma...
+            </div>
+
+            <div
+              v-else-if="!studentRows.length"
+              class="flex-1 flex items-center justify-center py-10 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400 px-4"
+            >
+              Seleccione uma turma com alunos matriculados para marcar presenças.
+            </div>
+
+            <div
+              v-else-if="!filteredStudentRows.length"
+              class="flex-1 flex items-center justify-center py-10 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 text-xs text-slate-400 px-4"
+            >
+              Nenhum aluno encontrado para "{{ studentSearchQuery }}".
+            </div>
+
+            <div v-else class="space-y-2 overflow-y-auto pr-1 flex-1">
+              <div
+                v-for="row in filteredStudentRows"
+                :key="row.student_id"
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+              >
+                <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                  {{ formatStudentLabel(row) }}
+                </p>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    @click="row.status = 'PRESENT'"
+                    :class="[
+                      'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                      row.status === 'PRESENT'
+                        ? 'bg-emerald-600 text-white shadow'
+                        : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+                    ]"
+                  >
+                    Presente
+                  </button>
+                  <button
+                    type="button"
+                    @click="row.status = 'ABSENT'"
+                    :class="[
+                      'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                      row.status === 'ABSENT'
+                        ? 'bg-red-600 text-white shadow'
+                        : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+                    ]"
+                  >
+                    Falta
+                  </button>
+                  <button
+                    type="button"
+                    @click="row.status = 'JUSTIFICATED'"
+                    :class="[
+                      'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                      row.status === 'JUSTIFICATED'
+                        ? 'bg-amber-500 text-white shadow'
+                        : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+                    ]"
+                  >
+                    Justificado
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div
-          class="flex items-center justify-end gap-3 pt-5 border-t border-slate-200 dark:border-slate-800"
+          class="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
         >
           <button
             type="button"

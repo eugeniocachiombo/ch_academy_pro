@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import Select from 'primevue/select'
 import {
   useStudentPresenceStore,
   type StudentPresence,
@@ -10,15 +11,17 @@ import StudentPresencesFormView from './StudentPresencesFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
 
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
-
 const presenceStore = useStudentPresenceStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
 
 const searchQuery = ref('')
+const selectedGroupconfigFilter = ref<number | null>(null)
+const selectedSubjectFilter = ref<number | null>(null)
+const selectedDateFilter = ref('')
+const expandedCards = ref<Record<number, boolean>>({})
+
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedPresence = ref<StudentPresence | null>(null)
@@ -35,21 +38,102 @@ onMounted(async () => {
   } catch {}
 })
 
-const totalCount = computed(() => presenceStore.presences.filter((item: any) => item != null).length)
+const groupconfigFilterOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const item of presenceStore.presences) {
+    if (item?.groupconfig_id && item.groupconfig?.name) {
+      map.set(item.groupconfig_id, item.groupconfig.name)
+    }
+  }
+  return Array.from(map, ([value, label]) => ({ value, label }))
+})
+
+const subjectFilterOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const item of presenceStore.presences) {
+    if (item?.subject_id && item.subject?.name) {
+      map.set(item.subject_id, item.subject.name)
+    }
+  }
+  return Array.from(map, ([value, label]) => ({ value, label }))
+})
+
+const hasActiveFilters = computed(
+  () =>
+    !!searchQuery.value.trim() ||
+    selectedGroupconfigFilter.value !== null ||
+    selectedSubjectFilter.value !== null ||
+    !!selectedDateFilter.value
+)
+
+const clearFilters = () => {
+  searchQuery.value = ''
+  selectedGroupconfigFilter.value = null
+  selectedSubjectFilter.value = null
+  selectedDateFilter.value = ''
+}
 
 const filteredPresences = computed(() => {
   return presenceStore.presences.filter((item: any) => {
     if (!item) return false
-    const q = searchQuery.value.toLowerCase()
+
+    if (
+      selectedGroupconfigFilter.value !== null &&
+      Number(item.groupconfig_id) !== Number(selectedGroupconfigFilter.value)
+    ) {
+      return false
+    }
+
+    if (
+      selectedSubjectFilter.value !== null &&
+      Number(item.subject_id) !== Number(selectedSubjectFilter.value)
+    ) {
+      return false
+    }
+
+    if (selectedDateFilter.value) {
+      const itemDate = item.date ? new Date(item.date).toISOString().slice(0, 10) : ''
+      if (itemDate !== selectedDateFilter.value) return false
+    }
+
+    const q = searchQuery.value.trim().toLowerCase()
     if (!q) return true
+
     return (
       item.groupconfig?.name?.toLowerCase().includes(q) ||
       item.subject?.name?.toLowerCase().includes(q) ||
       item.teacher?.user?.name?.toLowerCase().includes(q) ||
+      item.teacher?.name?.toLowerCase().includes(q) ||
       item.teacher?.codenumber?.toLowerCase().includes(q)
     )
   })
 })
+
+const stats = computed(() => {
+  let present = 0
+  let absent = 0
+  let justified = 0
+
+  for (const item of filteredPresences.value) {
+    const list = item.student_presence_lists || []
+    for (const entry of list) {
+      if (entry.status === 'PRESENT') present++
+      else if (entry.status === 'ABSENT') absent++
+      else if (entry.status === 'JUSTIFICATED') justified++
+    }
+  }
+
+  return {
+    totalCalls: filteredPresences.value.length,
+    present,
+    absent,
+    justified,
+  }
+})
+
+const toggleCardStudents = (id: number) => {
+  expandedCards.value[id] = !expandedCards.value[id]
+}
 
 const formatDate = (dateStr?: string | null) => {
   if (!dateStr) return '—'
@@ -65,7 +149,29 @@ const getSummary = (item: StudentPresence) => {
   const present = list.filter((l) => l.status === 'PRESENT').length
   const absent = list.filter((l) => l.status === 'ABSENT').length
   const justified = list.filter((l) => l.status === 'JUSTIFICATED').length
-  return { present, absent, justified, total: list.length }
+  const total = list.length
+  const rate = total > 0 ? Math.round((present / total) * 100) : 0
+  return { present, absent, justified, total, rate }
+}
+
+const formatStudentName = (entry: any) => {
+  const student = entry.student || {}
+  const name = student.user?.name || student.name || ''
+  const processnum = student.processnum ?? student.codenumber ?? ''
+  if (name && processnum) return `${name} (${processnum})`
+  if (name) return name
+  if (processnum) return String(processnum)
+  return `Aluno #${entry.student_id}`
+}
+
+const formatTeacherName = (item: any) => {
+  const teacher = item.teacher || {}
+  const name = teacher.user?.name || teacher.name || ''
+  const code = teacher.codenumber ?? ''
+  if (name && code) return `${name} (${code})`
+  if (name) return name
+  if (code) return String(code)
+  return 'Sem professor'
 }
 
 const openCreateModal = () => {
@@ -169,12 +275,12 @@ const handleDelete = async () => {
       </button>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/50 shadow-lg">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="p-5 rounded-2xl border bg-indigo-600/10 border-indigo-500/40 shadow-lg">
         <div class="flex items-center justify-between">
           <span
             class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
-            >Total de Chamadas</span
+            >Chamadas</span
           >
           <div
             class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center"
@@ -182,118 +288,303 @@ const handleDelete = async () => {
             <i class="fa-solid fa-clipboard-user text-sm"></i>
           </div>
         </div>
-        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">{{ totalCount }}</div>
+        <div class="text-2xl font-bold text-slate-900 dark:text-white mt-3">
+          {{ stats.totalCalls }}
+        </div>
       </div>
-    </div>
 
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl flex items-center gap-4"
-    >
-      <div class="relative flex-1 w-full">
-        <i
-          class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
-        ></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Pesquisar por turma, disciplina ou professor..."
-          class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
-        />
-      </div>
-    </div>
-
-    <div
-      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl overflow-hidden"
-    >
-      <DataTable
-        class="custom-datatable"
-        :value="filteredPresences"
-        :loading="presenceStore.isLoading"
-        paginator
-        :rows="10"
-        tableStyle="min-width: 55rem"
-      >
-        <template #empty>
-          <div class="py-12 text-center text-slate-400 dark:text-slate-500">
-            <i class="fa-solid fa-folder-open text-2xl mb-2 opacity-40"></i>
-            <p class="text-xs">Nenhum registo de presença encontrado.</p>
+      <div class="p-5 rounded-2xl border bg-emerald-600/10 border-emerald-500/40 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span
+            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >Presenças</span
+          >
+          <div
+            class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-user-check text-sm"></i>
           </div>
-        </template>
+        </div>
+        <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-3">
+          {{ stats.present }}
+        </div>
+      </div>
 
-        <Column field="date" header="Data" sortable style="width: 13%">
-          <template #body="slotProps">
-            <span class="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">
-              {{ formatDate(slotProps.data.date) }}
-            </span>
-          </template>
-        </Column>
+      <div class="p-5 rounded-2xl border bg-red-600/10 border-red-500/40 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span
+            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >Faltas</span
+          >
+          <div class="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+            <i class="fa-solid fa-user-xmark text-sm"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-red-600 dark:text-red-400 mt-3">
+          {{ stats.absent }}
+        </div>
+      </div>
 
-        <Column header="Turma" sortable field="groupconfig.name" style="width: 22%">
-          <template #body="slotProps">
-            <span class="font-semibold text-slate-900 dark:text-white text-sm">
-              {{ slotProps.data.groupconfig?.name || '—' }}
-            </span>
-          </template>
-        </Column>
+      <div class="p-5 rounded-2xl border bg-amber-500/10 border-amber-500/40 shadow-lg">
+        <div class="flex items-center justify-between">
+          <span
+            class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            >Justificados</span
+          >
+          <div
+            class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-file-medical text-sm"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-3">
+          {{ stats.justified }}
+        </div>
+      </div>
+    </div>
 
-        <Column header="Disciplina" sortable field="subject.name" style="width: 22%">
-          <template #body="slotProps">
-            <span class="text-sm text-slate-700 dark:text-slate-300">
-              {{ slotProps.data.subject?.name || '—' }}
-            </span>
-          </template>
-        </Column>
+    <div
+      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+        <div class="relative md:col-span-4">
+          <i
+            class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
+          ></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Pesquisar turma, disciplina ou professor..."
+            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+          />
+        </div>
 
-        <Column header="Professor" sortable field="teacher.user.name" style="width: 20%">
-          <template #body="slotProps">
-            <span class="text-xs text-slate-600 dark:text-slate-400">
-              {{ slotProps.data.teacher?.user?.name || slotProps.data.teacher?.codenumber || '—' }}
-            </span>
-          </template>
-        </Column>
+        <div class="md:col-span-3">
+          <Select
+            v-model="selectedGroupconfigFilter"
+            :options="groupconfigFilterOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todas as turmas"
+            filter
+            showClear
+            class="w-full rounded-xl text-sm"
+          />
+        </div>
 
-        <Column header="Resumo" style="width: 13%">
-          <template #body="slotProps">
-            <div class="flex items-center gap-1.5 text-[11px] font-semibold">
-              <span class="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                P: {{ getSummary(slotProps.data).present }}
+        <div class="md:col-span-3">
+          <Select
+            v-model="selectedSubjectFilter"
+            :options="subjectFilterOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todas as disciplinas"
+            filter
+            showClear
+            class="w-full rounded-xl text-sm"
+          />
+        </div>
+
+        <div class="md:col-span-2 flex items-center gap-2">
+          <input
+            v-model="selectedDateFilter"
+            type="date"
+            class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
+          />
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            @click="clearFilters"
+            title="Limpar filtros"
+            class="w-10 h-10 shrink-0 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors"
+          >
+            <i class="fa-solid fa-filter-circle-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="presenceStore.isLoading"
+      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+    >
+      <div
+        v-for="n in 6"
+        :key="n"
+        class="h-52 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 animate-pulse space-y-4"
+      >
+        <div class="h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-800"></div>
+        <div class="h-5 w-2/3 rounded bg-slate-200 dark:bg-slate-800"></div>
+        <div class="h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-800"></div>
+        <div class="h-2 w-full rounded bg-slate-200 dark:bg-slate-800 mt-6"></div>
+      </div>
+    </div>
+
+    <div
+      v-else-if="!filteredPresences.length"
+      class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center shadow-xl"
+    >
+      <i class="fa-solid fa-folder-open text-3xl mb-3 text-slate-400 opacity-50"></i>
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">
+        Nenhum registo de presença encontrado.
+      </p>
+      <p class="text-xs text-slate-400 mt-1">
+        Tente ajustar os filtros ou clique em "Nova Chamada" para registar.
+      </p>
+    </div>
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
+      <div
+        v-for="item in filteredPresences"
+        :key="item.id"
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xl hover:border-indigo-500/40 transition-all flex flex-col gap-4"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div class="space-y-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+              >
+                <i class="fa-regular fa-calendar text-[10px]"></i>
+                {{ formatDate(item.date) }}
               </span>
-              <span class="px-2 py-0.5 rounded-lg bg-red-500/10 text-red-600 dark:text-red-400">
-                F: {{ getSummary(slotProps.data).absent }}
-              </span>
-              <span class="px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                J: {{ getSummary(slotProps.data).justified }}
+              <span
+                class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 truncate"
+              >
+                {{ item.groupconfig?.name || 'Sem turma' }}
               </span>
             </div>
-          </template>
-        </Column>
 
-        <Column header="Acções" style="width: 10%">
-          <template #body="slotProps">
-            <div
-              class="flex items-center gap-1.5"
-              v-if="p('student-presences.update') || p('student-presences.delete')"
+            <h2 class="text-base font-bold text-slate-900 dark:text-white truncate pt-1">
+              {{ item.subject?.name || 'Sem disciplina' }}
+            </h2>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 truncate">
+              <i class="fa-solid fa-chalkboard-user text-[11px] text-slate-400"></i>
+              <span class="truncate">{{ formatTeacherName(item) }}</span>
+            </p>
+          </div>
+
+          <div
+            class="flex items-center gap-1.5 shrink-0"
+            v-if="p('student-presences.update') || p('student-presences.delete')"
+          >
+            <button
+              v-if="p('student-presences.update')"
+              @click="openEditModal(item)"
+              title="Gerir chamada"
+              class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
             >
-              <button
-                v-if="p('student-presences.update')"
-                @click="openEditModal(slotProps.data)"
-                title="Gerir chamada"
-                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
-              >
-                <i class="fa-solid fa-pen-to-square text-xs"></i>
-              </button>
-              <button
-                v-if="p('student-presences.delete')"
-                @click="confirmDeletePresence(slotProps.data)"
-                title="Eliminar chamada"
-                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
-              >
-                <i class="fa-solid fa-trash text-xs"></i>
-              </button>
+              <i class="fa-solid fa-pen-to-square text-xs"></i>
+            </button>
+            <button
+              v-if="p('student-presences.delete')"
+              @click="confirmDeletePresence(item)"
+              title="Eliminar chamada"
+              class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
+            >
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-500 dark:text-slate-400 font-medium">Assiduidade</span>
+            <span class="font-bold text-slate-800 dark:text-slate-200"
+              >{{ getSummary(item).rate }}% ({{ getSummary(item).present }}/{{
+                getSummary(item).total
+              }})</span
+            >
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div
+              class="h-full rounded-full bg-emerald-500 transition-all duration-300"
+              :style="{ width: `${getSummary(item).rate}%` }"
+            ></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="py-2 px-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <span class="block text-sm font-bold text-emerald-600 dark:text-emerald-400">{{
+              getSummary(item).present
+            }}</span>
+            <span class="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300"
+              >Presentes</span
+            >
+          </div>
+          <div class="py-2 px-2 rounded-xl bg-red-500/10 border border-red-500/20">
+            <span class="block text-sm font-bold text-red-600 dark:text-red-400">{{
+              getSummary(item).absent
+            }}</span>
+            <span class="text-[10px] font-semibold text-red-700 dark:text-red-300">Faltas</span>
+          </div>
+          <div class="py-2 px-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <span class="block text-sm font-bold text-amber-600 dark:text-amber-400">{{
+              getSummary(item).justified
+            }}</span>
+            <span class="text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+              >Justif.</span
+            >
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            @click="toggleCardStudents(item.id)"
+            class="w-full flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            <span>Lista de Alunos ({{ item.student_presence_lists?.length || 0 }})</span>
+            <i
+              :class="[
+                'fa-solid text-[11px] transition-transform duration-200',
+                expandedCards[item.id] ? 'fa-chevron-up' : 'fa-chevron-down',
+              ]"
+            ></i>
+          </button>
+
+          <div
+            v-if="expandedCards[item.id]"
+            class="mt-3 space-y-1.5 max-h-52 overflow-y-auto pr-1"
+          >
+            <div
+              v-if="!item.student_presence_lists?.length"
+              class="text-xs text-slate-400 py-2 text-center"
+            >
+              Nenhum aluno registado nesta chamada.
             </div>
-          </template>
-        </Column>
-      </DataTable>
+            <div
+              v-for="entry in item.student_presence_lists"
+              :key="entry.id"
+              class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800"
+            >
+              <span class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                {{ formatStudentName(entry) }}
+              </span>
+              <span
+                v-if="entry.status === 'PRESENT'"
+                class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"
+              >
+                Presente
+              </span>
+              <span
+                v-else-if="entry.status === 'ABSENT'"
+                class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-red-500/10 text-red-600 dark:text-red-400 shrink-0"
+              >
+                Falta
+              </span>
+              <span
+                v-else
+                class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0"
+              >
+                Justificado
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <StudentPresencesFormView
