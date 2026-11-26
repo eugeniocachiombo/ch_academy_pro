@@ -23,6 +23,7 @@ export interface CrudOptions {
 
 export interface CrudContext {
   schoolId?: string | number;
+  userId?: string | number;
   isSuperAdmin?: boolean;
 }
 

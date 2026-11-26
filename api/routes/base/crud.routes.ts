@@ -9,9 +9,18 @@ export class CrudRoutes {
     }
 
     private getContext(req: Request): any {
+        const anyReq = req as any;
+        const userId =
+            anyReq.userId ??
+            anyReq.user?.id ??
+            anyReq.user?.userId ??
+            anyReq.auth?.userId ??
+            anyReq.auth?.id;
+
         return {
-            schoolId: (req as any).schoolId || req.headers['x-school-id'],
-            isSuperAdmin: (req as any).isSuperAdmin || false
+            schoolId: anyReq.schoolId ?? req.headers['x-school-id'],
+            userId,
+            isSuperAdmin: Boolean(anyReq.isSuperAdmin ?? anyReq.user?.isSuperAdmin),
         };
     }
 
