@@ -120,7 +120,7 @@ class TeacherService extends BaseService {
             }, true);
             const user = await userRepository.create({ data: userPayload }, "user", tx);
     
-            const role = await roleRepository.findFirst({ where: { name: 'teacher' } }, "role", tx);
+            const role = await roleRepository.findFirst({ where: { name: 'professor' } }, "role", tx);
             if (role) {
                 await userRoleRepository.create({
                     data: {

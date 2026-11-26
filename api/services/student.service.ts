@@ -81,7 +81,7 @@ class StudentService extends BaseService {
             }, true);
             const user = await userRepository.create({ data: userPayload }, "user", tx);
 
-            const role = await roleRepository.findFirst({ where: { name: 'student' } }, "role", tx);
+            const role = await roleRepository.findFirst({ where: { name: 'aluno' } }, "role", tx);
             if (role) {
                 await userRoleRepository.create({
                     data: {
