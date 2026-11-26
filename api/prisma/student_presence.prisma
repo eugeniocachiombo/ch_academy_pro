@@ -5,11 +5,13 @@ model StudentPresence {
   teacher_id     Int
   subject_id     Int
   school_id      Int?
+  created_by     Int?
 
   groupconfig Groupconfig @relation(fields: [groupconfig_id], references: [id], onDelete: Cascade)
   teacher     Teacher     @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
   subject     Subject     @relation(fields: [subject_id], references: [id], onDelete: Cascade)
   school      School?     @relation(fields: [school_id], references: [id])
+  author      User?       @relation("StudentPresenceAuthor", fields: [created_by], references: [id], onDelete: SetNull)
 
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt

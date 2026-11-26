@@ -18,10 +18,11 @@ model User {
   createdAt DateTime? @default(now())
   updatedAt DateTime? @updatedAt
 
-  person        Person?    @relation(fields: [person_id], references: [id], onDelete: Cascade)
-  studentschool School?    @relation(fields: [school_id], references: [id])
-  userRoles     UserRole[]
-  student       Student?
-  parent        Parent?
-  teacher       Teacher?
+  person                    Person?           @relation(fields: [person_id], references: [id], onDelete: Cascade)
+  studentschool             School?           @relation(fields: [school_id], references: [id])
+  userRoles                 UserRole[]
+  student                   Student?
+  parent                    Parent?
+  teacher                   Teacher?
+  student_presences_created StudentPresence[] @relation("StudentPresenceAuthor")
 }
