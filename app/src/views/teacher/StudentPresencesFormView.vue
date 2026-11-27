@@ -11,6 +11,7 @@ import {
   type PresenceStatus,
 } from '@/stores/student-presence-list.store'
 import { useClassSubjectStore } from '@/stores/class-subject.store'
+import { useTeacherocupationStore } from '@/stores/teacherocupation.store'
 import { api } from '@/services/api'
 import { showNotification } from '@/services/general_service'
 
@@ -43,6 +44,7 @@ const emit = defineEmits<{
 const presenceStore = useStudentPresenceStore()
 const presenceListStore = useStudentPresenceListStore()
 const classSubjectStore = useClassSubjectStore()
+const teacherocupationStore = useTeacherocupationStore()
 
 const form = ref<StudentPresencePayload & { id?: number }>({
   date: new Date().toISOString().slice(0, 10),
@@ -63,6 +65,19 @@ const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
 
+const formatTeacherLabel = (t: any) => {
+  const name = t.user?.name || `Professor #${t.id}`
+  const code = t.codenumber != null && String(t.codenumber).trim() !== '' ? String(t.codenumber) : ''
+  return code ? `${name} (${code})` : name
+}
+
+const teacherOptions = computed<SelectOption[]>(() =>
+  teachers.value.map((t) => ({
+    label: formatTeacherLabel(t),
+    value: Number(t.id),
+  }))
+)
+
 const selectedGroupconfig = computed(() => {
   if (!form.value.groupconfig_id) return null
   return groupconfigs.value.find((gc) => Number(gc.id) === Number(form.value.groupconfig_id)) ?? null
@@ -75,37 +90,86 @@ const selectedClassId = computed<number | null>(() => {
   return rawClassId !== null && rawClassId !== undefined ? Number(rawClassId) : null
 })
 
-const groupconfigOptions = computed<SelectOption[]>(() =>
-  groupconfigs.value.map((gc) => ({
-    label: gc.name,
-    value: gc.id,
-  }))
-)
+const teacherOccupationsForSelectedTeacher = computed(() => {
+  const teacherId = form.value.teacher_id
+  if (!teacherId) return []
+
+  const gc = selectedGroupconfig.value
+  const yearId = gc?.year_id ?? gc?.year?.id ?? null
+
+  return (teacherocupationStore.teacherocupations || []).filter((to: any) => {
+    if (!to || Number(to.teacher_id) !== Number(teacherId)) return false
+    if (yearId != null && to.year_id != null && Number(to.year_id) !== Number(yearId)) return false
+    return true
+  })
+})
+
+const groupconfigOptions = computed<SelectOption[]>(() => {
+  const teacherId = form.value.teacher_id
+  if (!teacherId) return []
+
+  const assignedGroupconfigIds = new Set(
+    (teacherocupationStore.teacherocupations || [])
+      .filter((to: any) => to && Number(to.teacher_id) === Number(teacherId) && to.groupconfig_id != null)
+      .map((to: any) => Number(to.groupconfig_id))
+  )
+
+  return groupconfigs.value
+    .filter((gc) => assignedGroupconfigIds.has(Number(gc.id)))
+    .map((gc) => ({
+      label: gc.name,
+      value: Number(gc.id),
+    }))
+})
 
 const subjectOptions = computed<SelectOption[]>(() => {
+  const teacherId = form.value.teacher_id
+  const groupconfigId = form.value.groupconfig_id
   const classId = selectedClassId.value
-  if (!classId) return []
+  if (!teacherId || !groupconfigId || !classId) return []
 
-  const allowedSubjectIds = new Set(
+  const gc = selectedGroupconfig.value
+  const yearId = gc?.year_id ?? gc?.year?.id ?? null
+
+  const classSubjectIds = new Set(
     classSubjectStore.classSubjects
       .filter((cs) => Number(cs.class_id) === classId)
       .map((cs) => Number(cs.subject_id))
   )
 
+  const teacherGroupSubjects = (teacherocupationStore.teacherocupations || []).filter((to: any) => {
+    if (!to || Number(to.teacher_id) !== Number(teacherId) || to.subject_id == null) return false
+    if (yearId != null && to.year_id != null && Number(to.year_id) !== Number(yearId)) return false
+    return Number(to.groupconfig_id) === Number(groupconfigId)
+  })
+
+  const allowedSubjectIds = new Set<number>()
+
+  if (teacherGroupSubjects.length > 0) {
+    teacherGroupSubjects.forEach((to: any) => {
+      const sId = Number(to.subject_id)
+      if (classSubjectIds.has(sId)) {
+        allowedSubjectIds.add(sId)
+      }
+    })
+  } else {
+    teacherOccupationsForSelectedTeacher.value.forEach((to: any) => {
+      if (to.subject_id != null && to.groupconfig_id == null) {
+        const sId = Number(to.subject_id)
+        if (classSubjectIds.has(sId)) {
+          allowedSubjectIds.add(sId)
+        }
+      }
+    })
+  }
+
   return subjects.value
     .filter((sub) => allowedSubjectIds.has(Number(sub.id)))
     .map((sub) => ({
       label: sub.name,
-      value: sub.id,
+      value: Number(sub.id),
     }))
 })
-
-const teacherOptions = computed<SelectOption[]>(() =>
-  teachers.value.map((t) => ({
-    label: t.user?.name || t.codenumber || `Professor #${t.id}`,
-    value: t.id,
-  }))
-)
 
 const filteredStudentRows = computed(() => {
   const q = studentSearchQuery.value.trim().toLowerCase()
@@ -144,6 +208,7 @@ const loadOptions = async () => {
       api.get<any[]>('/teachers').catch(() => []),
       api.get<any[]>('/subjects').catch(() => []),
       classSubjectStore.list().catch(() => []),
+      teacherocupationStore.list().catch(() => []),
     ])
     groupconfigs.value = gcRes || []
     teachers.value = tRes || []
@@ -201,6 +266,13 @@ const buildStudentRows = async (groupconfigId: number | null) => {
   }
 }
 
+const syncSubjectWithOptions = () => {
+  const validSubjectIds = new Set(subjectOptions.value.map((opt) => Number(opt.value)))
+  if (form.value.subject_id && !validSubjectIds.has(Number(form.value.subject_id))) {
+    form.value.subject_id = null
+  }
+}
+
 watch(
   () => props.initialData,
   async (newData) => {
@@ -216,27 +288,52 @@ watch(
     studentSearchQuery.value = ''
     fieldErrors.value = {}
     generalMessage.value = ''
+
     if (!classSubjectStore.classSubjects.length) {
       await classSubjectStore.list().catch(() => [])
     }
+    if (!teacherocupationStore.teacherocupations.length) {
+      await teacherocupationStore.list().catch(() => [])
+    }
+
+    syncSubjectWithOptions()
     await buildStudentRows(form.value.groupconfig_id)
   },
   { immediate: true, deep: true }
 )
 
+const onTeacherChange = async () => {
+  clearFieldError('teacher_id')
+  clearFieldError('groupconfig_id')
+  clearFieldError('subject_id')
+
+  if (!teacherocupationStore.teacherocupations.length) {
+    await teacherocupationStore.list().catch(() => [])
+  }
+
+  const validGroupconfigIds = new Set(groupconfigOptions.value.map((opt) => Number(opt.value)))
+  if (form.value.groupconfig_id && !validGroupconfigIds.has(Number(form.value.groupconfig_id))) {
+    form.value.groupconfig_id = null
+    studentSearchQuery.value = ''
+    await buildStudentRows(null)
+  }
+
+  syncSubjectWithOptions()
+}
+
 const onGroupconfigChange = async () => {
   clearFieldError('groupconfig_id')
+  clearFieldError('subject_id')
   studentSearchQuery.value = ''
 
   if (!classSubjectStore.classSubjects.length) {
     await classSubjectStore.list().catch(() => [])
   }
-
-  const validSubjectIds = new Set(subjectOptions.value.map((opt) => Number(opt.value)))
-  if (form.value.subject_id && !validSubjectIds.has(Number(form.value.subject_id))) {
-    form.value.subject_id = null
+  if (!teacherocupationStore.teacherocupations.length) {
+    await teacherocupationStore.list().catch(() => [])
   }
 
+  syncSubjectWithOptions()
   await buildStudentRows(form.value.groupconfig_id)
 }
 
@@ -348,23 +445,27 @@ const handleSubmit = async () => {
 
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-                >Data</label
+                >Professor</label
               >
-              <input
-                v-model="form.date"
-                @input="clearFieldError('date')"
-                type="date"
+              <Select
+                v-model="form.teacher_id"
+                :options="teacherOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Seleccione o professor"
+                filter
+                :filterFields="['label']"
+                showClear
+                @change="onTeacherChange"
                 :class="[
-                  'w-full bg-white dark:bg-slate-950 border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
-                  hasError('date')
-                    ? 'border-red-500'
-                    : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
+                  'w-full rounded-xl text-sm',
+                  hasError('teacher_id') ? 'border-red-500' : '',
                 ]"
               />
               <span
-                v-if="hasError('date')"
+                v-if="hasError('teacher_id')"
                 class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
-                >{{ getFieldError('date') }}</span
+                >{{ getFieldError('teacher_id') }}</span
               >
             </div>
 
@@ -377,7 +478,10 @@ const handleSubmit = async () => {
                 :options="groupconfigOptions"
                 optionLabel="label"
                 optionValue="value"
-                placeholder="Seleccione a turma"
+                :disabled="!form.teacher_id"
+                :placeholder="
+                  form.teacher_id ? 'Seleccione a turma' : 'Seleccione primeiro o professor'
+                "
                 filter
                 showClear
                 @change="onGroupconfigChange"
@@ -402,9 +506,13 @@ const handleSubmit = async () => {
                 :options="subjectOptions"
                 optionLabel="label"
                 optionValue="value"
-                :disabled="!selectedClassId"
+                :disabled="!form.teacher_id || !selectedClassId"
                 :placeholder="
-                  selectedClassId ? 'Seleccione a disciplina' : 'Seleccione primeiro a turma'
+                  !form.teacher_id
+                    ? 'Seleccione primeiro o professor'
+                    : selectedClassId
+                      ? 'Seleccione a disciplina'
+                      : 'Seleccione primeiro a turma'
                 "
                 filter
                 showClear
@@ -423,26 +531,23 @@ const handleSubmit = async () => {
 
             <div>
               <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5"
-                >Professor</label
+                >Data</label
               >
-              <Select
-                v-model="form.teacher_id"
-                :options="teacherOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="Seleccione o professor"
-                filter
-                showClear
-                @change="clearFieldError('teacher_id')"
+              <input
+                v-model="form.date"
+                @input="clearFieldError('date')"
+                type="date"
                 :class="[
-                  'w-full rounded-xl text-sm',
-                  hasError('teacher_id') ? 'border-red-500' : '',
+                  'w-full bg-white dark:bg-slate-950 border rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none transition-all',
+                  hasError('date')
+                    ? 'border-red-500'
+                    : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500',
                 ]"
               />
               <span
-                v-if="hasError('teacher_id')"
+                v-if="hasError('date')"
                 class="text-[11px] text-red-600 dark:text-red-400 mt-1 block font-medium"
-                >{{ getFieldError('teacher_id') }}</span
+                >{{ getFieldError('date') }}</span
               >
             </div>
 
