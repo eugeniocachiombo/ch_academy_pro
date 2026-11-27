@@ -97,7 +97,7 @@ app.get("/", (req, res) => {
 
 if (process.env.NODE_ENV !== "production") {
   app.listen(port, () => {
-    console.log("Servidor a rodar na porta 1999" + port);
+    console.log("Servidor a rodar na porta " + port);
   });
 }
 

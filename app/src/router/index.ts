@@ -26,6 +26,7 @@ declare module 'vue-router' {
 const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
   { path: '/', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
+  { path: '/documentacao', name: 'doc', component: () => import('@/views/Documentation.vue') },
   { path: '/acesso-negado', name: 'unauthorized', component: UnauthorizedView, meta: { public: true } },
   { path: '/conta-bloqueada', name: 'blocked', component: BlockedView, meta: { public: true } }, // <--- Nova rota pública
 
