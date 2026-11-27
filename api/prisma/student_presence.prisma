@@ -19,4 +19,6 @@ model StudentPresence {
   updatedAt DateTime? @updatedAt
 
   student_presence_lists StudentPresenceList[]
+
+  @@unique([date, groupconfig_id, subject_id, schedule_id])
 }
