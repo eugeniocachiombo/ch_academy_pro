@@ -22,6 +22,13 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
   SATURDAY: 'Sábado',
 }
 
+const WEEK_DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
+
+const dayFilterOptions = WEEK_DAYS.map((day) => ({
+  value: day,
+  label: DAY_LABELS[day],
+}))
+
 const presenceStore = useStudentPresenceStore()
 const authStore = useAuthStore()
 
@@ -30,6 +37,7 @@ const p = (name: string) => authStore.getPermition(name)
 const searchQuery = ref('')
 const selectedGroupconfigFilter = ref<number | null>(null)
 const selectedSubjectFilter = ref<number | null>(null)
+const selectedDayFilter = ref<DayOfWeek | null>(null)
 const selectedDateFilter = ref('')
 const expandedCards = ref<Record<number, boolean>>({})
 
@@ -49,13 +57,64 @@ onMounted(async () => {
   } catch {}
 })
 
+const normalizeDayOfWeek = (raw: unknown): DayOfWeek | null => {
+  if (raw == null || raw === '') return null
+
+  const str = String(raw)
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/-FEIRA$/, '')
+
+  if (WEEK_DAYS.includes(str as DayOfWeek)) return str as DayOfWeek
+
+  const map: Record<string, DayOfWeek> = {
+    MON: 'MONDAY', MONDAY: 'MONDAY',
+    TUE: 'TUESDAY', TUES: 'TUESDAY', TUESDAY: 'TUESDAY',
+    WED: 'WEDNESDAY', WEDNESDAY: 'WEDNESDAY',
+    THU: 'THURSDAY', THUR: 'THURSDAY', THURS: 'THURSDAY', THURSDAY: 'THURSDAY',
+    FRI: 'FRIDAY', FRIDAY: 'FRIDAY',
+    SAT: 'SATURDAY', SATURDAY: 'SATURDAY',
+    SEG: 'MONDAY', SEGUNDA: 'MONDAY',
+    TER: 'TUESDAY', TERCA: 'TUESDAY',
+    QUA: 'WEDNESDAY', QUARTA: 'WEDNESDAY',
+    QUI: 'THURSDAY', QUINTA: 'THURSDAY',
+    SEX: 'FRIDAY', SEXTA: 'FRIDAY',
+    SAB: 'SATURDAY', SABADO: 'SATURDAY',
+    '1': 'MONDAY', '2': 'TUESDAY', '3': 'WEDNESDAY',
+    '4': 'THURSDAY', '5': 'FRIDAY', '6': 'SATURDAY',
+  }
+
+  return map[str] ?? null
+}
+
+const getDayFromDateStr = (dateStr?: string | null): DayOfWeek | null => {
+  if (!dateStr) return null
+  const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return null
+  const y = Number(match[1])
+  const m = Number(match[2])
+  const d = Number(match[3])
+  if (!y || !m || !d) return null
+  const utcDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
+  return utcDay === 0 ? null : WEEK_DAYS[utcDay - 1]
+}
+
+const getItemDayOfWeek = (item: any): DayOfWeek | null => {
+  return normalizeDayOfWeek(item?.schedule?.day_of_week) ?? getDayFromDateStr(item?.date)
+}
+
 const formatPeriodLabel = (period: any) => (period?.name ? String(period.name).trim() : '')
 
 const formatScheduleLabel = (schedule: any) => {
   if (!schedule) return ''
-  const day = schedule.day_of_week
-    ? DAY_LABELS[schedule.day_of_week as DayOfWeek] || schedule.day_of_week
-    : ''
+  const normalizedDay = normalizeDayOfWeek(schedule.day_of_week)
+  const day = normalizedDay
+    ? DAY_LABELS[normalizedDay]
+    : schedule.day_of_week
+      ? String(schedule.day_of_week)
+      : ''
   const time = [schedule.start_time, schedule.end_time].filter(Boolean).join(' - ')
   return [day, time].filter(Boolean).join(' · ')
 }
@@ -70,6 +129,8 @@ const getGroupconfigDetails = (item: any) => {
   const roomName = gc.room?.name || gc.room_name || ''
   const yearName = gc.year?.name || gc.year_name || ''
   const scheduleText = formatScheduleLabel(item?.schedule)
+  const itemDay = getItemDayOfWeek(item)
+  const dayLabel = itemDay ? DAY_LABELS[itemDay] : ''
 
   const searchBlob = [
     gcName,
@@ -80,6 +141,7 @@ const getGroupconfigDetails = (item: any) => {
     roomName,
     yearName,
     scheduleText,
+    dayLabel,
   ]
     .filter(Boolean)
     .join(' ')
@@ -93,6 +155,7 @@ const getGroupconfigDetails = (item: any) => {
     roomName,
     yearName,
     scheduleText,
+    dayLabel,
     searchBlob,
   }
 }
@@ -126,6 +189,7 @@ const hasActiveFilters = computed(
     !!searchQuery.value.trim() ||
     selectedGroupconfigFilter.value !== null ||
     selectedSubjectFilter.value !== null ||
+    selectedDayFilter.value !== null ||
     !!selectedDateFilter.value
 )
 
@@ -133,6 +197,7 @@ const clearFilters = () => {
   searchQuery.value = ''
   selectedGroupconfigFilter.value = null
   selectedSubjectFilter.value = null
+  selectedDayFilter.value = null
   selectedDateFilter.value = ''
 }
 
@@ -152,6 +217,12 @@ const filteredPresences = computed(() => {
       Number(item.subject_id) !== Number(selectedSubjectFilter.value)
     ) {
       return false
+    }
+
+    if (selectedDayFilter.value !== null) {
+      if (getItemDayOfWeek(item) !== selectedDayFilter.value) {
+        return false
+      }
     }
 
     if (selectedDateFilter.value) {
@@ -415,7 +486,7 @@ const handleDelete = async () => {
       class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl"
     >
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        <div class="relative md:col-span-4">
+        <div class="relative md:col-span-3">
           <i
             class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"
           ></i>
@@ -427,7 +498,7 @@ const handleDelete = async () => {
           />
         </div>
 
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <Select
             v-model="selectedGroupconfigFilter"
             :options="groupconfigFilterOptions"
@@ -440,7 +511,7 @@ const handleDelete = async () => {
           />
         </div>
 
-        <div class="md:col-span-3">
+        <div class="md:col-span-2">
           <Select
             v-model="selectedSubjectFilter"
             :options="subjectFilterOptions"
@@ -453,7 +524,19 @@ const handleDelete = async () => {
           />
         </div>
 
-        <div class="md:col-span-2 flex items-center gap-2">
+        <div class="md:col-span-2">
+          <Select
+            v-model="selectedDayFilter"
+            :options="dayFilterOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Todos os dias"
+            showClear
+            class="w-full rounded-xl text-sm"
+          />
+        </div>
+
+        <div class="md:col-span-3 flex items-center gap-2">
           <input
             v-model="selectedDateFilter"
             type="date"
@@ -515,6 +598,12 @@ const handleDelete = async () => {
               >
                 <i class="fa-regular fa-calendar text-[10px]"></i>
                 {{ formatDate(item.date) }}
+              </span>
+              <span
+                v-if="getGroupconfigDetails(item).dayLabel"
+                class="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300"
+              >
+                {{ getGroupconfigDetails(item).dayLabel }}
               </span>
               <span
                 v-if="getGroupconfigDetails(item).yearName"
@@ -705,6 +794,7 @@ const handleDelete = async () => {
       :existing-presence="selectedPresence"
       @close="closeModal"
       @saved="handleSaved"
+      @open-existing="openEditModal"
     />
 
     <ConfirmDeleteModal
