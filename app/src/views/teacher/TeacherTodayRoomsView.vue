@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Select from 'primevue/select'
 import { api } from '@/services/api'
 import { showNotification } from '@/services/general_service'
@@ -25,7 +25,7 @@ const DAY_LABELS: Record<DayOfWeek, string> = {
 const WEEK_DAYS: DayOfWeek[] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
 
 const presenceStore = useStudentPresenceStore()
-const authStore = useAuthStore()
+const authStore = useAuthStore() as any
 
 const p = (name: string) => authStore.getPermition(name)
 
@@ -43,6 +43,36 @@ const isModalOpen = ref(false)
 const isEditing = ref(false)
 const selectedPresence = ref<StudentPresence | null>(null)
 const formData = ref<(StudentPresencePayload & { id?: number }) | null>(null)
+
+const normalizeCode = (val: unknown): string => {
+  if (val === undefined || val === null) return ''
+  return String(val).trim().toLowerCase()
+}
+
+const currentUser = computed<any>(() => authStore.currentUser ?? authStore.user ?? null)
+
+const currentUsername = computed<string>(() => normalizeCode(currentUser.value?.username))
+
+const currentRoleName = computed<string>(() => {
+  const fromGetter =
+    typeof authStore.getUserRole === 'function'
+      ? authStore.getUserRole()?.role?.name
+      : null
+  const rawRole = fromGetter ?? currentUser.value?.role?.name ?? ''
+  return String(rawRole)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+})
+
+const isDirectorUser = computed<boolean>(() => {
+  return (
+    currentRoleName.value === 'director' ||
+    currentRoleName.value === 'diretor' ||
+    !!currentUser.value?.isSuperAdmin
+  )
+})
 
 const normalizeDayOfWeek = (raw: unknown): DayOfWeek | null => {
   if (raw == null || raw === '') return null
@@ -95,32 +125,58 @@ const normalizeDateKey = (raw?: string | Date | null): string => {
 }
 
 const activeDayOfWeek = computed(() => getDayFromDateStr(selectedDate.value))
-const activeDayLabel = computed(() => (activeDayOfWeek.value ? DAY_LABELS[activeDayOfWeek.value] : 'Domingo'))
+const activeDayLabel = computed(() =>
+  activeDayOfWeek.value ? DAY_LABELS[activeDayOfWeek.value] : 'Domingo'
+)
 
 const currentTeacher = computed(() => {
-  const user: any = authStore.user
-  if (!user) return null
+  if (!currentUsername.value) return null
   return (
     teachers.value.find(
-      (t: any) =>
-        Number(t.user_id) === Number(user.id) ||
-        Number(t.user?.id) === Number(user.id)
+      (t: any) => normalizeCode(t?.codenumber) === currentUsername.value
     ) ?? null
   )
 })
 
-const teacherOptions = computed(() =>
-  teachers.value.map((t: any) => {
+const teacherOptions = computed(() => {
+  const list = isDirectorUser.value
+    ? teachers.value
+    : currentTeacher.value
+      ? [currentTeacher.value]
+      : []
+
+  return list.map((t: any) => {
     const name = t.user?.name || t.name || `Professor #${t.id}`
-    const code = t.codenumber != null && String(t.codenumber).trim() !== '' ? ` (${t.codenumber})` : ''
+    const code =
+      t.codenumber != null && String(t.codenumber).trim() !== '' ? ` (${t.codenumber})` : ''
     return { label: `${name}${code}`, value: Number(t.id) }
   })
-)
+})
+
+const syncTeacherFilterForRole = () => {
+  if (isDirectorUser.value) return
+  selectedTeacherId.value = currentTeacher.value ? Number(currentTeacher.value.id) : -1
+}
+
+watch([isDirectorUser, currentTeacher], syncTeacherFilterForRole, { immediate: true })
 
 const effectiveTeacherId = computed<number | null>(() => {
-  if (selectedTeacherId.value != null) return Number(selectedTeacherId.value)
-  return currentTeacher.value ? Number(currentTeacher.value.id) : null
+  if (isDirectorUser.value) {
+    return selectedTeacherId.value != null ? Number(selectedTeacherId.value) : null
+  }
+  return currentTeacher.value ? Number(currentTeacher.value.id) : -1
 })
+
+const isLessonOwnerTeacher = (row: any): boolean => {
+  if (!currentUsername.value) return false
+  const teacherCode = normalizeCode(row?.teacher?.codenumber)
+  return !!teacherCode && teacherCode === currentUsername.value
+}
+
+const canManageLessonPresence = (row: any): boolean => {
+  if (!isDirectorUser.value && !isLessonOwnerTeacher(row)) return false
+  return row.presence ? !!p('student-presences.update') : !!p('student-presences.create')
+}
 
 const loadAll = async () => {
   isLoadingData.value = true
@@ -137,9 +193,7 @@ const loadAll = async () => {
     teachers.value = tRes || []
     subjects.value = subRes || []
 
-    if (selectedTeacherId.value == null && currentTeacher.value) {
-      selectedTeacherId.value = Number(currentTeacher.value.id)
-    }
+    syncTeacherFilterForRole()
   } finally {
     isLoadingData.value = false
   }
@@ -175,8 +229,9 @@ const todayRoomLessons = computed(() => {
   const list = schedules.value
     .filter((sch: any) => {
       if (!sch || normalizeDayOfWeek(sch.day_of_week) !== day) return false
-      if (effectiveTeacherId.value != null && Number(sch.teacher_id) !== effectiveTeacherId.value) {
-        return false
+      if (effectiveTeacherId.value != null) {
+        if (effectiveTeacherId.value === -1) return false
+        if (Number(sch.teacher_id) !== effectiveTeacherId.value) return false
       }
       return true
     })
@@ -198,6 +253,7 @@ const todayRoomLessons = computed(() => {
 
       return {
         schedule: sch,
+        teacher,
         id: sch.id,
         roomName,
         timeRange,
@@ -242,9 +298,10 @@ const summaryStats = computed(() => {
 })
 
 const openAttendanceForLesson = (row: any) => {
+  if (!canManageLessonPresence(row)) return
+
   const sch = row.schedule
   if (row.presence) {
-    if (!p('student-presences.update')) return
     isEditing.value = true
     selectedPresence.value = row.presence
     formData.value = {
@@ -257,7 +314,6 @@ const openAttendanceForLesson = (row: any) => {
       school_id: row.presence.school_id ?? sch.school_id ?? null,
     }
   } else {
-    if (!p('student-presences.create')) return
     isEditing.value = false
     selectedPresence.value = null
     formData.value = {
@@ -294,7 +350,8 @@ const handleSaved = async () => {
           Salas de Aula do Dia
         </h1>
         <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          Consulte as salas, horários e o estado das chamadas para <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ activeDayLabel }}</span>.
+          Consulte as salas, horários e o estado das chamadas para
+          <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ activeDayLabel }}</span>.
         </p>
       </div>
 
@@ -364,9 +421,10 @@ const handleSaved = async () => {
             :options="teacherOptions"
             optionLabel="label"
             optionValue="value"
-            placeholder="Todos os professores"
+            :disabled="!isDirectorUser"
+            :placeholder="isDirectorUser ? 'Todos os professores' : 'Meu perfil de professor'"
             filter
-            showClear
+            :showClear="isDirectorUser"
             class="w-full rounded-xl text-sm"
           />
         </div>
@@ -482,7 +540,7 @@ const handleSaved = async () => {
         </div>
 
         <button
-          v-if="(row.presence && p('student-presences.update')) || (!row.presence && p('student-presences.create'))"
+          v-if="canManageLessonPresence(row)"
           type="button"
           @click="openAttendanceForLesson(row)"
           :class="[
