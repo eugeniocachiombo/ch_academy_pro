@@ -61,6 +61,60 @@ const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
 
+const normalizeDayOfWeek = (raw: unknown): DayOfWeek | null => {
+  if (raw == null || raw === '') return null
+
+  const str = String(raw)
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/-FEIRA$/, '')
+
+  if (WEEK_DAYS.includes(str as DayOfWeek)) return str as DayOfWeek
+
+  const map: Record<string, DayOfWeek> = {
+    // Inglês / abreviações
+    MON: 'MONDAY',
+    MONDAY: 'MONDAY',
+    TUE: 'TUESDAY',
+    TUES: 'TUESDAY',
+    TUESDAY: 'TUESDAY',
+    WED: 'WEDNESDAY',
+    WEDNESDAY: 'WEDNESDAY',
+    THU: 'THURSDAY',
+    THUR: 'THURSDAY',
+    THURS: 'THURSDAY',
+    THURSDAY: 'THURSDAY',
+    FRI: 'FRIDAY',
+    FRIDAY: 'FRIDAY',
+    SAT: 'SATURDAY',
+    SATURDAY: 'SATURDAY',
+    // Português / abreviações
+    SEG: 'MONDAY',
+    SEGUNDA: 'MONDAY',
+    TER: 'TUESDAY',
+    TERCA: 'TUESDAY',
+    QUA: 'WEDNESDAY',
+    QUARTA: 'WEDNESDAY',
+    QUI: 'THURSDAY',
+    QUINTA: 'THURSDAY',
+    SEX: 'FRIDAY',
+    SEXTA: 'FRIDAY',
+    SAB: 'SATURDAY',
+    SABADO: 'SATURDAY',
+    // Numéricos comuns (1 = Segunda .. 6 = Sábado)
+    '1': 'MONDAY',
+    '2': 'TUESDAY',
+    '3': 'WEDNESDAY',
+    '4': 'THURSDAY',
+    '5': 'FRIDAY',
+    '6': 'SATURDAY',
+  }
+
+  return map[str] ?? null
+}
+
 const getDayFromDate = (dateStr?: string | null): DayOfWeek | null => {
   if (!dateStr) return null
   const [y, m, d] = dateStr.split('-').map(Number)
@@ -68,6 +122,9 @@ const getDayFromDate = (dateStr?: string | null): DayOfWeek | null => {
   const utcDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay()
   return utcDay === 0 ? null : WEEK_DAYS[utcDay - 1]
 }
+
+const activeDayOfWeek = computed(() => getDayFromDate(form.value.date))
+const activeDayLabel = computed(() => (activeDayOfWeek.value ? DAY_LABELS[activeDayOfWeek.value] : ''))
 
 const selectedGroupconfig = computed(
   () => groupconfigs.value.find((gc) => Number(gc.id) === Number(form.value.groupconfig_id)) ?? null
@@ -110,25 +167,40 @@ const groupconfigOptions = computed<SelectOption[]>(() => {
   return groupconfigs.value.filter((gc) => ids.has(Number(gc.id))).map((gc) => ({ label: gc.name, value: Number(gc.id) }))
 })
 
+const formatScheduleOption = (sch: any): SelectOption => {
+  const normalizedDay = normalizeDayOfWeek(sch.day_of_week)
+  const dayLabel = normalizedDay ? DAY_LABELS[normalizedDay] : String(sch.day_of_week || '')
+  const time = [sch.start_time, sch.end_time].filter(Boolean).join(' - ')
+  const subj = sch.subject?.name || subjects.value.find((s) => Number(s.id) === Number(sch.subject_id))?.name || ''
+  return {
+    label: [dayLabel, time, subj].filter(Boolean).join(' · '),
+    value: Number(sch.id),
+  }
+}
+
 const scheduleOptions = computed<SelectOption[]>(() => {
-  if (!form.value.teacher_id || !form.value.groupconfig_id) return []
-  const matching = schedules.value.filter(
+  if (!form.value.teacher_id || !form.value.groupconfig_id || !activeDayOfWeek.value) return []
+
+  const list = schedules.value.filter(
     (sch: any) =>
       sch &&
       Number(sch.teacher_id) === Number(form.value.teacher_id) &&
       Number(sch.groupconfig_id) === Number(form.value.groupconfig_id) &&
+      normalizeDayOfWeek(sch.day_of_week) === activeDayOfWeek.value &&
       (selectedYearId.value == null || sch.year_id == null || Number(sch.year_id) === selectedYearId.value)
   )
-  const day = getDayFromDate(form.value.date)
-  const byDay = day ? matching.filter((sch: any) => sch.day_of_week === day) : matching
-  const list = byDay.length ? byDay : matching
 
-  return list.map((sch: any) => {
-    const dayLabel = DAY_LABELS[sch.day_of_week as DayOfWeek] || sch.day_of_week || ''
-    const time = [sch.start_time, sch.end_time].filter(Boolean).join(' - ')
-    const subj = sch.subject?.name || subjects.value.find((s) => Number(s.id) === Number(sch.subject_id))?.name || ''
-    return { label: [dayLabel, time, subj].filter(Boolean).join(' · '), value: Number(sch.id) }
-  })
+  const options = list.map(formatScheduleOption)
+
+  if (props.isEditing && form.value.schedule_id != null) {
+    const currentId = Number(form.value.schedule_id)
+    if (!options.some((o) => Number(o.value) === currentId)) {
+      const currentSch = schedules.value.find((s: any) => Number(s.id) === currentId)
+      if (currentSch) options.unshift(formatScheduleOption(currentSch))
+    }
+  }
+
+  return options
 })
 
 const subjectOptions = computed<SelectOption[]>(() => {
@@ -232,11 +304,28 @@ const buildStudentRows = async (groupconfigId: number | null) => {
   }
 }
 
-const syncSelections = () => {
-  const validSchedules = new Set(scheduleOptions.value.map((o) => Number(o.value)))
+const applyScheduleSubject = (scheduleId: number | null) => {
+  if (!scheduleId) return
+  const sch = schedules.value.find((s: any) => Number(s.id) === Number(scheduleId))
+  if (sch?.subject_id != null) {
+    clearFieldError('subject_id')
+    form.value.subject_id = Number(sch.subject_id)
+  }
+}
+
+const syncSelections = (autoPickSingleSchedule = false) => {
+  const opts = scheduleOptions.value
+  const validSchedules = new Set(opts.map((o) => Number(o.value)))
+
   if (form.value.schedule_id && !validSchedules.has(Number(form.value.schedule_id))) {
     form.value.schedule_id = null
   }
+
+  if (autoPickSingleSchedule && !form.value.schedule_id && opts.length === 1) {
+    form.value.schedule_id = opts[0].value
+    applyScheduleSubject(opts[0].value)
+  }
+
   const validSubjects = new Set(subjectOptions.value.map((o) => Number(o.value)))
   if (form.value.subject_id && !validSubjects.has(Number(form.value.subject_id))) {
     form.value.subject_id = null
@@ -251,7 +340,7 @@ watch(
     fieldErrors.value = {}
     generalMessage.value = ''
     await ensureStoresLoaded()
-    syncSelections()
+    syncSelections(!props.isEditing)
     await buildStudentRows(form.value.groupconfig_id)
   },
   { immediate: true, deep: true }
@@ -266,29 +355,25 @@ const onTeacherChange = async () => {
     studentSearchQuery.value = ''
     await buildStudentRows(null)
   }
-  syncSelections()
+  syncSelections(true)
 }
 
 const onGroupconfigChange = async () => {
   clearFieldError('groupconfig_id', 'schedule_id', 'subject_id')
   studentSearchQuery.value = ''
   await ensureStoresLoaded()
-  syncSelections()
+  syncSelections(true)
   await buildStudentRows(form.value.groupconfig_id)
 }
 
 const onScheduleChange = () => {
   clearFieldError('schedule_id')
-  const sch = schedules.value.find((s: any) => Number(s.id) === Number(form.value.schedule_id))
-  if (sch?.subject_id != null) {
-    clearFieldError('subject_id')
-    form.value.subject_id = Number(sch.subject_id)
-  }
+  applyScheduleSubject(form.value.schedule_id ?? null)
 }
 
 const onDateChange = () => {
   clearFieldError('date', 'schedule_id')
-  syncSelections()
+  syncSelections(true)
 }
 
 const markAllAs = (status: PresenceStatus) => {
@@ -428,8 +513,11 @@ const handleSubmit = async () => {
             </div>
 
             <div>
-              <label :class="['block text-xs font-semibold mb-1.5', (!form.teacher_id || !form.groupconfig_id) ? 'text-slate-400 dark:text-slate-600' : 'text-slate-700 dark:text-slate-300']">
-                Horário
+              <label :class="['flex items-center justify-between text-xs font-semibold mb-1.5', (!form.teacher_id || !form.groupconfig_id) ? 'text-slate-400 dark:text-slate-600' : 'text-slate-700 dark:text-slate-300']">
+                <span>Horário</span>
+                <span v-if="activeDayLabel" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  {{ activeDayLabel }}
+                </span>
               </label>
               <Select
                 v-model="form.schedule_id"
@@ -437,7 +525,7 @@ const handleSubmit = async () => {
                 optionLabel="label"
                 optionValue="value"
                 :disabled="!form.teacher_id || !form.groupconfig_id"
-                :placeholder="(!form.teacher_id || !form.groupconfig_id) ? 'Bloqueado · Seleccione professor e turma' : 'Opcional · Seleccione o horário'"
+                :placeholder="(!form.teacher_id || !form.groupconfig_id) ? 'Bloqueado · Seleccione professor e turma' : `Opcional · Horários de ${activeDayLabel || 'hoje'}`"
                 filter
                 showClear
                 @change="onScheduleChange"
