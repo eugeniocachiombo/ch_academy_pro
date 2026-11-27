@@ -33,7 +33,11 @@ const props = defineProps<{
   existingPresence?: StudentPresence | null
 }>()
 
-const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+const emit = defineEmits<{
+  (e: 'close'): void
+  (e: 'saved'): void
+  (e: 'open-existing', presence: StudentPresence): void
+}>()
 
 const presenceStore = useStudentPresenceStore()
 const presenceListStore = useStudentPresenceListStore()
@@ -61,6 +65,12 @@ const fieldErrors = ref<Record<string, string[]>>({})
 const generalMessage = ref('')
 const internalLoading = ref(false)
 
+const normalizeDateKey = (raw?: string | Date | null): string => {
+  if (!raw) return ''
+  const str = String(raw)
+  return str.length >= 10 ? str.slice(0, 10) : new Date(str).toISOString().slice(0, 10)
+}
+
 const normalizeDayOfWeek = (raw: unknown): DayOfWeek | null => {
   if (raw == null || raw === '') return null
 
@@ -74,42 +84,20 @@ const normalizeDayOfWeek = (raw: unknown): DayOfWeek | null => {
   if (WEEK_DAYS.includes(str as DayOfWeek)) return str as DayOfWeek
 
   const map: Record<string, DayOfWeek> = {
-    // Inglês / abreviações
-    MON: 'MONDAY',
-    MONDAY: 'MONDAY',
-    TUE: 'TUESDAY',
-    TUES: 'TUESDAY',
-    TUESDAY: 'TUESDAY',
-    WED: 'WEDNESDAY',
-    WEDNESDAY: 'WEDNESDAY',
-    THU: 'THURSDAY',
-    THUR: 'THURSDAY',
-    THURS: 'THURSDAY',
-    THURSDAY: 'THURSDAY',
-    FRI: 'FRIDAY',
-    FRIDAY: 'FRIDAY',
-    SAT: 'SATURDAY',
-    SATURDAY: 'SATURDAY',
-    // Português / abreviações
-    SEG: 'MONDAY',
-    SEGUNDA: 'MONDAY',
-    TER: 'TUESDAY',
-    TERCA: 'TUESDAY',
-    QUA: 'WEDNESDAY',
-    QUARTA: 'WEDNESDAY',
-    QUI: 'THURSDAY',
-    QUINTA: 'THURSDAY',
-    SEX: 'FRIDAY',
-    SEXTA: 'FRIDAY',
-    SAB: 'SATURDAY',
-    SABADO: 'SATURDAY',
-    // Numéricos comuns (1 = Segunda .. 6 = Sábado)
-    '1': 'MONDAY',
-    '2': 'TUESDAY',
-    '3': 'WEDNESDAY',
-    '4': 'THURSDAY',
-    '5': 'FRIDAY',
-    '6': 'SATURDAY',
+    MON: 'MONDAY', MONDAY: 'MONDAY',
+    TUE: 'TUESDAY', TUES: 'TUESDAY', TUESDAY: 'TUESDAY',
+    WED: 'WEDNESDAY', WEDNESDAY: 'WEDNESDAY',
+    THU: 'THURSDAY', THUR: 'THURSDAY', THURS: 'THURSDAY', THURSDAY: 'THURSDAY',
+    FRI: 'FRIDAY', FRIDAY: 'FRIDAY',
+    SAT: 'SATURDAY', SATURDAY: 'SATURDAY',
+    SEG: 'MONDAY', SEGUNDA: 'MONDAY',
+    TER: 'TUESDAY', TERCA: 'TUESDAY',
+    QUA: 'WEDNESDAY', QUARTA: 'WEDNESDAY',
+    QUI: 'THURSDAY', QUINTA: 'THURSDAY',
+    SEX: 'FRIDAY', SEXTA: 'FRIDAY',
+    SAB: 'SATURDAY', SABADO: 'SATURDAY',
+    '1': 'MONDAY', '2': 'TUESDAY', '3': 'WEDNESDAY',
+    '4': 'THURSDAY', '5': 'FRIDAY', '6': 'SATURDAY',
   }
 
   return map[str] ?? null
@@ -223,6 +211,35 @@ const subjectOptions = computed<SelectOption[]>(() => {
   return subjects.value.filter((sub) => allowedIds.has(Number(sub.id))).map((sub) => ({ label: sub.name, value: Number(sub.id) }))
 })
 
+const duplicatePresence = computed<StudentPresence | null>(() => {
+  const dateKey = normalizeDateKey(form.value.date)
+  const gcId = form.value.groupconfig_id ? Number(form.value.groupconfig_id) : null
+  const subjId = form.value.subject_id ? Number(form.value.subject_id) : null
+  const schId = form.value.schedule_id != null ? Number(form.value.schedule_id) : null
+
+  if (!dateKey || !gcId || !subjId) return null
+
+  return (
+    (presenceStore.presences || []).find((item: any) => {
+      if (!item) return false
+      if (props.isEditing && form.value.id && Number(item.id) === Number(form.value.id)) return false
+
+      const sameLesson =
+        normalizeDateKey(item.date) === dateKey &&
+        Number(item.groupconfig_id) === gcId &&
+        Number(item.subject_id) === subjId
+
+      if (!sameLesson) return false
+
+      const itemSchId = item.schedule_id != null ? Number(item.schedule_id) : null
+      if (schId != null && itemSchId != null) {
+        return schId === itemSchId
+      }
+      return true
+    }) ?? null
+  )
+})
+
 const filteredStudentRows = computed(() => {
   const q = studentSearchQuery.value.trim().toLowerCase()
   if (!q) return studentRows.value
@@ -247,6 +264,7 @@ const clearFieldError = (...fields: string[]) => {
 
 const ensureStoresLoaded = async () => {
   const tasks: Promise<any>[] = []
+  if (!presenceStore.presences.length) tasks.push(presenceStore.list().catch(() => []))
   if (!classSubjectStore.classSubjects.length) tasks.push(classSubjectStore.list().catch(() => []))
   if (!teacherocupationStore.teacherocupations.length) tasks.push(teacherocupationStore.list().catch(() => []))
   if (!schedules.value.length) tasks.push(api.get<any[]>('/schedules').then((r) => (schedules.value = r || [])).catch(() => []))
@@ -348,6 +366,7 @@ watch(
 
 const onTeacherChange = async () => {
   clearFieldError('teacher_id', 'groupconfig_id', 'schedule_id', 'subject_id')
+  generalMessage.value = ''
   await ensureStoresLoaded()
   const validGroups = new Set(groupconfigOptions.value.map((o) => Number(o.value)))
   if (form.value.groupconfig_id && !validGroups.has(Number(form.value.groupconfig_id))) {
@@ -360,6 +379,7 @@ const onTeacherChange = async () => {
 
 const onGroupconfigChange = async () => {
   clearFieldError('groupconfig_id', 'schedule_id', 'subject_id')
+  generalMessage.value = ''
   studentSearchQuery.value = ''
   await ensureStoresLoaded()
   syncSelections(true)
@@ -368,11 +388,13 @@ const onGroupconfigChange = async () => {
 
 const onScheduleChange = () => {
   clearFieldError('schedule_id')
+  generalMessage.value = ''
   applyScheduleSubject(form.value.schedule_id ?? null)
 }
 
 const onDateChange = () => {
   clearFieldError('date', 'schedule_id')
+  generalMessage.value = ''
   syncSelections(true)
 }
 
@@ -382,8 +404,17 @@ const markAllAs = (status: PresenceStatus) => {
 }
 
 const handleSubmit = async () => {
+  if (internalLoading.value) return
   fieldErrors.value = {}
   generalMessage.value = ''
+
+  if (duplicatePresence.value) {
+    const msg = 'Já existe uma chamada registada para esta turma, disciplina e data.'
+    generalMessage.value = msg
+    showNotification(msg, 'warning')
+    return
+  }
+
   internalLoading.value = true
   try {
     const payload: StudentPresencePayload = {
@@ -454,6 +485,23 @@ const handleSubmit = async () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="flex-1 flex flex-col overflow-hidden">
+        <div
+          v-if="duplicatePresence && !props.isEditing"
+          class="mx-6 mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs flex flex-wrap items-center justify-between gap-3"
+        >
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-info text-base text-amber-500 shrink-0"></i>
+            <span>Já existe uma chamada registada para esta turma, disciplina e data.</span>
+          </div>
+          <button
+            type="button"
+            @click="emit('open-existing', duplicatePresence)"
+            class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 font-semibold text-amber-900 dark:text-amber-200 transition-colors cursor-pointer"
+          >
+            Abrir chamada existente
+          </button>
+        </div>
+
         <div
           v-if="generalMessage && !Object.keys(fieldErrors).length"
           class="mx-6 mt-4 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs flex items-start gap-3"
@@ -691,7 +739,7 @@ const handleSubmit = async () => {
           </button>
           <button
             type="submit"
-            :disabled="internalLoading"
+            :disabled="internalLoading || (!!duplicatePresence && !props.isEditing)"
             class="px-6 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
           >
             <i v-if="internalLoading" class="fa-solid fa-spinner animate-spin"></i>
