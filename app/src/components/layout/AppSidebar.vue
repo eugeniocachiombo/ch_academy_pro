@@ -104,8 +104,8 @@ const menuItems = computed(() => [
     children: [
       { id: 'teachers', label: 'Docentes', icon: 'fa-id-badge', permition: p('teachers.manage') },
       { id: 'teacherocupations', label: 'Alocação de Professores', icon: 'fa-chalkboard-user', permition: p('teacherocupations.manage') },
+      { id: 'teacher-today-rooms', label: 'Salas de Hoje', icon: 'fa-door-open', permition: p('student-presences.manage') },
       { id: 'student-presences', label: 'Presença de Alunos', icon: 'fa-clipboard-user', permition: p('student-presences.manage') },
-      // { id: 'teachers-schedule', label: 'Horários', icon: 'fa-calendar-days', permition: p('schedule.manage') },
     ],
   },
   {
