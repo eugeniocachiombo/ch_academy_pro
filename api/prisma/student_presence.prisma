@@ -20,5 +20,5 @@ model StudentPresence {
 
   student_presence_lists StudentPresenceList[]
 
-  @@unique([date, groupconfig_id, subject_id, schedule_id])
+  @@unique([school_id, teacher_id, date, groupconfig_id, subject_id, schedule_id])
 }
