@@ -9,6 +9,7 @@ import NoticeModal from '@/components/shared/NoticeModal.vue'
 // import ChatWidget from '@/components/shared/ChatWidget.vue'
 import { useYearStore } from '@/stores/year.store'
 import { closeOverlays, showNotification } from '@/services/general_service'
+import { isRouteLoading } from '@/composables/useRouteLoading'
 import Toast from 'primevue/toast'
 import AppBottomNav from '@/components/layout/AppBottomNav.vue'
 
@@ -56,6 +57,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <!-- Barra global de carregamento de rota -->
+  <div
+    v-if="isRouteLoading"
+    class="fixed top-0 left-0 right-0 z-[9999] h-1 overflow-hidden bg-blue-500/20 pointer-events-none"
+  >
+    <div class="h-full w-1/3 animate-route-bar bg-blue-600 dark:bg-blue-400" />
+  </div>
+
   <RouterView v-if="isPublic" />
 
   <template v-else>
@@ -65,7 +74,11 @@ onBeforeUnmount(() => {
       <AppHeader />
 
       <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50/50 dark:bg-slate-950 relative">
-        <RouterView />
+        <RouterView v-slot="{ Component, route: currentRoute }">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="currentRoute.fullPath" />
+          </Transition>
+        </RouterView>
       </main>
     </div>
 
@@ -74,6 +87,40 @@ onBeforeUnmount(() => {
     <NoticeModal />
     <AppBottomNav />
   </template>
+
   <Toast />
   <ToastNotification />
 </template>
+
+<style scoped>
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@keyframes route-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+  50% {
+    transform: translateX(150%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+.animate-route-bar {
+  animation: route-bar 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+</style>

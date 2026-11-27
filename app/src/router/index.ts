@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import UnauthorizedView from '@/views/UnauthorizedView.vue'
-import BlockedView from '@/views/BlockedView.vue' // <--- Importe a nova view
+import BlockedView from '@/views/BlockedView.vue'
+import { isRouteLoading } from '@/composables/useRouteLoading'
 
 // Importação das rotas modularizadas
 import { academicRoutes } from './modules/academic.routes'
@@ -28,7 +29,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/', name: 'dashboard', component: () => import('@/views/DashboardView.vue') },
   { path: '/documentacao', name: 'doc', component: () => import('@/views/Documentation.vue') },
   { path: '/acesso-negado', name: 'unauthorized', component: UnauthorizedView, meta: { public: true } },
-  { path: '/conta-bloqueada', name: 'blocked', component: BlockedView, meta: { public: true } }, // <--- Nova rota pública
+  { path: '/conta-bloqueada', name: 'blocked', component: BlockedView, meta: { public: true } },
 
   // Agrupando todas as rotas dos módulos via spread operator (...)
   ...academicRoutes,
@@ -48,7 +49,14 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to) => {
+let loadingTimeout: ReturnType<typeof setTimeout> | undefined
+
+router.beforeEach(async (to, from) => {
+  if (to.fullPath !== from.fullPath) {
+    clearTimeout(loadingTimeout)
+    isRouteLoading.value = true
+  }
+
   const authStore = useAuthStore()
 
   // 1. Autenticação (a store já faz initUser() ao ser criada)
@@ -69,8 +77,7 @@ router.beforeEach(async (to) => {
       return { name: 'login' }
     }
 
-    // --- NOVO: Se o utilizador estiver bloqueado, redireciona para a página de bloqueio ---
-    // (Garante que não entra em loop se já estiver indo para a rota 'blocked')
+    // Se o utilizador estiver bloqueado, redireciona para a página de bloqueio
     if (authStore.currentUser?.status === 'BLOCKED' && to.name !== 'blocked') {
       return { name: 'blocked' }
     }
@@ -79,6 +86,18 @@ router.beforeEach(async (to) => {
       return { name: 'unauthorized' }
     }
   }
+})
+
+router.afterEach(() => {
+  clearTimeout(loadingTimeout)
+  loadingTimeout = setTimeout(() => {
+    isRouteLoading.value = false
+  }, 200)
+})
+
+router.onError(() => {
+  clearTimeout(loadingTimeout)
+  isRouteLoading.value = false
 })
 
 export default router
