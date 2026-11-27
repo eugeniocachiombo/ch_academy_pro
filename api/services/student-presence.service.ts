@@ -34,6 +34,7 @@ class StudentPresenceService extends BaseService {
                         },
                     },
                     subject: true,
+                    schedule: true,
                     author: true,
                     student_presence_lists: {
                         include: {
@@ -44,7 +45,7 @@ class StudentPresenceService extends BaseService {
                             },
                         },
                     },
-            },
+                },
             }
         );
     }

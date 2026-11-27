@@ -11,6 +11,17 @@ import StudentPresencesFormView from './StudentPresencesFormView.vue'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal.vue'
 import { useAuthStore } from '@/stores/auth.store'
 
+type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY'
+
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  MONDAY: 'Segunda',
+  TUESDAY: 'Terça',
+  WEDNESDAY: 'Quarta',
+  THURSDAY: 'Quinta',
+  FRIDAY: 'Sexta',
+  SATURDAY: 'Sábado',
+}
+
 const presenceStore = useStudentPresenceStore()
 const authStore = useAuthStore()
 
@@ -38,12 +49,15 @@ onMounted(async () => {
   } catch {}
 })
 
-const formatPeriodLabel = (period: any) => {
-  if (!period) return ''
-  const name = period.name || ''
-  const start = period.starthour || ''
-  const end = period.endhour || ''
-  return `${name}`.trim()
+const formatPeriodLabel = (period: any) => (period?.name ? String(period.name).trim() : '')
+
+const formatScheduleLabel = (schedule: any) => {
+  if (!schedule) return ''
+  const day = schedule.day_of_week
+    ? DAY_LABELS[schedule.day_of_week as DayOfWeek] || schedule.day_of_week
+    : ''
+  const time = [schedule.start_time, schedule.end_time].filter(Boolean).join(' - ')
+  return [day, time].filter(Boolean).join(' · ')
 }
 
 const getGroupconfigDetails = (item: any) => {
@@ -55,8 +69,18 @@ const getGroupconfigDetails = (item: any) => {
   const periodText = formatPeriodLabel(gc.period)
   const roomName = gc.room?.name || gc.room_name || ''
   const yearName = gc.year?.name || gc.year_name || ''
+  const scheduleText = formatScheduleLabel(item?.schedule)
 
-  const searchBlob = [gcName, groupName, courseName, className, periodText, roomName, yearName]
+  const searchBlob = [
+    gcName,
+    groupName,
+    courseName,
+    className,
+    periodText,
+    roomName,
+    yearName,
+    scheduleText,
+  ]
     .filter(Boolean)
     .join(' ')
 
@@ -68,6 +92,7 @@ const getGroupconfigDetails = (item: any) => {
     periodText,
     roomName,
     yearName,
+    scheduleText,
     searchBlob,
   }
 }
@@ -155,8 +180,7 @@ const stats = computed(() => {
   let justified = 0
 
   for (const item of filteredPresences.value) {
-    const list = item.student_presence_lists || []
-    for (const entry of list) {
+    for (const entry of item.student_presence_lists || []) {
       if (entry.status === 'PRESENT') present++
       else if (entry.status === 'ABSENT') absent++
       else if (entry.status === 'JUSTIFICATED') justified++
@@ -223,12 +247,13 @@ const openCreateModal = () => {
     groupconfig_id: null,
     teacher_id: null,
     subject_id: null,
+    schedule_id: null,
     school_id: null,
   }
   isModalOpen.value = true
 }
 
-const openEditModal = (presence: StudentPresence) => {
+const openEditModal = (presence: any) => {
   if (!p('student-presences.update')) return
   isEditing.value = true
   selectedPresence.value = presence
@@ -238,6 +263,7 @@ const openEditModal = (presence: StudentPresence) => {
     groupconfig_id: presence.groupconfig_id,
     teacher_id: presence.teacher_id,
     subject_id: presence.subject_id,
+    schedule_id: presence.schedule_id ?? presence.schedule?.id ?? null,
     school_id: presence.school_id ?? null,
   }
   isModalOpen.value = true
@@ -396,7 +422,7 @@ const handleDelete = async () => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Pesquisar turma, classe, curso, disciplina ou professor..."
+            placeholder="Pesquisar turma, classe, curso, horário, disciplina ou professor..."
             class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -531,7 +557,9 @@ const handleDelete = async () => {
           </div>
         </div>
 
-        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-1 text-xs">
+        <div
+          class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-1 text-xs"
+        >
           <div class="flex items-baseline justify-between gap-2">
             <span class="text-slate-500 dark:text-slate-400 shrink-0">Turma:</span>
             <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
@@ -554,6 +582,12 @@ const handleDelete = async () => {
             <span class="text-slate-500 dark:text-slate-400 shrink-0">Turno:</span>
             <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
               {{ getGroupconfigDetails(item).periodText || '—' }}
+            </span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Horário:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).scheduleText || '—' }}
             </span>
           </div>
           <div class="flex items-baseline justify-between gap-2">
