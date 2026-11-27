@@ -51,6 +51,9 @@ const presenceToDeleteId = ref<number | null>(null)
 const presenceToDeleteLabel = ref('')
 const isDeleting = ref(false)
 
+const exportingExcelId = ref<number | null>(null)
+const exportingPdfId = ref<number | null>(null)
+
 onMounted(async () => {
   try {
     await presenceStore.list()
@@ -309,6 +312,40 @@ const formatTeacherName = (item: any) => {
   return 'Sem professor'
 }
 
+const handleDownloadRecordExcel = async (item: any) => {
+  if (!item?.id || exportingExcelId.value === item.id) return
+  exportingExcelId.value = Number(item.id)
+  try {
+    const datePart = item.date ? String(item.date).slice(0, 10) : 'chamada'
+    await presenceStore.exportExcel(item.id, `chamada-${item.id}-${datePart}.xlsx`)
+    showNotification('Excel da chamada exportado com sucesso.', 'success')
+  } catch (err: any) {
+    showNotification(
+      presenceStore.error || err?.message || 'Erro ao exportar Excel da chamada.',
+      'error'
+    )
+  } finally {
+    exportingExcelId.value = null
+  }
+}
+
+const handleDownloadRecordPdf = async (item: any) => {
+  if (!item?.id || exportingPdfId.value === item.id) return
+  exportingPdfId.value = Number(item.id)
+  try {
+    const datePart = item.date ? String(item.date).slice(0, 10) : 'chamada'
+    await presenceStore.exportPdf(item.id, `chamada-${item.id}-${datePart}.pdf`)
+    showNotification('PDF da chamada exportado com sucesso.', 'success')
+  } catch (err: any) {
+    showNotification(
+      presenceStore.error || err?.message || 'Erro ao exportar PDF da chamada.',
+      'error'
+    )
+  } finally {
+    exportingPdfId.value = null
+  }
+}
+
 const openCreateModal = () => {
   if (!p('student-presences.create')) return
   isEditing.value = false
@@ -404,10 +441,11 @@ const handleDelete = async () => {
           Registe e acompanhe a assiduidade por turma, disciplina e professor.
         </p>
       </div>
+
       <button
         v-if="p('student-presences.create')"
         @click="openCreateModal"
-        class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95"
+        class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-xl shadow-indigo-600/25 transition-all active:scale-95 cursor-pointer"
       >
         <i class="fa-solid fa-plus-circle text-sm"></i>
         <span>Nova Chamada</span>
@@ -623,15 +661,42 @@ const handleDelete = async () => {
             </p>
           </div>
 
-          <div
-            class="flex items-center gap-1.5 shrink-0"
-            v-if="p('student-presences.update') || p('student-presences.delete')"
-          >
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              :disabled="exportingExcelId === item.id"
+              @click="handleDownloadRecordExcel(item)"
+              title="Exportar Excel desta chamada"
+              class="h-8 px-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1 text-[11px] font-bold transition-colors hover:bg-emerald-100 dark:hover:bg-emerald-900/50 disabled:opacity-50 cursor-pointer"
+            >
+              <i
+                :class="[
+                  'fa-solid text-xs',
+                  exportingExcelId === item.id ? 'fa-spinner fa-spin' : 'fa-file-excel',
+                ]"
+              ></i>
+              <span>XLS</span>
+            </button>
+            <button
+              type="button"
+              :disabled="exportingPdfId === item.id"
+              @click="handleDownloadRecordPdf(item)"
+              title="Exportar PDF desta chamada"
+              class="h-8 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center gap-1 text-[11px] font-bold transition-colors hover:bg-rose-100 dark:hover:bg-rose-900/50 disabled:opacity-50 cursor-pointer"
+            >
+              <i
+                :class="[
+                  'fa-solid text-xs',
+                  exportingPdfId === item.id ? 'fa-spinner fa-spin' : 'fa-file-pdf',
+                ]"
+              ></i>
+              <span>PDF</span>
+            </button>
             <button
               v-if="p('student-presences.update')"
               @click="openEditModal(item)"
               title="Gerir chamada"
-              class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50"
+              class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-900/50 cursor-pointer"
             >
               <i class="fa-solid fa-pen-to-square text-xs"></i>
             </button>
@@ -639,7 +704,7 @@ const handleDelete = async () => {
               v-if="p('student-presences.delete')"
               @click="confirmDeletePresence(item)"
               title="Eliminar chamada"
-              class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50"
+              class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-950/50 text-red-600 flex items-center justify-center transition-colors hover:bg-red-100 dark:hover:bg-red-900/50 cursor-pointer"
             >
               <i class="fa-solid fa-trash text-xs"></i>
             </button>

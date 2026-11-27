@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{TITULO}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #111; }
+    .topo { text-align: center; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 16px; }
+    .topo p { margin: 2px 0; }
+    .campos { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-bottom: 16px; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; }
+    th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div class="topo">
+    <p><strong>REPÚBLICA DE ANGOLA</strong></p>
+    <p><strong>MINISTÉRIO DA EDUCAÇÃO</strong></p>
+    <p>{{ESCOLA}}</p>
+  </div>
+
+  <h2>{{TITULO}}</h2>
+  <div class="campos">{{CAMPOS_EXTRAS}}</div>
+
+  {{CONTEUDO}}
+</body>
+</html>

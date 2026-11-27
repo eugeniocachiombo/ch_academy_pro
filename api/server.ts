@@ -35,6 +35,7 @@ import { provinceRoutes } from "./routes/province.routes.js";
 import { municipalityRoutes } from "./routes/municipality.routes.js";
 import { studentPresenceRoutes } from "./routes/student-presence.routes.js";
 import { studentPresenceListRoutes } from "./routes/student-presence-list.routes.js";
+import { exportRoutes } from './routes/export.routes.js';
 
 const app = express();
 const port = 1999
@@ -82,7 +83,8 @@ app.use(
   provinceRoutes,
   municipalityRoutes,
   studentPresenceRoutes,
-  studentPresenceListRoutes
+  studentPresenceListRoutes,
+  exportRoutes
 );
 
 app.get("/", (req, res) => {
