@@ -8,16 +8,19 @@ export interface Teacherocupation {
   teacher_id: number | string;
   subject_id: number | string;
   year_id: number | string;
+  groupconfig_id?: number | string;
   school_id?: number | string | null;
   teacher?: any;
   subject?: any;
   year?: any;
+  groupconfig?: any;
 }
 
 export interface TeacherocupationPayload {
   teacher_id: number | string;
   subject_id: number | string;
   year_id: number | string;
+  groupconfig_id?: number | string | null;
   school_id?: number | string | null;
 }
 

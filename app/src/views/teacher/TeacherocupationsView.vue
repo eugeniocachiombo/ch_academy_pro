@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useTeacherStore } from '@/stores/teacher.store'
 import { useGroupconfigStore } from '@/stores/groupconfig.store'
 import { useSubjectStore } from '@/stores/subject.store'
 import { useYearStore } from '@/stores/year.store'
 import { useTeacherocupationStore } from '@/stores/teacherocupation.store'
+import { useClassSubjectStore } from '@/stores/class-subject.store'
 import { useAuthStore } from '@/stores/auth.store'
 import Select from 'primevue/select'
 
@@ -15,18 +16,30 @@ const groupconfigStore = useGroupconfigStore()
 const subjectStore = useSubjectStore()
 const yearStore = useYearStore()
 const teacherocupationStore = useTeacherocupationStore()
+const classSubjectStore = useClassSubjectStore()
 const authStore = useAuthStore()
 
 const p = (name: string) => authStore.getPermition(name)
 const canEdit = () => p('teacherocupations.update') || p('teacherocupations.manage')
 
-const same = (a: Id, b: Id) => String(a) === String(b)
+const same = (a: Id | null | undefined, b: Id | null | undefined) => {
+  if (a == null && b == null) return true
+  if (a == null || b == null) return false
+  return String(a) === String(b)
+}
+
+const formatTeacherLabel = (teacher: any) => {
+  const name = teacher?.user?.name || ''
+  const code = teacher?.codenumber != null && String(teacher.codenumber).trim() !== '' ? String(teacher.codenumber) : ''
+  if (name && code) return `${name} (${code})`
+  return name || (code ? `(${code})` : '')
+}
 
 const selectedTeacherId = ref<Id | null>(null)
 const selectedYearId = ref<Id | null>(null)
-const selectedSubjectId = ref<Id | null>(null)
+const selectedGroupconfigId = ref<Id | null>(null)
 
-const assignmentMap = ref<Record<string, Id[]>>({}) 
+const assignmentMap = ref<Record<string, Id[]>>({})
 const originalAssignmentMap = ref<Record<string, Id[]>>({})
 
 const teacherSearchQuery = ref('')
@@ -35,18 +48,37 @@ const internalLoading = ref(false)
 const globalError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 
+const filteredGroupconfigs = computed(() => {
+  const list = groupconfigStore.groupconfigs || []
+  if (selectedYearId.value == null) return list
+  return list.filter((gc: any) => gc && same(gc.year_id, selectedYearId.value))
+})
+
+const currentGroupconfig = computed(() => {
+  if (selectedGroupconfigId.value == null) return null
+  return (groupconfigStore.groupconfigs || []).find((gc: any) => gc && same(gc.id, selectedGroupconfigId.value)) || null
+})
+
+watch(selectedYearId, () => {
+  if (
+    selectedGroupconfigId.value != null &&
+    !filteredGroupconfigs.value.some((gc: any) => same(gc.id, selectedGroupconfigId.value))
+  ) {
+    selectedGroupconfigId.value = null
+  }
+})
+
+const makeKey = (teacherId: Id, yearId: Id, groupconfigId: Id | null | undefined) =>
+  `${teacherId}_${yearId}_${groupconfigId != null ? groupconfigId : 'none'}`
+
 const buildMapping = () => {
   const mapping: Record<string, Id[]> = {}
   teacherocupationStore.teacherocupations.forEach((to: any) => {
-    const tId = String(to.teacher_id)
-    const yId = String(to.year_id)
-    const sId = to.subject_id
+    if (to.subject_id == null) return
 
-    if (sId == null) return
-
-    const key = `${tId}_${yId}`
+    const key = makeKey(String(to.teacher_id), String(to.year_id), to.groupconfig_id)
     if (!mapping[key]) mapping[key] = []
-    mapping[key].push(sId)
+    mapping[key].push(to.subject_id)
   })
   assignmentMap.value = JSON.parse(JSON.stringify(mapping))
   originalAssignmentMap.value = JSON.parse(JSON.stringify(mapping))
@@ -59,7 +91,8 @@ onMounted(async () => {
       groupconfigStore.list(),
       subjectStore.list(),
       yearStore.list(),
-      teacherocupationStore.list()
+      teacherocupationStore.list(),
+      classSubjectStore.list()
     ])
 
     if (teacherStore.teachers.length > 0) {
@@ -77,11 +110,12 @@ const totalTeachersCount = computed(() => teacherStore.teachers.filter((t: any) 
 const totalSubjectsCount = computed(() => subjectStore.subjects.filter((s: any) => s != null).length)
 
 const filteredTeachers = computed(() => {
-  const q = teacherSearchQuery.value.toLowerCase()
+  const q = teacherSearchQuery.value.trim().toLowerCase()
   return teacherStore.teachers.filter((teacher: any) => {
     if (!teacher) return false
-    const name = teacher.user?.name || ''
-    return !q || name.toLowerCase().includes(q) || String(teacher.codenumber || '').toLowerCase().includes(q)
+    const name = String(teacher.user?.name || '').toLowerCase()
+    const code = String(teacher.codenumber || '').toLowerCase()
+    return !q || name.includes(q) || code.includes(q)
   })
 })
 
@@ -92,8 +126,21 @@ const currentTeacher = computed(() => {
 
 const filteredSubjects = computed(() => {
   const q = subjectSearchQuery.value.toLowerCase()
+  const gc: any = currentGroupconfig.value
+  const classId = gc?.class_id
+
+  const allowedSubjectIds =
+    classId != null
+      ? new Set(
+          (classSubjectStore.classSubjects || [])
+            .filter((cs: any) => cs && same(cs.class_id, classId))
+            .map((cs: any) => String(cs.subject_id))
+        )
+      : null
+
   return subjectStore.subjects.filter((subj: any) => {
     if (!subj) return false
+    if (allowedSubjectIds && !allowedSubjectIds.has(String(subj.id))) return false
     return !q ||
       subj.name?.toLowerCase().includes(q) ||
       subj.code?.toLowerCase().includes(q)
@@ -102,7 +149,7 @@ const filteredSubjects = computed(() => {
 
 const currentKey = computed(() => {
   if (selectedTeacherId.value == null || selectedYearId.value == null) return null
-  return `${selectedTeacherId.value}_${selectedYearId.value}`
+  return makeKey(selectedTeacherId.value, selectedYearId.value, selectedGroupconfigId.value)
 })
 
 const isSubjectAssigned = (subjectId: Id) => {
@@ -128,9 +175,16 @@ const toggleSubject = (subjectId: Id) => {
 }
 
 const saveChanges = async () => {
-  const key = currentKey.value
-  if (!key || selectedTeacherId.value == null || selectedYearId.value == null) return
+  if (selectedTeacherId.value == null || selectedYearId.value == null) return
   if (!canEdit()) return
+
+  if (selectedGroupconfigId.value == null) {
+    globalError.value = 'É obrigatório selecionar a turma antes de guardar.'
+    return
+  }
+
+  const key = currentKey.value
+  if (!key) return
 
   internalLoading.value = true
   globalError.value = null
@@ -139,6 +193,7 @@ const saveChanges = async () => {
   try {
     const teacherId = selectedTeacherId.value
     const yearId = selectedYearId.value
+    const groupconfigId = selectedGroupconfigId.value
 
     const currentSelected = assignmentMap.value[key] || []
     const originalSelected = originalAssignmentMap.value[key] || []
@@ -151,7 +206,8 @@ const saveChanges = async () => {
         (to: any) =>
           same(to.teacher_id, teacherId) &&
           same(to.year_id, yearId) &&
-          same(to.subject_id, subjectId)
+          same(to.subject_id, subjectId) &&
+          same(to.groupconfig_id, groupconfigId)
       )
       if (found && found.id) {
         await teacherocupationStore.remove(found.id)
@@ -162,7 +218,8 @@ const saveChanges = async () => {
       await teacherocupationStore.create({
         teacher_id: teacherId,
         year_id: yearId,
-        subject_id: subjectId
+        subject_id: subjectId,
+        groupconfig_id: groupconfigId
       })
     }
 
@@ -186,7 +243,7 @@ const saveChanges = async () => {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Atribuição de Disciplinas a Professores</h1>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure as disciplinas lecionadas por cada professor por ano letivo.</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Configure as disciplinas lecionadas por cada professor por ano letivo e turma.</p>
       </div>
       <button
         v-if="currentKey && (p('teacherocupations.update') || p('teacherocupations.manage'))"
@@ -221,8 +278,7 @@ const saveChanges = async () => {
       </div>
     </div>
 
-    <!-- Filtro global de Ano Letivo -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Ano Letivo</label>
         <Select
@@ -236,11 +292,24 @@ const saveChanges = async () => {
           class="w-full text-xs"
         />
       </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Turma / Configuração *</label>
+        <Select
+          v-model="selectedGroupconfigId"
+          :options="filteredGroupconfigs"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Selecione a turma"
+          filter
+          showClear
+          class="w-full text-xs"
+        />
+      </div>
     </div>
 
-    <div v-if="globalError || teacherStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-3">
+    <div v-if="globalError || teacherStore.error || subjectStore.error || yearStore.error || groupconfigStore.error || teacherocupationStore.error || classSubjectStore.error" class="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-sm flex items-center gap-3">
       <i class="fa-solid fa-circle-exclamation text-lg"></i>
-      <span>{{ globalError || teacherStore.error || subjectStore.error || yearStore.error || teacherocupationStore.error }}</span>
+      <span>{{ globalError || teacherStore.error || subjectStore.error || yearStore.error || groupconfigStore.error || teacherocupationStore.error || classSubjectStore.error }}</span>
     </div>
 
     <div v-if="successMessage" class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-3">
@@ -257,7 +326,7 @@ const saveChanges = async () => {
           <input
             v-model="teacherSearchQuery"
             type="text"
-            placeholder="Pesquisar professor..."
+            placeholder="Pesquisar por nome ou código..."
             class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -275,14 +344,14 @@ const saveChanges = async () => {
             @click="selectedTeacherId = teacher.id"
             :class="[
               'w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-semibold transition-all text-left',
-              selectedTeacherId === teacher.id 
+              same(selectedTeacherId, teacher.id)
                 ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
             ]"
           >
             <div class="flex items-center gap-2.5 truncate">
               <i class="fa-solid fa-chalkboard-user text-sm opacity-80"></i>
-              <span class="truncate">{{ teacher.user?.name || `#${teacher.codenumber}` }}</span>
+              <span class="truncate">{{ formatTeacherLabel(teacher) }}</span>
             </div>
             <i class="fa-solid fa-chevron-right text-[10px] opacity-60"></i>
           </button>
@@ -293,7 +362,7 @@ const saveChanges = async () => {
         <div class="p-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h3 class="font-bold text-slate-900 dark:text-white text-base">
-              Disciplinas para: <span class="text-indigo-600 dark:text-indigo-400">{{ currentTeacher?.user?.name || 'Selecione um professor' }}</span>
+              Disciplinas para: <span class="text-indigo-600 dark:text-indigo-400">{{ currentTeacher ? formatTeacherLabel(currentTeacher) : 'Selecione um professor' }}</span>
             </h3>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Marque as caixas de seleção correspondentes às disciplinas lecionadas.</p>
           </div>
@@ -312,7 +381,7 @@ const saveChanges = async () => {
         </div>
 
         <div class="p-6 overflow-y-auto max-h-[480px]">
-          <div v-if="teacherStore.isLoading || subjectStore.isLoading || teacherocupationStore.isLoading" class="py-12 text-center text-slate-400 dark:text-slate-500">
+          <div v-if="teacherStore.isLoading || subjectStore.isLoading || teacherocupationStore.isLoading || classSubjectStore.isLoading" class="py-12 text-center text-slate-400 dark:text-slate-500">
             <i class="fa-solid fa-spinner animate-spin text-xl mb-2"></i>
             <p class="text-xs">A carregar disciplinas...</p>
           </div>
