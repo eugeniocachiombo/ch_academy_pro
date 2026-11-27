@@ -15,8 +15,9 @@ model Schedule {
   year        Year        @relation(fields: [year_id], references: [id], onDelete: Cascade)
   school      School?     @relation(fields: [school_id], references: [id])
 
-  createdAt DateTime? @default(now())
-  updatedAt DateTime? @updatedAt
+  createdAt        DateTime?         @default(now())
+  updatedAt        DateTime?         @updatedAt
+  studentPresences StudentPresence[]
 
   @@unique([groupconfig_id, year_id, day_of_week, start_time])
 }
