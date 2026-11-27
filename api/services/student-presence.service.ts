@@ -18,7 +18,16 @@ class StudentPresenceService extends BaseService {
             {
                 tenant: "mixed",
                 include: {
-                    groupconfig: true,
+                    groupconfig: {
+                        include: {
+                            group: true,
+                            course: true,
+                            class: true,
+                            period: true,
+                            room: true,
+                            year: true,
+                        },
+                    },
                     teacher: {
                         include: {
                             user: true,
@@ -35,7 +44,7 @@ class StudentPresenceService extends BaseService {
                             },
                         },
                     },
-                },
+            },
             }
         );
     }

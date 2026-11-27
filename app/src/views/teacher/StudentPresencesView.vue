@@ -38,11 +38,49 @@ onMounted(async () => {
   } catch {}
 })
 
+const formatPeriodLabel = (period: any) => {
+  if (!period) return ''
+  const name = period.name || ''
+  const start = period.starthour || ''
+  const end = period.endhour || ''
+  return `${name}`.trim()
+}
+
+const getGroupconfigDetails = (item: any) => {
+  const gc = item?.groupconfig || {}
+  const gcName = gc.name || ''
+  const groupName = gc.group?.name || gc.group_name || ''
+  const courseName = gc.course?.name || gc.course_name || ''
+  const className = gc.class?.name || gc.class_name || ''
+  const periodText = formatPeriodLabel(gc.period)
+  const roomName = gc.room?.name || gc.room_name || ''
+  const yearName = gc.year?.name || gc.year_name || ''
+
+  const searchBlob = [gcName, groupName, courseName, className, periodText, roomName, yearName]
+    .filter(Boolean)
+    .join(' ')
+
+  return {
+    gcName,
+    groupName,
+    courseName,
+    className,
+    periodText,
+    roomName,
+    yearName,
+    searchBlob,
+  }
+}
+
 const groupconfigFilterOptions = computed(() => {
   const map = new Map<number, string>()
   for (const item of presenceStore.presences) {
-    if (item?.groupconfig_id && item.groupconfig?.name) {
-      map.set(item.groupconfig_id, item.groupconfig.name)
+    if (item?.groupconfig_id && item.groupconfig) {
+      const label =
+        item.groupconfig.name ||
+        getGroupconfigDetails(item).groupName ||
+        `#${item.groupconfig_id}`
+      map.set(Number(item.groupconfig_id), label)
     }
   }
   return Array.from(map, ([value, label]) => ({ value, label }))
@@ -52,7 +90,7 @@ const subjectFilterOptions = computed(() => {
   const map = new Map<number, string>()
   for (const item of presenceStore.presences) {
     if (item?.subject_id && item.subject?.name) {
-      map.set(item.subject_id, item.subject.name)
+      map.set(Number(item.subject_id), item.subject.name)
     }
   }
   return Array.from(map, ([value, label]) => ({ value, label }))
@@ -99,12 +137,14 @@ const filteredPresences = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
     if (!q) return true
 
+    const gcInfo = getGroupconfigDetails(item)
+
     return (
-      item.groupconfig?.name?.toLowerCase().includes(q) ||
+      gcInfo.searchBlob.toLowerCase().includes(q) ||
       item.subject?.name?.toLowerCase().includes(q) ||
       item.teacher?.user?.name?.toLowerCase().includes(q) ||
       item.teacher?.name?.toLowerCase().includes(q) ||
-      item.teacher?.codenumber?.toLowerCase().includes(q)
+      String(item.teacher?.codenumber || '').toLowerCase().includes(q)
     )
   })
 })
@@ -218,8 +258,10 @@ const handleSaved = async () => {
 
 const confirmDeletePresence = (presence: StudentPresence) => {
   if (!p('student-presences.delete')) return
+  const gcInfo = getGroupconfigDetails(presence)
+  const turmaLabel = gcInfo.groupName || gcInfo.gcName || 'Turma'
   presenceToDeleteId.value = presence.id
-  presenceToDeleteLabel.value = `${presence.groupconfig?.name || 'Turma'} - ${presence.subject?.name || 'Disciplina'} (${formatDate(presence.date)})`
+  presenceToDeleteLabel.value = `${turmaLabel} - ${presence.subject?.name || 'Disciplina'} (${formatDate(presence.date)})`
   isDeleteModalOpen.value = true
 }
 
@@ -354,7 +396,7 @@ const handleDelete = async () => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Pesquisar turma, disciplina ou professor..."
+            placeholder="Pesquisar turma, classe, curso, disciplina ou professor..."
             class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-200 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -440,8 +482,8 @@ const handleDelete = async () => {
         class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-xl hover:border-indigo-500/40 transition-all flex flex-col gap-4"
       >
         <div class="flex items-start justify-between gap-3">
-          <div class="space-y-1 min-w-0">
-            <div class="flex items-center gap-2">
+          <div class="space-y-1.5 min-w-0">
+            <div class="flex items-center flex-wrap gap-2">
               <span
                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
               >
@@ -449,13 +491,14 @@ const handleDelete = async () => {
                 {{ formatDate(item.date) }}
               </span>
               <span
-                class="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 truncate"
+                v-if="getGroupconfigDetails(item).yearName"
+                class="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
               >
-                {{ item.groupconfig?.name || 'Sem turma' }}
+                {{ getGroupconfigDetails(item).yearName }}
               </span>
             </div>
 
-            <h2 class="text-base font-bold text-slate-900 dark:text-white truncate pt-1">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white truncate pt-0.5">
               {{ item.subject?.name || 'Sem disciplina' }}
             </h2>
 
@@ -485,6 +528,39 @@ const handleDelete = async () => {
             >
               <i class="fa-solid fa-trash text-xs"></i>
             </button>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-1 text-xs">
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Turma:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).groupName || getGroupconfigDetails(item).gcName || '—' }}
+            </span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Curso:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).courseName || '—' }}
+            </span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Classe:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).className || '—' }}
+            </span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Turno:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).periodText || '—' }}
+            </span>
+          </div>
+          <div class="flex items-baseline justify-between gap-2">
+            <span class="text-slate-500 dark:text-slate-400 shrink-0">Sala:</span>
+            <span class="font-semibold text-slate-900 dark:text-white text-right truncate">
+              {{ getGroupconfigDetails(item).roomName || '—' }}
+            </span>
           </div>
         </div>
 
